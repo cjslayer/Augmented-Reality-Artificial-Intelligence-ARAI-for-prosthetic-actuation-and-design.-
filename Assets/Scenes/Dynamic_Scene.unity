@@ -716,7 +716,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2189632787672534430, guid: 89fcafe537c345041921dd79448fb634, type: 3}
       propertyPath: m_BrainParameters.VectorObservationSize
-      value: 28
+      value: 42
       objectReference: {fileID: 0}
     - target: {fileID: 2478712358241747475, guid: 89fcafe537c345041921dd79448fb634, type: 3}
       propertyPath: m_IsActive
@@ -1444,6 +1444,47 @@ MonoBehaviour:
   MaxStep: 5000
   rotationSpeed: 90
   arm: {fileID: 770069238}
+  indexBaseLimits: {x: -90, y: 10}
+  indexMiddleLimits: {x: -100, y: 5}
+  indexEndLimits: {x: -80, y: 5}
+  middleBaseLimits: {x: -90, y: 10}
+  middleMiddleLimits: {x: -100, y: 5}
+  middleEndLimits: {x: -80, y: 5}
+  ringBaseLimits: {x: -90, y: 10}
+  ringMiddleLimits: {x: -100, y: 5}
+  ringEndLimits: {x: -80, y: 5}
+  pinkyBaseLimits: {x: -90, y: 10}
+  pinkyMiddleLimits: {x: -100, y: 5}
+  pinkyEndLimits: {x: -80, y: 5}
+  thumbBaseLimits: {x: -15, y: 60}
+  thumbEndLimits: {x: -10, y: 80}
+  penetrationTolerance: 0.0005
+  contactDistance: 0.003
+  contactSolveIterations: 5
+  distanceRewardScale: 1
+  contactRewardPerSegment: 0.00002
+  successBonus: 1
+  requiredContactSegments: 6
+  requiredDistinctFingers: 2
+  requireThumbContact: 1
+  requiredHoldDecisions: 10
+  existentialPenaltyScale: 1
+  workspaceScale: 0.4
+  heuristicActions:
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
 --- !u!114 &770069243
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1457,7 +1498,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 28
+    VectorObservationSize: 42
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 14

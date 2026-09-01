@@ -20,7 +20,46 @@ behaviors:
         gamma: 0.99
         strength: 1.0
     keep_checkpoints: 5
+    init_path: results/005/Prosthetic/checkpoint.pt
     max_steps: 30000000
     time_horizon: 128
     summary_freq: 10000
     threaded: true
+
+environment_parameters:
+  hold_decisions:
+    curriculum:
+      - name: Hold2
+        completion_criteria:
+          measure: reward
+          behavior: Prosthetic
+          signal_smoothing: true
+          min_lesson_length: 150
+          threshold: 5.8
+        value: 2.0
+      - name: Hold4
+        completion_criteria:
+          measure: reward
+          behavior: Prosthetic
+          signal_smoothing: true
+          min_lesson_length: 150
+          threshold: 5.8
+        value: 4.0
+      - name: Hold6
+        completion_criteria:
+          measure: reward
+          behavior: Prosthetic
+          signal_smoothing: true
+          min_lesson_length: 150
+          threshold: 5.8
+        value: 6.0
+      - name: Hold8
+        completion_criteria:
+          measure: reward
+          behavior: Prosthetic
+          signal_smoothing: true
+          min_lesson_length: 150
+          threshold: 5.8
+        value: 8.0
+      - name: Hold10
+        value: 10.0

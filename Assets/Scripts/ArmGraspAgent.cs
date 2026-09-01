@@ -92,7 +92,7 @@ public class ArmGraspAgent : Agent
     public int requiredDistinctFingers = 2;
     [Tooltip("Require at least one thumb segment in contact for a grasp.")]
     public bool requireThumbContact = true;
-    [Tooltip("Consecutive decisions the grasp must be held before the episode ends successfully.")]
+    [Tooltip("Consecutive decisions the grasp must be held before the episode ends successfully. Overridden by the 'hold_decisions' environment parameter when present.")]
     public int requiredHoldDecisions = 10;
     [Tooltip("Per-step penalty = -existentialPenaltyScale / MaxStep (faster grasps score higher).")]
     public float existentialPenaltyScale = 1.0f;
@@ -109,6 +109,8 @@ public class ArmGraspAgent : Agent
 
     /// <summary>Number of successful grasps (success bonus fired) since the component was created.</summary>
     public int SuccessCount { get; private set; }
+    /// <summary>Hold requirement in effect this episode: the 'hold_decisions' environment parameter, or requiredHoldDecisions.</summary>
+    public int HoldDecisions { get; private set; }
     /// <summary>Segments touching the cylinder after the last action.</summary>
     public int CurrentContacts { get; private set; }
     /// <summary>Commanded angle (deg) of a finger joint group, for inspection.</summary>
@@ -302,6 +304,8 @@ public class ArmGraspAgent : Agent
 
         m_HoldSteps = 0;
         CurrentContacts = 0;
+        HoldDecisions = Mathf.Max(1, Mathf.RoundToInt(Academy.Instance.EnvironmentParameters.GetWithDefault(
+            "hold_decisions", requiredHoldDecisions)));
     }
 
     // Teleport the cylinder to a random reachable pose: uniform in a horizontal disk around spawnCenter,
@@ -450,7 +454,7 @@ public class ArmGraspAgent : Agent
                   && distinctFingers >= requiredDistinctFingers
                   && (!requireThumbContact || thumbTouching);
         m_HoldSteps = grasp ? m_HoldSteps + 1 : 0;
-        if (grasp && m_HoldSteps >= requiredHoldDecisions * m_DecisionPeriod)
+        if (grasp && m_HoldSteps >= (HoldDecisions > 0 ? HoldDecisions : requiredHoldDecisions) * m_DecisionPeriod)
         {
             SuccessCount++;
             AddReward(successBonus);

@@ -222,3 +222,39 @@ gitignored), Unity reimports, then press Play to watch. Verified end-to-end with
 Workflow: `mlagents-learn … --env Builds\Prosthetic\Prosthetic.exe --num-envs 8 --no-graphics` → Ctrl+C when
 done → `tools\deploy_model.cmd <run-id>` → Play in Editor. Do **not** press Play while `--env` training runs
 (harmless, but the Editor just runs inference on the old model and is unrelated to the training).
+
+---
+
+## Phase D (2026-09-01): target randomization + reaching (Option A, 5 arm axes)
+
+**Actuation set (decision):** RL controls the 14 finger groups plus 5 arm axes — shoulder flexion
+(`Bicep.r` local X), shoulder abduction (`Bicep.r` local Z), elbow flexion (`forearm.r` local X),
+wrist flexion (`palm.r` local X) and wrist pronation (`palm.r` local Y). Humeral rotation stays
+frozen (not needed: the 50-spawn scripted reach test aligned the palm everywhere in the spawn volume).
+
+**Rationale:** the proximal joints (shoulder, elbow) emulate the user's gross reach; the distal joints
+(wrist, fingers) are the prosthesis. A distal-only ablation — freeze shoulder/elbow, scripted IK brings
+the palm to a standoff pose, RL owns wrist + fingers — is planned later for transradial realism. The arm
+actuation is therefore built so freezing the proximal axes is the serialized toggle
+`ArmGraspAgent.actuateProximalJoints` (action/observation sizes unchanged), not a rewrite.
+
+**Rig audit (edit pose):** `ArmAnimation/Armature/Bone/Bicep.r` (shoulder pivot, 0.749 m) →
+`forearm.r` (elbow, 0.818 m) → `palm.r` (wrist) → fingers. Every bone's long axis is local +Y (Blender
+import, local scale 100). Elbow rest angle 132.6°. Full extension 1.567 m; the original cylinder sat
+1.60 m from the shoulder — at the edge of reach — so spawns are placed **1.1–1.5 m** from the shoulder
+pivot instead. No Animator/Joints/ArticulationBodies. `JointOrientation` (Myo) sets the root rotation
+to identity at Play (edit pose is 3.1° off) and was verified constant over 120 frames (0.00000° drift),
+so it is left enabled. Rig changes: CapsuleCollider added to `forearm.r` (0.818 m × r 0.045 m); the
+palm BoxCollider was already 0.044 m thick (an earlier audit misread it as zero) and is unchanged.
+
+**Spawn:** uniform in a horizontal disk (`spawnRadius`, overridable by the `spawn_radius` environment
+parameter) around `spawnCenter` (0.48, 0.488, 5.57), + uniform height in [0, `spawnHeightRange`],
+random yaw; rejection-sampled to `reachRange` [1.1, 1.5] m from the shoulder and no overlap with the
+reset arm pose. **Observations 55** = 42 (as before) + sin/cos × 5 arm axes + cylinder position relative
+to the palm (palm frame, / `targetObsScale` = 1 m). **Actions 19** = 14 fingers + 5 arm axes.
+**Reward:** + potential-based shaping on the distance from the palm *grasp point*
+(`graspPointOffset`, where the cylinder sits in the run-004 grasp) to the cylinder surface, same
+coefficient scale as the finger shaping; everything else unchanged. Arm axes use the same rate-limited,
+limit-clamped, ComputePenetration-bisected actuation as the fingers (all 16 arm/hand colliders).
+
+Run 004's model (28+14 obs, 14 actions) is **incompatible** with this scene; never `--resume` from it.

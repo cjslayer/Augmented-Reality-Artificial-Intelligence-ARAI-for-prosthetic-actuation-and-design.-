@@ -716,7 +716,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2189632787672534430, guid: 89fcafe537c345041921dd79448fb634, type: 3}
       propertyPath: m_BrainParameters.VectorObservationSize
-      value: 42
+      value: 55
+      objectReference: {fileID: 0}
+    - target: {fileID: 2189632787672534430, guid: 89fcafe537c345041921dd79448fb634, type: 3}
+      propertyPath: 'm_BrainParameters.VectorActionSize.Array.data[0]'
+      value: 19
+      objectReference: {fileID: 0}
+    - target: {fileID: 2189632787672534430, guid: 89fcafe537c345041921dd79448fb634, type: 3}
+      propertyPath: m_BrainParameters.m_ActionSpec.m_NumContinuousActions
+      value: 19
       objectReference: {fileID: 0}
     - target: {fileID: 2478712358241747475, guid: 89fcafe537c345041921dd79448fb634, type: 3}
       propertyPath: m_IsActive
@@ -1142,6 +1150,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 699201081}
+  - component: {fileID: 699201082}
   m_Layer: 0
   m_Name: forearm.r
   m_TagString: Untagged
@@ -1165,6 +1174,29 @@ Transform:
   - {fileID: 1029814201}
   m_Father: {fileID: 1227007471}
   m_LocalEulerAnglesHint: {x: 45.703, y: -18.218, z: -2.079}
+--- !u!136 &699201082
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 699201080}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.00044999973
+  m_Height: 0.008177344
+  m_Direction: 1
+  m_Center: {x: 0, y: 0.004088672, z: 0}
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
@@ -1443,6 +1475,7 @@ MonoBehaviour:
   hasUpgradedFromAgentParameters: 1
   MaxStep: 5000
   rotationSpeed: 90
+  armRotationSpeed: 90
   arm: {fileID: 770069238}
   indexBaseLimits: {x: -90, y: 10}
   indexMiddleLimits: {x: -100, y: 5}
@@ -1458,10 +1491,27 @@ MonoBehaviour:
   pinkyEndLimits: {x: -80, y: 5}
   thumbBaseLimits: {x: -15, y: 60}
   thumbEndLimits: {x: -10, y: 80}
+  shoulderFlexionLimits: {x: -40, y: 100}
+  shoulderAbductionLimits: {x: -60, y: 60}
+  elbowFlexionLimits: {x: -47, y: 98}
+  wristFlexionLimits: {x: -70, y: 80}
+  wristPronationLimits: {x: -80, y: 80}
+  actuateProximalJoints: 1
+  shoulderPath: Armature/Bone/Bicep.r
+  forearmPath: Armature/Bone/Bicep.r/forearm.r
+  palmPath: Armature/Bone/Bicep.r/forearm.r/palm.r
+  spawnCenter: {x: 0.48, y: 0.488, z: 5.57}
+  spawnRadius: 0.25
+  spawnHeightRange: 0.1
+  randomizeYaw: 1
+  reachRange: {x: 1.1, y: 1.5}
+  spawnAttempts: 50
   penetrationTolerance: 0.0005
   contactDistance: 0.003
   contactSolveIterations: 5
   distanceRewardScale: 1
+  palmDistanceRewardScale: 1
+  graspPointOffset: {x: 0.186, y: 0.205, z: 0.078}
   contactRewardPerSegment: 0.00002
   successBonus: 1
   requiredContactSegments: 6
@@ -1470,7 +1520,13 @@ MonoBehaviour:
   requiredHoldDecisions: 10
   existentialPenaltyScale: 1
   workspaceScale: 0.4
+  targetObsScale: 1
   heuristicActions:
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
   - 0
   - 0
   - 0
@@ -1498,12 +1554,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 42
+    VectorObservationSize: 55
     NumStackedVectorObservations: 1
     m_ActionSpec:
-      m_NumContinuousActions: 14
+      m_NumContinuousActions: 19
       BranchSizes: 
-    VectorActionSize: 0e000000
+    VectorActionSize: 13000000
     VectorActionDescriptions: []
     VectorActionSpaceType: 1
     hasUpgradedBrainParametersWithActionSpec: 1

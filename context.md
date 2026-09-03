@@ -52,7 +52,7 @@ Read this first, then skim `MLAGENTS_UPGRADE.md` (addendum at bottom) if you tou
 - **Unity Editor is running** with this project open (launched via `unity open`, started ~4:21 PM Aug 31).
   Pipeline server on port 7800, `unity status` = ready. Console: 2 warnings (Input Manager deprecation,
   URP Global Settings created) + 1 pre-existing error "Blender could not be found" (a `.blend` asset, no Blender installed).
-- **Committed Aug 31 (3rd session)** as `d941b43` + `e124d90` (see item 5). Before that, the uncommitted tree included many changes that pre-date this session
+- **Committed Aug 31 (3rd session)** as `39d91d7` + `e878cd6` (see item 5). Before that, the uncommitted tree included many changes that pre-date this session
   (Unity 6 / URP / OpenXR migration, scene edits, package upgrades) plus this session's:
   - `Packages/manifest.json` (+`com.unity.pipeline`, ml-agents 4.1.0, −sentis) and `Packages/packages-lock.json`
   - new `.mcp.json` (should be committed — it's the shared MCP config)
@@ -107,5 +107,5 @@ Read this first, then skim `MLAGENTS_UPGRADE.md` (addendum at bottom) if you tou
    Assets\Models\Prosthetic.onnx). The committed Assets/Models/Prosthetic.onnx is the old June-19 model.
 4. Optional cleanup: `com.unity.ide.vscode` is deprecated (Editor warning); the Input Manager deprecation
    warning suggests eventually moving to the Input System package (already in manifest, 1.11.2).
-5. ~~Commit split~~ **DONE (Aug 31, 3rd session):** `d941b43` chore: tooling + ML-Agents 4.1.0 fix; `e124d90` chore: Unity 6 /
+5. ~~Commit split~~ **DONE (Aug 31, 3rd session):** `39d91d7` chore: tooling + ML-Agents 4.1.0 fix; `e878cd6` chore: Unity 6 /
    URP / OpenXR migration. Only `UserSettings/Layouts/`, `Search.index`, `Search.settings` left untracked (per-user artifacts).

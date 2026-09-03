@@ -77,3 +77,9 @@ Assets/Models/*.onnx.bak
 
 # ML-Agents training output
 /results/
+
+# Python environments / caches
+venv/
+.venv/
+__pycache__/
+*.py[cod]

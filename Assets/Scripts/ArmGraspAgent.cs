@@ -76,14 +76,16 @@ public class ArmGraspAgent : Agent
     public int contactSolveIterations = 5;
 
     [Header("Reward")]
-    [Tooltip("Scale of the per-step distance-delta shaping reward (sum over segments).")]
+    [Tooltip("Per-term multiplier of the normalized segment-distance shaping (delta / episode-initial distance).")]
     public float distanceRewardScale = 1.0f;
-    [Tooltip("Scale of the per-step palm-to-cylinder distance-delta shaping (grasp point to cylinder center).")]
+    [Tooltip("Per-term multiplier of the normalized grasp-point shaping (delta / episode-initial distance).")]
     public float palmDistanceRewardScale = 1.0f;
+    [Tooltip("Scale applied to the SUM of the 15 normalized potentials (14 segments + grasp point). 1/15 caps the episode shaping budget at 1.0.")]
+    public float shapingScale = 1f / 15f;
+    [Tooltip("Floor (m) for the episode-initial distance each potential is normalized by.")]
+    public float shapingFloorDistance = 0.05f;
     [Tooltip("Offset (m, palm rotation frame) from the palm pivot to where the cylinder sits in a good grasp; used for reach shaping.")]
     public Vector3 graspPointOffset = new Vector3(0.186f, 0.205f, 0.078f);
-    [Tooltip("Reward per step for each segment touching the cylinder.")]
-    public float contactRewardPerSegment = 0.00002f;
     [Tooltip("Terminal bonus when a grasp is held for requiredHoldDecisions decisions.")]
     public float successBonus = 1.0f;
     [Tooltip("Segments that must touch the cylinder simultaneously for a grasp.")]
@@ -96,6 +98,26 @@ public class ArmGraspAgent : Agent
     public int requiredHoldDecisions = 10;
     [Tooltip("Per-step penalty = -existentialPenaltyScale / MaxStep (faster grasps score higher).")]
     public float existentialPenaltyScale = 1.0f;
+
+    [Header("Grasp Quality Q (paid while the hold criterion is met)")]
+    [Tooltip("Weight of the saturating contact-count term (segments only; saturates at qualityContactSaturation).")]
+    public float qualityContactWeight = 0.35f;
+    [Tooltip("Weight of the azimuthal-coverage term: 0 while the largest angular gap between contacts is >= 180 deg, ramping to 1 as the gap closes.")]
+    public float qualityCoverageWeight = 0.30f;
+    [Tooltip("Weight of the thumb antipodality term: angle between the thumb contact azimuth and the mean finger azimuth, peak at 180 deg.")]
+    public float qualityAntipodalWeight = 0.20f;
+    [Tooltip("Weight of the binary palm-contact term (palm collider touching; never counts toward the success gate).")]
+    public float qualityPalmWeight = 0.15f;
+    [Tooltip("Contact count at which the contact term saturates; segments beyond this pay nothing.")]
+    public int qualityContactSaturation = 8;
+    [Tooltip("Maximum number of steps per episode on which Q is paid (anti-farming cap).")]
+    public int qualityBudgetSteps = 50;
+    [Tooltip("Q is multiplied by this on each paying step; 1/50 with a 50-step budget caps quality pay at 1.0 per episode.")]
+    public float qualityPayPerStep = 1f / 50f;
+
+    [Header("Episode Stats")]
+    [Tooltip("If set, one CSV row per episode is appended to this file (Editor diagnostics). Stats are always sent to the ML-Agents StatsRecorder.")]
+    public string statsCsvPath = "";
 
     [Header("Observations")]
     [Tooltip("Joint-to-cylinder distances are divided by this (m) so they land roughly in [0, 1].")]
@@ -175,9 +197,44 @@ public class ArmGraspAgent : Agent
     private List<Collider> armColliders = new List<Collider>();   // forearm + palm colliders
     private Dictionary<Collider, int> segmentFinger = new Dictionary<Collider, int>();
     private Dictionary<Collider, float> previousDistances = new Dictionary<Collider, float>();
+    private Dictionary<Collider, float> initialDistances = new Dictionary<Collider, float>();
     private float previousGraspPointDistance;
+    private float initialGraspPointDistance;
+    private Collider m_PalmCollider;
     private int m_HoldSteps;
     private int m_DecisionPeriod = 1;
+
+    // One contact sample per touching collider (segments, plus the palm for quality only)
+    struct ContactSample { public float azimuthDeg; public float height; public bool isThumb; public bool isPalm; }
+    private List<ContactSample> m_Contacts = new List<ContactSample>();
+    private List<float> m_Azimuths = new List<float>();
+
+    // Per-episode bookkeeping (reset in OnEpisodeBegin, reported at episode end)
+    private int m_QualityStepsPaid;
+    private float m_ShapingReturn, m_QualityReturn, m_PenaltyReturn, m_BonusReturn;
+    private int m_StepsToFirstSixContacts = -1, m_StepsToFirstHoldCriterion = -1;
+    private float m_MinGraspPointDistance, m_MaxPenetration, m_SpawnDistance;
+    private int m_HoldWindowCount; private double m_HoldWindowSum, m_HoldWindowSumSq;
+    private bool m_EpisodeActive;
+
+    /// <summary>Latest quality score Q in [0,1] (computed every step, paid only while the hold criterion is met).</summary>
+    public float LastQuality { get; private set; }
+    public float LastCoverageGapDeg { get; private set; }
+    public float LastAntipodality { get; private set; }
+    public float LastVerticalSpread { get; private set; }
+    public bool LastPalmTouching { get; private set; }
+    public int LastDistinctFingers { get; private set; }
+    public bool LastThumbTouching { get; private set; }
+    public bool LastHoldCriterionMet { get; private set; }
+    public int QualityStepsPaid => m_QualityStepsPaid;
+    public float ShapingReturn => m_ShapingReturn;
+    public float QualityReturn => m_QualityReturn;
+    public float PenaltyReturn => m_PenaltyReturn;
+    public float BonusReturn => m_BonusReturn;
+    public float MaxPenetration => m_MaxPenetration;
+    public float SpawnDistance => m_SpawnDistance;
+    /// <summary>Sum of the 14 segment distances after the last action.</summary>
+    public float ResidualSegmentDistance { get; private set; }
 
     public override void Initialize()
     {
@@ -228,7 +285,7 @@ public class ArmGraspAgent : Agent
 
         var allHand = new List<Collider>(armColliders); allHand.AddRange(segmentColliders);
         var palmAndFingers = new List<Collider>(segmentColliders);
-        if (m_Palm != null && m_Palm.TryGetComponent<Collider>(out var pc)) palmAndFingers.Insert(0, pc);
+        if (m_Palm != null && m_Palm.TryGetComponent<Collider>(out var pc)) { palmAndFingers.Insert(0, pc); m_PalmCollider = pc; }
         // Capture the scene pose once: it is 0 deg for every arm axis
         var shoulderBone = new ArmBone { transform = m_Shoulder, colliders = allHand.ToArray(),        baseRotation = m_Shoulder != null ? m_Shoulder.localRotation : Quaternion.identity };
         var forearmBone  = new ArmBone { transform = m_Forearm,  colliders = allHand.ToArray(),        baseRotation = m_Forearm  != null ? m_Forearm.localRotation  : Quaternion.identity };
@@ -294,16 +351,34 @@ public class ArmGraspAgent : Agent
         ZeroZ(palmJoints);
         Physics.SyncTransforms();
 
+        // Report the previous episode if it ended without success (MaxStep interruption)
+        if (m_EpisodeActive) LogEpisode(false);
+
         SpawnCylinder();
 
-        // Initialize potentials for the shaping rewards
+        // Initialize potentials for the shaping rewards; each is normalized by its episode-initial value
         previousDistances.Clear();
+        initialDistances.Clear();
         foreach (var col in segmentColliders)
-            previousDistances[col] = SegmentDistance(col);
+        {
+            float d0 = SegmentDistance(col);
+            previousDistances[col] = d0;
+            initialDistances[col] = Mathf.Max(d0, shapingFloorDistance);
+        }
         previousGraspPointDistance = GraspPointDistance;
+        initialGraspPointDistance = Mathf.Max(previousGraspPointDistance, shapingFloorDistance);
 
         m_HoldSteps = 0;
         CurrentContacts = 0;
+        m_QualityStepsPaid = 0;
+        m_ShapingReturn = m_QualityReturn = m_PenaltyReturn = m_BonusReturn = 0f;
+        m_StepsToFirstSixContacts = m_StepsToFirstHoldCriterion = -1;
+        m_MinGraspPointDistance = previousGraspPointDistance;
+        m_MaxPenetration = 0f;
+        m_SpawnDistance = (m_Shoulder != null && cylinderTransform != null) ? Vector3.Distance(m_Shoulder.position, cylinderTransform.position) : 0f;
+        m_HoldWindowCount = 0; m_HoldWindowSum = m_HoldWindowSumSq = 0;
+        LastQuality = 0f; LastCoverageGapDeg = 360f; LastAntipodality = 0f; LastVerticalSpread = 0f; LastPalmTouching = false; LastDistinctFingers = 0; LastThumbTouching = false; LastHoldCriterionMet = false;
+        m_EpisodeActive = true;
         HoldDecisions = Mathf.Max(1, Mathf.RoundToInt(Academy.Instance.EnvironmentParameters.GetWithDefault(
             "hold_decisions", requiredHoldDecisions)));
     }
@@ -414,51 +489,199 @@ public class ArmGraspAgent : Agent
             ApplyAngleWithContactClamp(m_Groups[g], target);
         }
 
-        // Reward
-        float totalReward = 0f;
+        // ---- Reward ----
+        // 1) Shaping: 15 potentials (14 segments + grasp point), each normalized by its episode-initial distance,
+        //    summed and scaled by shapingScale so the episode budget is at most ~1.0.
+        float shapingSum = 0f;
         int contacts = 0;
         bool thumbTouching = false;
         int fingerMask = 0;
+        float residual = 0f;
+        m_Contacts.Clear();
         foreach (var col in segmentColliders)
         {
-            // distance-based incremental shaping (kept from the original reward)
             float currDist = SegmentDistance(col);
             float delta = previousDistances[col] - currDist;
-            totalReward += delta * distanceRewardScale;
+            shapingSum += distanceRewardScale * delta / initialDistances[col];
             previousDistances[col] = currDist;
+            residual += currDist;
 
-            if (IsTouching(col))
+            if (TryGetContact(col, out ContactSample sample))
             {
                 contacts++;
-                totalReward += contactRewardPerSegment;
                 int finger = segmentFinger[col];
-                if (finger == k_ThumbFinger) thumbTouching = true;
+                sample.isThumb = finger == k_ThumbFinger;
+                if (sample.isThumb) thumbTouching = true;
                 else fingerMask |= 1 << finger;
+                m_Contacts.Add(sample);
             }
         }
         CurrentContacts = contacts;
+        ResidualSegmentDistance = residual;
 
-        // palm (grasp point) to cylinder potential-based shaping
+        // Palm contact: quality only, never part of the success gate
+        bool palmTouching = false;
+        if (m_PalmCollider != null && TryGetContact(m_PalmCollider, out ContactSample palmSample))
+        {
+            palmTouching = true;
+            palmSample.isPalm = true;
+            m_Contacts.Add(palmSample);
+        }
+
         float graspDist = GraspPointDistance;
-        totalReward += (previousGraspPointDistance - graspDist) * palmDistanceRewardScale;
+        shapingSum += palmDistanceRewardScale * (previousGraspPointDistance - graspDist) / initialGraspPointDistance;
         previousGraspPointDistance = graspDist;
+        if (graspDist < m_MinGraspPointDistance) m_MinGraspPointDistance = graspDist;
 
-        if (MaxStep > 0)
-            totalReward -= existentialPenaltyScale / MaxStep;
+        float shaping = shapingSum * shapingScale;
+        float penalty = MaxStep > 0 ? -existentialPenaltyScale / MaxStep : 0f;
+        m_ShapingReturn += shaping;
+        m_PenaltyReturn += penalty;
+        AddReward(shaping + penalty);
 
-        AddReward(totalReward);
-
-        // Success: grasp held for K consecutive decisions
+        // 2) Hold criterion (unchanged): >= N segments, >= M distinct fingers, thumb touching
         int distinctFingers = CountBits(fingerMask);
         bool grasp = contacts >= requiredContactSegments
                   && distinctFingers >= requiredDistinctFingers
                   && (!requireThumbContact || thumbTouching);
+        if (contacts >= requiredContactSegments && m_StepsToFirstSixContacts < 0) m_StepsToFirstSixContacts = StepCount;
+        if (grasp && m_StepsToFirstHoldCriterion < 0) m_StepsToFirstHoldCriterion = StepCount;
+
+        // 3) Quality Q (computed every step for diagnostics; paid only on held steps, capped per episode)
+        float q = ComputeQuality(contacts, thumbTouching, palmTouching);
+        LastQuality = q; LastPalmTouching = palmTouching; LastDistinctFingers = distinctFingers; LastThumbTouching = thumbTouching; LastHoldCriterionMet = grasp;
+        if (grasp)
+        {
+            if (m_QualityStepsPaid < qualityBudgetSteps)
+            {
+                float pay = q * qualityPayPerStep;
+                AddReward(pay);
+                m_QualityReturn += pay;
+                m_QualityStepsPaid++;
+            }
+            m_HoldWindowCount++; m_HoldWindowSum += contacts; m_HoldWindowSumSq += (double)contacts * contacts;
+        }
+        else
+        {
+            m_HoldWindowCount = 0; m_HoldWindowSum = m_HoldWindowSumSq = 0;
+        }
+
+        // 4) Success: grasp held for K consecutive decisions (unchanged)
         m_HoldSteps = grasp ? m_HoldSteps + 1 : 0;
         if (grasp && m_HoldSteps >= (HoldDecisions > 0 ? HoldDecisions : requiredHoldDecisions) * m_DecisionPeriod)
         {
             SuccessCount++;
             AddReward(successBonus);
+            m_BonusReturn += successBonus;
+            LogEpisode(true);
             EndEpisode();
+        }
+    }
+
+    // ---- grasp quality ----
+
+    /// <summary>Q in [0,1] from the contact samples gathered this step. Weights are serialized and sum to 1 by default.</summary>
+    private float ComputeQuality(int contacts, bool thumbTouching, bool palmTouching)
+    {
+        float contactScore = qualityContactSaturation > 0 ? Mathf.Clamp01((float)Mathf.Min(contacts, qualityContactSaturation) / qualityContactSaturation) : 0f;
+
+        // Azimuthal coverage: largest circular gap between contact azimuths (segments + palm)
+        m_Azimuths.Clear();
+        foreach (var c in m_Contacts) m_Azimuths.Add(c.azimuthDeg);
+        float largestGap = 360f;
+        if (m_Azimuths.Count >= 2)
+        {
+            m_Azimuths.Sort();
+            largestGap = 0f;
+            for (int i = 1; i < m_Azimuths.Count; i++) largestGap = Mathf.Max(largestGap, m_Azimuths[i] - m_Azimuths[i - 1]);
+            largestGap = Mathf.Max(largestGap, 360f - (m_Azimuths[m_Azimuths.Count - 1] - m_Azimuths[0]));
+        }
+        float coverage = Mathf.Clamp01((180f - largestGap) / 180f);
+
+        // Thumb antipodality: circular mean of thumb contacts vs circular mean of finger contacts, peak at 180 deg
+        float antipodal = 0f;
+        if (thumbTouching)
+        {
+            float ts = 0f, tc = 0f, fs = 0f, fc = 0f; int fingerCount = 0;
+            foreach (var c in m_Contacts)
+            {
+                if (c.isPalm) continue;
+                float r = c.azimuthDeg * Mathf.Deg2Rad;
+                if (c.isThumb) { ts += Mathf.Sin(r); tc += Mathf.Cos(r); }
+                else { fs += Mathf.Sin(r); fc += Mathf.Cos(r); fingerCount++; }
+            }
+            if (fingerCount > 0)
+            {
+                float thumbAz = Mathf.Atan2(ts, tc) * Mathf.Rad2Deg, fingerAz = Mathf.Atan2(fs, fc) * Mathf.Rad2Deg;
+                float diff = Mathf.Abs(Mathf.DeltaAngle(thumbAz, fingerAz));   // [0, 180]
+                antipodal = Mathf.Clamp01(diff / 180f);
+            }
+        }
+
+        // Vertical spread of contacts along the cylinder axis (diagnostic only)
+        float minH = float.MaxValue, maxH = float.MinValue;
+        foreach (var c in m_Contacts) { if (c.height < minH) minH = c.height; if (c.height > maxH) maxH = c.height; }
+        LastVerticalSpread = m_Contacts.Count > 0 ? maxH - minH : 0f;
+        LastCoverageGapDeg = largestGap;
+        LastAntipodality = antipodal;
+
+        return Mathf.Clamp01(qualityContactWeight * contactScore
+                           + qualityCoverageWeight * coverage
+                           + qualityAntipodalWeight * antipodal
+                           + qualityPalmWeight * (palmTouching ? 1f : 0f));
+    }
+
+    // ---- episode stats ----
+
+    private void LogEpisode(bool success)
+    {
+        m_EpisodeActive = false;
+        float holdStd = 0f;
+        if (m_HoldWindowCount > 1)
+        {
+            double mean = m_HoldWindowSum / m_HoldWindowCount;
+            holdStd = (float)System.Math.Sqrt(System.Math.Max(0.0, m_HoldWindowSumSq / m_HoldWindowCount - mean * mean));
+        }
+        float yaw = cylinderTransform != null ? cylinderTransform.eulerAngles.y : 0f;
+        var rec = Academy.Instance.StatsRecorder;
+        rec.Add("Grasp/Success", success ? 1f : 0f);
+        rec.Add("Grasp/StepsToFirstSixContacts", m_StepsToFirstSixContacts);
+        rec.Add("Grasp/StepsToSuccess", success ? StepCount : -1);
+        rec.Add("Grasp/ContactsAtEnd", CurrentContacts);
+        rec.Add("Grasp/DistinctFingersAtEnd", LastDistinctFingers);
+        rec.Add("Grasp/ThumbAtEnd", LastThumbTouching ? 1f : 0f);
+        rec.Add("Grasp/PalmAtEnd", LastPalmTouching ? 1f : 0f);
+        rec.Add("Grasp/CoverageGapDeg", LastCoverageGapDeg);
+        rec.Add("Grasp/Antipodality", LastAntipodality);
+        rec.Add("Grasp/VerticalSpread", LastVerticalSpread);
+        rec.Add("Grasp/HoldContactStd", holdStd);
+        rec.Add("Grasp/QualityAtEnd", LastQuality);
+        rec.Add("Grasp/MinGraspPointDistance", m_MinGraspPointDistance);
+        rec.Add("Grasp/FinalGraspPointDistance", previousGraspPointDistance);
+        rec.Add("Grasp/ResidualSegmentDistance", ResidualSegmentDistance);
+        rec.Add("Grasp/MaxPenetration", m_MaxPenetration);
+        rec.Add("Grasp/SpawnDistance", m_SpawnDistance);
+        rec.Add("Grasp/CylinderYaw", yaw);
+        rec.Add("Return/Shaping", m_ShapingReturn);
+        rec.Add("Return/Quality", m_QualityReturn);
+        rec.Add("Return/Bonus", m_BonusReturn);
+        rec.Add("Return/Penalty", m_PenaltyReturn);
+        rec.Add("Return/QualityStepsPaid", m_QualityStepsPaid);
+
+        if (!string.IsNullOrEmpty(statsCsvPath))
+        {
+            try
+            {
+                if (!System.IO.File.Exists(statsCsvPath))
+                    System.IO.File.WriteAllText(statsCsvPath, "episode,success,steps,stepsToFirstSixContacts,stepsToHoldCriterion,contacts,distinctFingers,thumb,palm,coverageGapDeg,antipodality,verticalSpread,holdContactStd,qualityAtEnd,minGraspDist,finalGraspDist,residualSegDist,maxPenetration,spawnDistance,cylYaw,retShaping,retQuality,retBonus,retPenalty,qualityStepsPaid\n");
+                System.IO.File.AppendAllText(statsCsvPath, string.Join(",", new string[] {
+                    CompletedEpisodes.ToString(), success ? "1" : "0", StepCount.ToString(), m_StepsToFirstSixContacts.ToString(), m_StepsToFirstHoldCriterion.ToString(),
+                    CurrentContacts.ToString(), LastDistinctFingers.ToString(), LastThumbTouching ? "1" : "0", LastPalmTouching ? "1" : "0",
+                    LastCoverageGapDeg.ToString("F1"), LastAntipodality.ToString("F3"), LastVerticalSpread.ToString("F4"), holdStd.ToString("F3"), LastQuality.ToString("F4"),
+                    m_MinGraspPointDistance.ToString("F4"), previousGraspPointDistance.ToString("F4"), ResidualSegmentDistance.ToString("F4"), m_MaxPenetration.ToString("F5"),
+                    m_SpawnDistance.ToString("F3"), yaw.ToString("F0"), m_ShapingReturn.ToString("F4"), m_QualityReturn.ToString("F4"), m_BonusReturn.ToString("F2"), m_PenaltyReturn.ToString("F4"), m_QualityStepsPaid.ToString() }) + "\n");
+            }
+            catch (System.Exception e) { Debug.LogWarning("[ArmGraspAgent] stats CSV: " + e.Message); }
         }
     }
 
@@ -550,15 +773,43 @@ public class ArmGraspAgent : Agent
         return false;
     }
 
-    private bool IsTouching(Collider col)
+    // Touch test with the same acceptance as before (overlap, or closest-point gap <= contactDistance), now also
+    // returning the contact geometry: azimuth about the cylinder axis from the outward contact normal
+    // (ComputePenetration direction when overlapping, closest-point pair otherwise) and the height along the axis.
+    private bool TryGetContact(Collider col, out ContactSample sample)
     {
+        sample = default;
         if (cylinderCollider == null) return false;
+        Vector3 normal;
+        Vector3 onCylinder;
         if (Physics.ComputePenetration(col, col.transform.position, col.transform.rotation,
-                cylinderCollider, cylinderTransform.position, cylinderTransform.rotation, out _, out _))
-            return true;
-        Vector3 onCylinder = cylinderCollider.ClosestPoint(col.transform.position);
-        Vector3 onSegment = col.ClosestPoint(onCylinder);
-        return Vector3.Distance(onCylinder, onSegment) <= contactDistance;
+                cylinderCollider, cylinderTransform.position, cylinderTransform.rotation, out Vector3 dir, out float depth))
+        {
+            if (depth > m_MaxPenetration) m_MaxPenetration = depth;
+            normal = dir;                                                   // direction that separates col from the cylinder = outward normal
+            onCylinder = cylinderCollider.ClosestPoint(col.transform.position);
+        }
+        else
+        {
+            Vector3 p0 = cylinderCollider.ClosestPoint(col.transform.position);
+            Vector3 onSegment = col.ClosestPoint(p0);
+            if (Vector3.Distance(p0, onSegment) > contactDistance) return false;   // unchanged acceptance test
+            onCylinder = cylinderCollider.ClosestPoint(onSegment);              // refine the cylinder-side point
+            normal = onSegment - onCylinder;
+        }
+        Vector3 radial = normal;
+        radial -= Vector3.Dot(radial, cylinderTransform.up) * cylinderTransform.up;   // project onto the plane normal to the axis
+        if (radial.sqrMagnitude < 1e-10f)
+        {
+            radial = onCylinder - cylinderTransform.position;
+            radial -= Vector3.Dot(radial, cylinderTransform.up) * cylinderTransform.up;
+        }
+        Vector3 local = cylinderTransform.InverseTransformDirection(radial);
+        float az = Mathf.Atan2(local.z, local.x) * Mathf.Rad2Deg;
+        if (az < 0f) az += 360f;
+        sample.azimuthDeg = az;
+        sample.height = Vector3.Dot(onCylinder - cylinderTransform.position, cylinderTransform.up);
+        return true;
     }
 
     private float SegmentDistance(Collider col)

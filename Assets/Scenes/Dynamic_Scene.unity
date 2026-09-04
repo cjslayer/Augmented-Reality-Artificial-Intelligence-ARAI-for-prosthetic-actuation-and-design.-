@@ -1551,14 +1551,23 @@ MonoBehaviour:
   contactSolveIterations: 5
   distanceRewardScale: 1
   palmDistanceRewardScale: 1
+  shapingScale: 0.06666667
+  shapingFloorDistance: 0.05
   graspPointOffset: {x: 0.186, y: 0.205, z: 0.078}
-  contactRewardPerSegment: 0.00002
   successBonus: 1
   requiredContactSegments: 6
   requiredDistinctFingers: 2
   requireThumbContact: 1
   requiredHoldDecisions: 10
   existentialPenaltyScale: 1
+  qualityContactWeight: 0.35
+  qualityCoverageWeight: 0.3
+  qualityAntipodalWeight: 0.2
+  qualityPalmWeight: 0.15
+  qualityContactSaturation: 8
+  qualityBudgetSteps: 50
+  qualityPayPerStep: 0.02
+  statsCsvPath: 
   workspaceScale: 0.4
   targetObsScale: 1
   heuristicActions:

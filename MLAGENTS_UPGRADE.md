@@ -258,3 +258,13 @@ coefficient scale as the finger shaping; everything else unchanged. Arm axes use
 limit-clamped, ComputePenetration-bisected actuation as the fingers (all 16 arm/hand colliders).
 
 Run 004's model (28+14 obs, 14 actions) is **incompatible** with this scene; never `--resume` from it.
+
+## Deferred: squeeze depth / penetration clamp (2026-09-07)
+
+The drop-test control experiments (`results/008/controls/REPORT.md`) showed that grasp failures are axial slides
+limited by normal-force retention: the kinematic hand only generates contact force by resolving the 0.5 mm
+`penetrationTolerance` clamp, and that force relaxes unless the posture wedges the object. Two environment levers
+exist: contact friction (adopted as the evaluation curve, mu = 0.6 / 1.0 / 1.5, primary 1.0) and a controllable
+squeeze depth (letting the policy command penetration beyond the clamp, or a compliant contact model). The squeeze-depth
+/ clamp change is **deferred to future work**: it changes the contact clamp in `ArmGraspAgent.cs`, the observation
+semantics and the comparability with runs 004-008, so it needs its own study.

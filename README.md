@@ -26,17 +26,23 @@ never interpenetrates the object (measured max penetration 0.48 mm).
 at least 2 distinct non-thumb fingers, the thumb touching, held for 10 consecutive decisions
 (50 physics steps). Success pays +1 and ends the episode.
 
-**Current reward** (run 008 onward, quality-graded):
+**Current reward** (quality-graded; introduced in run 008, quality term revised in run 009):
 
 - **Shaping** — 15 potential-based terms (14 segment-to-cylinder distances + the palm grasp-point
   distance), each normalized by its episode-initial value (floor 0.05 m) and summed with scale 1/15,
   so the shaping budget is at most ~1.0 per episode regardless of spawn distance.
 - **Quality Q ∈ [0, 1]**, paid as Q/50 on each step where the hold criterion is met, capped at 50
-  paying steps per episode (so cycling grip/release cannot farm it):
-  0.35 saturating contact count (saturates at 8) + 0.30 azimuthal coverage (0 while the largest
-  angular gap between contacts is ≥ 180°, ramping to 1) + 0.20 thumb antipodality (thumb azimuth vs
-  mean finger azimuth, peak at 180°) + 0.15 palm contact. The palm collider is detected for Q only
-  and never counts toward the success gate.
+  paying steps per episode (so cycling grip/release cannot farm it). Since run 009:
+  0.30 wedge posture (vertical spread of the contact heights, palm low / fingertips high:
+  clamp((spread − 0.42 m) / 0.03 m), paid only while the palm touches and multiplied by an
+  opposition gate clamp(antipodality / 0.5); a one-sided contact set can relieve all depenetration
+  by lateral translation, so spread without opposition earns nothing)
+  + 0.25 saturating contact count (saturates at 8)
+  + 0.20 palm contact
+  + 0.15 azimuthal coverage (credit ramps from a 240° largest gap to full at 180°, the reachable range for this hand and object)
+  + 0.10 thumb antipodality (thumb azimuth vs mean finger azimuth, peak at 180°).
+  Run 008 used 0.35 contacts / 0.30 coverage from 180° / 0.20 antipodality / 0.15 palm. The palm collider is
+  detected for Q only and never counts toward the success gate.
 - **Bonus** +1 on success; **time penalty** −1/MaxStep per step.
 
 Maximum return ≈ 3.0. Per-episode statistics (`Grasp/*`, `Return/*`) are sent to the ML-Agents
@@ -50,52 +56,88 @@ StatsRecorder and, optionally, to a CSV (`statsCsvPath`).
 | 005 | 2M | Random target position and yaw, 5-axis arm reach | Reaches ≥6 contacts but never holds |
 | 006 | 6M | Hold-length curriculum K = 2→10, init from 005 | 19/20 held grasps, box-collider failure at yaw 162° |
 | 007 | 6M | Box collider → capsule (yaw-invariant target), init from 006 | 41/41 held grasps, episodes ~16 decisions |
-| **008** | 2M | Quality-graded reward (above), init from 007, K = 10 fixed | 20/20 held grasps; see below |
+| 008 | 2M | Quality-graded reward (normalized shaping + budgeted hold Q), init from 007, K = 10 fixed | 20/20 held grasps; drop-test pass 0.49 at μ = 1.0 |
+| **009** | 2M | Q revised from the drop-test analysis: opposition-gated wedge posture term, coverage recalibrated; init from 008 | drop-test pass 0.86 at μ = 1.0 (held-out seeds); see below |
 
 Model files live under `results/<run>/` (not tracked); the deployed policy is
-`Assets/Models/Prosthetic.onnx` (currently run 008).
+`Assets/Models/Prosthetic.onnx` (currently run 009).
 
-## Run 008 results
+## Evaluation: drop test as a pass-vs-μ curve
 
-Training (8 headless environments, 87 min):
+Grasps are evaluated physically, not by the reward. At hold completion the policy is frozen, the
+arm Rigidbody is made kinematic, the platform collider is disabled, the cylinder is made dynamic with
+gravity (its FreezeAll constraints cleared), and physics is stepped for 2 s at the fixed 0.02 s step;
+pass = cylinder centre displaced less than 0.1 m. Three repeats per episode from the identical
+pre-drop state, Enhanced Determinism on. Contact friction is applied through a runtime material on
+the cylinder (Maximum combine, verified to change the resolved pair friction) and swept over
+μ = 0.6 / 1.0 / 1.5; **μ = 1.0 is the primary coefficient**, taken as representative of silicone
+prosthetic fingertip surfaces (literature citation pending), with 0.6 and 1.5 as the robustness sweep.
+The curve is reported for every policy on the same seed list.
 
-| Metric | 007 (last 10 summaries) | 008 start | 008 end |
+### Runs 008 and 009 on held-out seeds 2001–2100 (100 episodes each, all reached the hold)
+
+Mean per-episode pass fraction with bootstrap 95% CIs; the last column is the paired per-seed
+difference.
+
+| μ | 008 | 009 | paired 009 − 008 |
 |---|---|---|---|
-| Cumulative reward | 7.23 (old reward) | 2.39 | 2.46 |
-| Reward std across episodes | 1.64 | 0.08 | 0.06 |
-| Episode length (decisions) | 16.3 | 17.5 | 16.4 |
-| Return components: shaping / quality / bonus / penalty | — | 0.90 / 0.50 / 1.00 / −0.02 | 0.90 / 0.57 / 1.00 / −0.02 |
-| Quality Q at hold completion | — | 0.51 | 0.59 |
-| Palm contact at hold | — | 36% | 88% |
-| Contacts at hold | — | 9.0 | 8.5 |
-| Coverage gap (deg) | — | 206.6 | 205.5 |
-| Thumb antipodality | — | 0.57 | 0.58 |
+| 0.6 | 0.213 [0.147, 0.287] | 0.603 [0.517, 0.683] | +0.390 [+0.297, +0.483] |
+| **1.0** | 0.487 [0.387, 0.577] | **0.857 [0.797, 0.910]** | +0.370 [+0.280, +0.460] |
+| 1.5 | 0.777 [0.700, 0.847] | 0.980 [0.960, 0.997] | +0.203 [+0.127, +0.283] |
 
-Under the previous reward, ~86% of the return was travel-distance shaping that scaled with spawn
-distance (reward std 1.64). Under the quality-graded reward the spawn dependence is gone (std 0.06),
-and the policy adapted mainly by adding palm contact. The coverage term never paid: with this hand
-and a 0.13 m diameter cylinder the contacts never span more than half the circumference.
+At μ = 1.0, 009 passes at least one repeat in 94% of episodes and all three in 75% (008: 52% and
+45%).
 
-Editor evaluation (20 episodes, capsule target, random spawn and yaw):
+**Failure mode.** Every failure, for both policies and at every μ, is an axial slide: the cylinder
+slips straight down its own axis out of the hand (median axial share of the first 0.3 s of motion
+0.997; lateral escapes 0 of 300 repeats in the 008 baseline study). Of the 300 repeats at μ = 1.0,
+008 shows 146 pass / 131 axial / 23 slow-axial; 009 shows 257 pass / 4 axial / 38 slow-axial /
+1 lateral. Raising friction alone on identical 008 grasps moved the pass fraction from 0.13 to
+0.53 to 0.83 (μ 0.6 / 1.0 / 1.5, seeds 1001–1100), so the residual failures are friction-capacity
+failures, not caging failures.
 
-| | |
-|---|---|
-| Held grasps | 20/20, median 80 physics steps |
-| Spearman(return, mean Q over paid steps) | 0.74 (Pearson 0.86) |
-| Spearman(return, drop-test pass fraction) | 0.61 |
-| Drop-test pass fraction | mean 0.13; 4/20 episodes ever caged the cylinder (1 passed 3/3, 2 passed 2/3, 1 passed 1/3) |
+**Per spawn band (μ = 1.0, mean pass fraction).** The far band was a zero-pass regime for 008; 009
+reaches it.
 
-The drop test is evaluation-only: at hold completion the policy is frozen, the arm made kinematic,
-the cylinder made dynamic with gravity, and physics stepped for 2 s; pass = cylinder centre displaced
-less than 0.1 m. Three repeats per episode; in 3 of 20 episodes the repeats disagreed even with
-Enhanced Determinism enabled. Return ranks the reward's own quality score well, but that score is
-only weakly tied to physical caging for this object: the learned grasp is a pinch plus palm contact
-rather than a wrap. Per-episode CSVs are in `results/008/`.
+| Shoulder-to-cylinder distance | 008 | 009 |
+|---|---|---|
+| [1.00, 1.25) m, n = 33 | 0.919 | 0.949 |
+| [1.25, 1.40) m, n = 51 | 0.359 | 0.863 |
+| [1.40, 1.60) m, n = 16 | 0.000 | 0.646 |
 
-Verification of the reward before training: normalized shaping telescopes to the analytic sum
-within 3×10⁻⁵; a scripted hold-45/release cycler earns 0.18 vs 2.17 for a completing grasp; a
-one-sided contact stack scores lower Q than the reference grip (0.22 vs 0.28 physically,
-0.35–0.38 vs 0.56–0.71 on synthetic contact sets).
+**Mechanism (spread → force → survival).** Contact impulses logged during the first steps after
+release (`ContactPoint.impulse`, normal component; the tangential component is not reported by this
+Unity version) show that at release every grasp has friction capacity above the 9.8 N weight
+(008 failers 22 N, passers 28 N). What separates them is retention: in failing grasps the summed
+normal force decays from 36 N to 1.4 N within 0.3 s while the fingers stay in geometric contact, in
+passing grasps it settles near 37 N, carried mainly by a load-bearing thumb (19 N vs 6 N). Among
+palm-present grasps the vertical spread of the contact heights (palm low, fingertips high) predicts
+the solver's normal force at release (Spearman 0.91) and at 0.1 s (0.70), and the drop outcome at
+μ = 1.0 (AUC 0.91): the palm-low / fingertips-high posture is the configuration in which the
+depenetration forces cannot be relieved by translating the cylinder, so the squeeze persists and
+friction can carry the weight. This is the basis of the wedge term in Q. On the held-out seeds 009
+raised the summed normal force at release from 38 N to 54 N and at 0.1 s from 16 N to 35 N, with
+vertical spread 0.413 → 0.451 m (wedge credit 0.46 → 0.97), palm contact 89% → 98%, antipodality
+0.58 → 0.65, coverage gap 206° → 197°, contacts 8.45 → 7.35. Within 009 the spread-to-force
+Spearman is 0.48 [0.29, 0.64], weaker than 008's 0.89 because 009's spread sits at saturation; the
+force and the pass rate rose together, so the term was not gamed. Palm-less grasps fell from 11/100
+to 2/100 (both 009 palm-less grasps pass at μ = 1.0). Within 009, Spearman(mean Q, pass fraction) is
+0.07: Q is saturated at 0.83 and no longer ranks episodes.
+
+Training for 009 (2M steps from 008, 86 min): reward 2.55 → 2.71, Q at hold 0.70 → 0.87, wedge
+0.45 → 0.94, entropy 1.01 → 0.97, success 1.00 throughout. Per-episode CSVs: `results/009/validation/`
+(held-out evaluation, both policies), `results/008/eval100/` and `results/008/controls/` (the 008
+failure analysis, friction sweep, spawn pins and force logs), `results/009_checks/` (exploit checks).
+
+Reward checks before training 009: normalized shaping telescopes to the analytic sum within
+4×10⁻⁵; a scripted hold-45/release cycler earns 0.11 vs 1.98–2.09 for a completing grasp; a
+one-sided stack scores Q 0.156 vs 0.195 for the scripted reference grip; a cylinder resting on
+passive curled fingers scores 0.063 without meeting the gate; on synthetic contact sets a
+gate-passing one-sided straddle scores 0.446 against 0.861 for a reference wrap (0.696 before the
+opposition gate), and 100% of real drop-test passers retain full wedge credit under the gate.
+
+Seeds 1001–1100 (analysis) and 2001–2100 (this comparison) have both been used for model
+decisions; final paper numbers will need a further held-out seed set.
 
 ## Training
 
@@ -123,7 +165,7 @@ tools\deploy_model.cmd <run-id>
 |---|---|
 | `Assets/Scripts/ArmGraspAgent.cs` | Agent: joints, penetration clamp, reward, quality score, episode stats |
 | `Assets/Scenes/Dynamic_Scene.unity` | Training / demo scene |
-| `Assets/Models/Prosthetic.onnx` | Deployed policy (run 008) |
+| `Assets/Models/Prosthetic.onnx` | Deployed policy (run 009) |
 | `Config/` | Trainer configurations |
 | `tools/deploy_model.cmd` | Copies `results/<run>/Prosthetic.onnx` into the scene asset |
 | `MLAGENTS_UPGRADE.md`, `context.md` | Notes on the ML-Agents 4.1 upgrade and the tooling setup |

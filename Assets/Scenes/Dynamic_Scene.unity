@@ -1560,10 +1560,16 @@ MonoBehaviour:
   requireThumbContact: 1
   requiredHoldDecisions: 10
   existentialPenaltyScale: 1
-  qualityContactWeight: 0.35
-  qualityCoverageWeight: 0.3
-  qualityAntipodalWeight: 0.2
-  qualityPalmWeight: 0.15
+  qualityContactWeight: 0.25
+  qualityCoverageWeight: 0.15
+  qualityCoverageRampStartDeg: 240
+  qualityCoverageRampDeg: 60
+  qualityAntipodalWeight: 0.1
+  qualityPalmWeight: 0.2
+  qualityWedgeWeight: 0.3
+  qualityWedgeSpreadStart: 0.42
+  qualityWedgeSpreadRamp: 0.03
+  qualityWedgeOppositionThreshold: 0.5
   qualityContactSaturation: 8
   qualityBudgetSteps: 50
   qualityPayPerStep: 0.02

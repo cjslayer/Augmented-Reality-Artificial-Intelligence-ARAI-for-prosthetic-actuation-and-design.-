@@ -101,13 +101,25 @@ public class ArmGraspAgent : Agent
 
     [Header("Grasp Quality Q (paid while the hold criterion is met)")]
     [Tooltip("Weight of the saturating contact-count term (segments only; saturates at qualityContactSaturation).")]
-    public float qualityContactWeight = 0.35f;
-    [Tooltip("Weight of the azimuthal-coverage term: 0 while the largest angular gap between contacts is >= 180 deg, ramping to 1 as the gap closes.")]
-    public float qualityCoverageWeight = 0.30f;
+    public float qualityContactWeight = 0.25f;
+    [Tooltip("Weight of the azimuthal-coverage term: 0 while the largest angular gap between contacts is >= qualityCoverageRampStartDeg, ramping to 1 over qualityCoverageRampDeg.")]
+    public float qualityCoverageWeight = 0.15f;
+    [Tooltip("Largest-gap value (deg) at which coverage credit starts; recalibrated to the reachable range (observed gaps 186-220 deg).")]
+    public float qualityCoverageRampStartDeg = 240f;
+    [Tooltip("Coverage credit reaches 1 when the largest gap is qualityCoverageRampDeg below the ramp start.")]
+    public float qualityCoverageRampDeg = 60f;
     [Tooltip("Weight of the thumb antipodality term: angle between the thumb contact azimuth and the mean finger azimuth, peak at 180 deg.")]
-    public float qualityAntipodalWeight = 0.20f;
+    public float qualityAntipodalWeight = 0.10f;
     [Tooltip("Weight of the binary palm-contact term (palm collider touching; never counts toward the success gate).")]
-    public float qualityPalmWeight = 0.15f;
+    public float qualityPalmWeight = 0.20f;
+    [Tooltip("Weight of the wedge-posture term: vertical spread of the contact heights (palm-low / fingertips-high), paid only while the palm touches. From the drop-test analysis: spread predicts the sustained normal force.")]
+    public float qualityWedgeWeight = 0.30f;
+    [Tooltip("Vertical contact spread (m) at which the wedge term starts paying.")]
+    public float qualityWedgeSpreadStart = 0.42f;
+    [Tooltip("Wedge term reaches 1 at qualityWedgeSpreadStart + this ramp (m).")]
+    public float qualityWedgeSpreadRamp = 0.03f;
+    [Tooltip("Opposition gate on the wedge term: the wedge credit is multiplied by clamp(antipodality / this, 0, 1). The self-tightening mechanism needs opposed contacts; a one-sided contact set can relieve all depenetration by lateral translation, so spread without opposition earns nothing.")]
+    public float qualityWedgeOppositionThreshold = 0.5f;
     [Tooltip("Contact count at which the contact term saturates; segments beyond this pay nothing.")]
     public int qualityContactSaturation = 8;
     [Tooltip("Maximum number of steps per episode on which Q is paid (anti-farming cap).")]
@@ -222,6 +234,7 @@ public class ArmGraspAgent : Agent
     public float LastCoverageGapDeg { get; private set; }
     public float LastAntipodality { get; private set; }
     public float LastVerticalSpread { get; private set; }
+    public float LastWedge { get; private set; }
     public bool LastPalmTouching { get; private set; }
     public int LastDistinctFingers { get; private set; }
     public bool LastThumbTouching { get; private set; }
@@ -377,7 +390,7 @@ public class ArmGraspAgent : Agent
         m_MaxPenetration = 0f;
         m_SpawnDistance = (m_Shoulder != null && cylinderTransform != null) ? Vector3.Distance(m_Shoulder.position, cylinderTransform.position) : 0f;
         m_HoldWindowCount = 0; m_HoldWindowSum = m_HoldWindowSumSq = 0;
-        LastQuality = 0f; LastCoverageGapDeg = 360f; LastAntipodality = 0f; LastVerticalSpread = 0f; LastPalmTouching = false; LastDistinctFingers = 0; LastThumbTouching = false; LastHoldCriterionMet = false;
+        LastQuality = 0f; LastCoverageGapDeg = 360f; LastAntipodality = 0f; LastVerticalSpread = 0f; LastWedge = 0f; LastPalmTouching = false; LastDistinctFingers = 0; LastThumbTouching = false; LastHoldCriterionMet = false;
         m_EpisodeActive = true;
         HoldDecisions = Mathf.Max(1, Mathf.RoundToInt(Academy.Instance.EnvironmentParameters.GetWithDefault(
             "hold_decisions", requiredHoldDecisions)));
@@ -596,7 +609,7 @@ public class ArmGraspAgent : Agent
             for (int i = 1; i < m_Azimuths.Count; i++) largestGap = Mathf.Max(largestGap, m_Azimuths[i] - m_Azimuths[i - 1]);
             largestGap = Mathf.Max(largestGap, 360f - (m_Azimuths[m_Azimuths.Count - 1] - m_Azimuths[0]));
         }
-        float coverage = Mathf.Clamp01((180f - largestGap) / 180f);
+        float coverage = qualityCoverageRampDeg > 0f ? Mathf.Clamp01((qualityCoverageRampStartDeg - largestGap) / qualityCoverageRampDeg) : 0f;
 
         // Thumb antipodality: circular mean of thumb contacts vs circular mean of finger contacts, peak at 180 deg
         float antipodal = 0f;
@@ -618,17 +631,28 @@ public class ArmGraspAgent : Agent
             }
         }
 
-        // Vertical spread of contacts along the cylinder axis (diagnostic only)
+        // Vertical spread of contacts along the cylinder axis (segments + palm)
         float minH = float.MaxValue, maxH = float.MinValue;
         foreach (var c in m_Contacts) { if (c.height < minH) minH = c.height; if (c.height > maxH) maxH = c.height; }
         LastVerticalSpread = m_Contacts.Count > 0 ? maxH - minH : 0f;
         LastCoverageGapDeg = largestGap;
         LastAntipodality = antipodal;
 
+        // Wedge posture: palm-low / fingertips-high spread, paid only while the palm touches (the spread means something
+        // else without a palm contact). Ramps from qualityWedgeSpreadStart to qualityWedgeSpreadStart + qualityWedgeSpreadRamp.
+        // Opposition gate: the self-tightening mechanism requires opposed contacts. A one-sided contact set can relieve all of
+        // its depenetration by lateral translation, so spread without opposition earns nothing: the credit is multiplied by
+        // clamp(antipodality / qualityWedgeOppositionThreshold, 0, 1), saturating at the threshold.
+        float wedgeCredit = (palmTouching && qualityWedgeSpreadRamp > 0f) ? Mathf.Clamp01((LastVerticalSpread - qualityWedgeSpreadStart) / qualityWedgeSpreadRamp) : 0f;
+        float oppositionGate = qualityWedgeOppositionThreshold > 0f ? Mathf.Clamp01(antipodal / qualityWedgeOppositionThreshold) : 1f;
+        float wedge = wedgeCredit * oppositionGate;
+        LastWedge = wedge;
+
         return Mathf.Clamp01(qualityContactWeight * contactScore
                            + qualityCoverageWeight * coverage
                            + qualityAntipodalWeight * antipodal
-                           + qualityPalmWeight * (palmTouching ? 1f : 0f));
+                           + qualityPalmWeight * (palmTouching ? 1f : 0f)
+                           + qualityWedgeWeight * wedge);
     }
 
     // ---- episode stats ----
@@ -654,6 +678,7 @@ public class ArmGraspAgent : Agent
         rec.Add("Grasp/CoverageGapDeg", LastCoverageGapDeg);
         rec.Add("Grasp/Antipodality", LastAntipodality);
         rec.Add("Grasp/VerticalSpread", LastVerticalSpread);
+        rec.Add("Grasp/WedgeAtEnd", LastWedge);
         rec.Add("Grasp/HoldContactStd", holdStd);
         rec.Add("Grasp/QualityAtEnd", LastQuality);
         rec.Add("Grasp/MinGraspPointDistance", m_MinGraspPointDistance);

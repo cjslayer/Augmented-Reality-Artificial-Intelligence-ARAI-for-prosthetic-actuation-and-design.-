@@ -301,3 +301,32 @@ harness that merely disables further sampling keeps that draw, including the act
 neutral pose (indexBase -30 deg) during a "deterministic" test. `MorphVerify` now resets link scales and the mask in its step
 and close modes; every close/grid CSV from 2026-09-09 (`results/010_verify/session2/`) was run before that fix and carries an
 unknown random mask.
+
+## Grasp-point reachability at small length scales: diagnosis (2026-09-14, awaiting approval before any fix)
+
+Forced-close tests (`MorphVerify` close/closegrid modes, mask and link scales reset explicitly, cylinder teleported to
+`GraspPoint`, `results/010_verify/clean/`). Palm frame as measured from the palm BoxCollider (4.4 x 19.4 x 20.7 cm) and
+the finger-base positions: **x = palm normal (closing direction), y = along the fingers, z = across the palm** (the
+`EffectiveGraspPointOffset` comment has x and z swapped).
+
+- With the current formula (x, y scaled by handSpan / handSpanRef, z fixed) the target sits at (0.168, 0.185) m for scale
+  0.8, (0.186, 0.205) for 1.0, (0.204, 0.225) for 1.2. Clean closes: 0.8 -> 4 contacts, gate never; 1.0 -> 7 contacts,
+  gate at step 68; 1.2 -> 8 contacts, gate at step 32 (`close_<scale>.csv`). The "1.2 regression" seen on 2026-09-09
+  was stale-mask noise (see the previous section).
+- Absolute placement grids (`absgrid_<scale>.csv`, x in 0.08..0.20, y in 0.17..0.215, 220 steps): scale 0.8 reaches
+  8-10 contacts and gates in 22-70 steps for x <= 0.14 with y >= 0.20 (best (0.11, 0.215): 10 contacts, gate at step 22);
+  the formula's (0.17, 0.185) cell gives 4 contacts and never gates. Scale 1.0: robust region x = 0.11-0.14, y >= 0.185
+  (9-10 contacts); the reference (0.186, 0.205) lies at the edge (5-7 contacts, gate 66-132 or never at (0.20, 0.20)).
+  Scale 1.2: x = 0.11-0.20 with y >= 0.185 all gate. The largest workable x grows with finger length (about 0.14 / 0.17 /
+  0.20 m at 0.8 / 1.0 / 1.2), while the workable y band (>= 0.185-0.20 m) is the same at every scale.
+- Geometry (`converge_<scale>.csv`, forced close with no object): the finger-base segments sit at y = 0.265-0.314 m and
+  the palm box is identical at every scale (link scaling moves only the segments distal to each pivot), so the along-finger
+  position of the enclosed region does not move with the hand span; only the closing radius (x reach: fingertip ends at
+  x = 0.18 / 0.23 / 0.27 m after the base phase) scales with finger length.
+
+Conclusion: (a) the offset formula misplaces the target: it shrinks y with the span (y should stay fixed) and scales x
+with the span ratio (0.903 at scale 0.8), which is weaker than the finger-length ratio (0.8) that the closing radius
+actually follows; the reference x itself is also 3-5 cm beyond the most robust region even at scale 1.0. (b) is false:
+the environment is feasible at scale 0.8 (10 contacts, thumb + 2 fingers, gate in 22 steps). (c) is false: the same
+scripted close gates as soon as the target is placed correctly. Contact rows with >= 6 contacts but gate = 0 (small x,
+small y at scales 1.0/1.2) failed the thumb / distinct-finger conditions of the gate, not the contact count.

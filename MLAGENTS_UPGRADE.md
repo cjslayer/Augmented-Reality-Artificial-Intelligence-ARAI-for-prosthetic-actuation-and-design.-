@@ -278,3 +278,26 @@ the Pipeline server stops answering, and the process must be killed (relaunch th
 "Packages with Errors" dialogs; decline the recovery, dismiss the package dialog). Until a compatible model is deployed the
 scene is kept on HeuristicOnly; when a new model is deployed, switch to InferenceOnly and confirm Play mode runs before
 committing the scene.
+
+## Integrator reconciliation and step-response verification (2026-09-14)
+
+`ArmGraspAgent` integrates every finger group and wrist axis with the exact one-step transition matrix of the linear
+spring-damper (`TransitionMatrix`, closed form per (k, b, I) and the fixed timestep, branching on the damping regime).
+That update is unconditionally stable for k >= 0, b >= 0, I > 0, so `MorphologyManager` no longer projects externally
+supplied springs into the semi-implicit Euler stability region: `Project()`/`IsStable()` became `CheckPlausibility()`/
+`IsPlausible()`, which only log and count (`OutOfRangeEvents`, recorded as `Morph/OutOfRangeEvents`) requests outside the
+plausibility bounds omega in [1, `maxPlausibleOmega` = 40] rad/s, zeta in [0, `maxPlausibleZeta` = 0.9], and sanitize
+non-physical values (I <= 0, k < 0, b < 0). The sampled ranges are unchanged. Serialized fields keep their scene values
+through `FormerlySerializedAs`.
+
+Step test (`results/010_verify/step_exact.csv`, indexBase free joint, 45 deg setpoint step, 50 steps of 0.02 s, reference
+hand): max |angle - analytic| = 0.0001 deg on all three triples (omega, zeta) = (12, 0.4), (25, 0.7), (40, 0.9), i.e.
+0.0002% of the step, against the 2% criterion; velocities agree to 0.002 deg/s. The archived
+`results/010_verify/step.csv` / `session2/step.csv` (2026-09-09) match semi-implicit Euler to 0.0001 deg and deviate from
+the analytic solution by 4.8 / 9.3 / 19.8 deg, so they were produced before the integrator change and are superseded.
+
+Diagnostic gotcha found while re-running: the first Play-mode episode samples theta (scene `randomizeByDefault` = 1), and a
+harness that merely disables further sampling keeps that draw, including the actuation mask, so masked groups sit at their
+neutral pose (indexBase -30 deg) during a "deterministic" test. `MorphVerify` now resets link scales and the mask in its step
+and close modes; every close/grid CSV from 2026-09-09 (`results/010_verify/session2/`) was run before that fix and carries an
+unknown random mask.

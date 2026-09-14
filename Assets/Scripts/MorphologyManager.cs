@@ -1,15 +1,18 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 using Unity.MLAgents;
 
 /// <summary>
 /// Morphology vector theta for the prosthetic hand: per-finger link-length scales, per-joint-group impedance
 /// (stiffness k, damping b, inertia I) for the 14 finger groups and the 2 wrist axes, and a 14-bit finger actuation mask.
 /// Values are sampled per episode (when morph/randomize is 1) or read from Academy environment parameters
-/// (keys listed below); any externally supplied (k, b, I) is projected into the stability region of the
-/// semi-implicit Euler integrator used by ArmGraspAgent (h = fixed timestep): with a = h^2 k / I and c = h b / I the
-/// update is stable iff 0 < c < 2 and a < 4 - 2c, i.e. zeta*omega*h < 1 and (omega*h)^2 < 4 (1 - zeta*omega*h).
-/// Sampling is done in (omega, zeta, I-scale) so the drawn springs are always inside the region.
+/// (keys listed below). ArmGraspAgent integrates each spring-damper with the exact one-step transition matrix of the
+/// linear system (see ArmGraspAgent.TransitionMatrix), which is unconditionally stable for k >= 0, b >= 0, I > 0, so no
+/// stability projection is needed. Externally supplied (k, b, I) are only checked against plausibility bounds
+/// (omega in [1, maxPlausibleOmega] rad/s, zeta in [0, maxPlausibleZeta]); out-of-range requests are logged and counted
+/// (OutOfRangeEvents) but applied as requested. Non-physical values (I <= 0, k < 0, b < 0) are sanitized because the
+/// transition matrix is undefined for them. Sampling is done in (omega, zeta, I-scale) inside the same bounds.
 ///
 /// Environment-parameter keys (all optional; absent keys keep the sampled / serialized value):
 ///   morph/randomize (1 = sample per episode, 0 = use serialized values + overrides)
@@ -50,11 +53,11 @@ public class MorphologyManager : MonoBehaviour
     [Tooltip("Mask draws must keep at least one thumb group active (gate needs the thumb).")]
     public bool requireThumbActive = true;
 
-    [Header("Stability projection (semi-implicit Euler at the fixed timestep)")]
-    [Tooltip("Upper bound on omega (rad/s) enforced on any externally supplied spring.")]
-    public float maxStableOmega = 40f;
-    [Tooltip("Upper bound on zeta enforced on any externally supplied spring.")]
-    public float maxStableZeta = 0.9f;
+    [Header("Plausibility bounds (the exact discrete update is unconditionally stable; out-of-range springs are logged, not rejected)")]
+    [Tooltip("Upper plausibility bound on omega (rad/s) for an externally supplied spring; exceeding it logs a warning.")]
+    [FormerlySerializedAs("maxStableOmega")] public float maxPlausibleOmega = 40f;
+    [Tooltip("Upper plausibility bound on zeta for an externally supplied spring; exceeding it logs a warning.")]
+    [FormerlySerializedAs("maxStableZeta")] public float maxPlausibleZeta = 0.9f;
     [Tooltip("Material density (kg/m^3) used for the geometric nominal inertia of segments and palm.")]
     public float density = 1000f;
 
@@ -65,8 +68,10 @@ public class MorphologyManager : MonoBehaviour
     public float[] inertia = new float[GroupCount];
     public bool[] mask = { true, true, true, true, true, true, true, true, true, true, true, true, true, true };
 
-    /// <summary>Number of stability projections applied this episode (externally supplied springs outside the region).</summary>
-    public int ProjectionEvents { get; private set; }
+    /// <summary>Number of externally supplied springs this episode that fell outside the plausibility bounds or had to be sanitized.</summary>
+    public int OutOfRangeEvents { get; private set; }
+    const int k_MaxLoggedOutOfRange = 10;   // warnings after this many are counted silently
+    static int s_LoggedOutOfRange;
     public float[] NominalInertia { get; private set; } = new float[GroupCount];
     public float[] LinkLength { get; private set; } = new float[FingerGroupCount];   // world metres, after scaling
     public float HandSpan { get; private set; }
@@ -117,7 +122,7 @@ public class MorphologyManager : MonoBehaviour
         if (!m_Initialized) return;
         var ep = Academy.Instance.EnvironmentParameters;
         Randomizing = ep.GetWithDefault("morph/randomize", randomizeByDefault ? 1f : 0f) > 0.5f;
-        ProjectionEvents = 0;
+        OutOfRangeEvents = 0;
         if (Randomizing) Sample();
         // env-param overrides (present keys win)
         for (int f = 0; f < FingerCount; f++) lengthScale[f] = ep.GetWithDefault("morph/len_" + FingerNames[f], lengthScale[f]);
@@ -128,7 +133,7 @@ public class MorphologyManager : MonoBehaviour
             float k = ep.GetWithDefault("morph/k_" + GroupNames[g], stiffness[g]);
             float b = ep.GetWithDefault("morph/b_" + GroupNames[g], damping[g]);
             float I = ep.GetWithDefault("morph/I_" + GroupNames[g], inertia[g]);
-            Project(ref k, ref b, ref I);
+            CheckPlausibility(GroupNames[g], ref k, ref b, ref I);
             stiffness[g] = k; damping[g] = b; inertia[g] = I;
         }
         for (int g = 0; g < FingerGroupCount; g++) mask[g] = ep.GetWithDefault("morph/mask_" + GroupNames[g], mask[g] ? 1f : 0f) > 0.5f;
@@ -157,24 +162,38 @@ public class MorphologyManager : MonoBehaviour
         for (int g = 0; g < FingerGroupCount; g++) mask[g] = true;   // fallback: fully actuated
     }
 
-    /// <summary>Clamp (k, b, I) into the integrator's stability region: omega <= maxStableOmega, zeta <= maxStableZeta.</summary>
-    public void Project(ref float k, ref float b, ref float I)
+    /// <summary>
+    /// Plausibility check of an externally supplied (k, b, I). The exact discrete update is stable for any k >= 0, b >= 0,
+    /// I > 0, so nothing is rejected: out-of-range omega/zeta are logged and counted but applied as requested. Only
+    /// non-physical values (I <= 0, k < 0, b < 0), for which the transition matrix is undefined, are sanitized.
+    /// </summary>
+    public void CheckPlausibility(string group, ref float k, ref float b, ref float I)
     {
-        if (I <= 1e-9f) { I = 1e-6f; ProjectionEvents++; }
-        float w = Mathf.Sqrt(Mathf.Max(k, 0f) / I); float z = w > 1e-6f ? b / (2f * I * w) : 0f;
-        bool changed = false;
-        if (w > maxStableOmega) { w = maxStableOmega; changed = true; }
-        if (w < 1f) { w = 1f; changed = true; }
-        if (z > maxStableZeta) { z = maxStableZeta; changed = true; }
-        if (z < 0f) { z = 0f; changed = true; }
-        if (changed) { k = I * w * w; b = 2f * z * I * w; ProjectionEvents++; }
+        bool sanitized = false;
+        if (I <= 1e-9f) { I = 1e-6f; sanitized = true; }
+        if (k < 0f) { k = 0f; sanitized = true; }
+        if (b < 0f) { b = 0f; sanitized = true; }
+        if (sanitized || !IsPlausible(k, b, I, maxPlausibleOmega, maxPlausibleZeta))
+        {
+            OutOfRangeEvents++;
+            if (s_LoggedOutOfRange < k_MaxLoggedOutOfRange)
+            {
+                s_LoggedOutOfRange++;
+                float w = Mathf.Sqrt(k / I), z = w > 1e-6f ? b / (2f * I * w) : 0f;
+                Debug.LogWarning("[MorphologyManager] " + (sanitized ? "non-physical spring sanitized" : "spring outside plausibility bounds") +
+                    " for " + group + ": omega=" + w.ToString("F1") + " rad/s (bounds 1.." + maxPlausibleOmega + "), zeta=" + z.ToString("F2") +
+                    " (bounds 0.." + maxPlausibleZeta + "), I=" + I.ToString("G4") + (sanitized ? "" : " - applied as requested") +
+                    (s_LoggedOutOfRange == k_MaxLoggedOutOfRange ? " (further warnings suppressed; see OutOfRangeEvents)" : ""));
+            }
+        }
     }
 
-    /// <summary>Stability check of the semi-implicit Euler update for (k, b, I) at timestep h.</summary>
-    public static bool IsStable(float k, float b, float I, float h)
+    /// <summary>True when omega = sqrt(k / I) is within [1, maxOmega] rad/s and zeta = b / (2 I omega) within [0, maxZeta].</summary>
+    public static bool IsPlausible(float k, float b, float I, float maxOmega, float maxZeta)
     {
-        float a = h * h * k / I, c = h * b / I;
-        return c > 0f && c < 2f && a > 0f && a < 4f - 2f * c;
+        if (I <= 0f || k < 0f || b < 0f) return false;
+        float w = Mathf.Sqrt(k / I), z = w > 1e-6f ? b / (2f * I * w) : 0f;
+        return w >= 1f && w <= maxOmega && z >= 0f && z <= maxZeta;
     }
 
     void ApplyLengthScales(float[] s)

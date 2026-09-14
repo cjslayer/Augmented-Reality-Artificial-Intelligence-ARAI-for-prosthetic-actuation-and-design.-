@@ -906,7 +906,7 @@ public class ArmGraspAgent : Agent
             rec.Add("Morph/OmegaMean", wMean);
             rec.Add("Morph/ActiveGroups", m_Morph.ActiveCount);
             rec.Add("Morph/HandSpanRatio", m_HandSpanRatio);
-            rec.Add("Morph/ProjectionEvents", m_Morph.ProjectionEvents);
+            rec.Add("Morph/OutOfRangeEvents", m_Morph.OutOfRangeEvents);
         }
 
         if (!string.IsNullOrEmpty(statsCsvPath))

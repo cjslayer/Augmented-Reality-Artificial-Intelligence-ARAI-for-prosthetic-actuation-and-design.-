@@ -268,3 +268,13 @@ exist: contact friction (adopted as the evaluation curve, mu = 0.6 / 1.0 / 1.5, 
 squeeze depth (letting the policy command penetration beyond the clamp, or a compliant contact model). The squeeze-depth
 / clamp change is **deferred to future work**: it changes the contact clamp in `ArmGraspAgent.cs`, the observation
 semantics and the comparability with runs 004-008, so it needs its own study.
+
+## Editor hang: inference with a model that does not match the sensor layout (2026-09-09)
+
+Entering Play mode with Behavior Type InferenceOnly (or Default without a trainer) while the referenced ONNX model was
+trained for a different observation layout (the run 009 model, 55-float vector obs, against the run 010 layout of a 22-float
+vector obs plus a 16x13 BufferSensor) does **not** produce an error: the Editor's main thread spins at 100% (three cores busy),
+the Pipeline server stops answering, and the process must be killed (relaunch then shows the "Recovering Scene Backups" and
+"Packages with Errors" dialogs; decline the recovery, dismiss the package dialog). Until a compatible model is deployed the
+scene is kept on HeuristicOnly; when a new model is deployed, switch to InferenceOnly and confirm Play mode runs before
+committing the scene.

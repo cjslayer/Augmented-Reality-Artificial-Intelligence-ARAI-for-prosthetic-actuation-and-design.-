@@ -716,7 +716,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2189632787672534430, guid: 89fcafe537c345041921dd79448fb634, type: 3}
       propertyPath: m_BrainParameters.VectorObservationSize
-      value: 55
+      value: 22
       objectReference: {fileID: 0}
     - target: {fileID: 2189632787672534430, guid: 89fcafe537c345041921dd79448fb634, type: 3}
       propertyPath: 'm_BrainParameters.VectorActionSize.Array.data[0]'
@@ -902,6 +902,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7697119373671860417, guid: 89fcafe537c345041921dd79448fb634, type: 3}
       insertIndex: -1
       addedObject: {fileID: 329367086}
+    - targetCorrespondingSourceObject: {fileID: 2478712358241747475, guid: 89fcafe537c345041921dd79448fb634, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1512828270}
+    - targetCorrespondingSourceObject: {fileID: 2478712358241747475, guid: 89fcafe537c345041921dd79448fb634, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1512828269}
   m_SourcePrefab: {fileID: 100100000, guid: 89fcafe537c345041921dd79448fb634, type: 3}
 --- !u!1 &273404441
 GameObject:
@@ -1436,6 +1442,8 @@ GameObject:
   - component: {fileID: 770069241}
   - component: {fileID: 770069240}
   - component: {fileID: 770069239}
+  - component: {fileID: 770069246}
+  - component: {fileID: 770069245}
   m_Layer: 0
   m_Name: ArmAnimation
   m_TagString: Untagged
@@ -1573,6 +1581,25 @@ MonoBehaviour:
   qualityContactSaturation: 8
   qualityBudgetSteps: 50
   qualityPayPerStep: 0.02
+  setpointRateDegPerSec: 180
+  neutralPoseDeg:
+  - -30
+  - -20
+  - -10
+  - -30
+  - -20
+  - -10
+  - -30
+  - -20
+  - -10
+  - -30
+  - -20
+  - -10
+  - 20
+  - 20
+  wedgeHandSpanRef: 0
+  effortWeight: 0.00002
+  safetyWeight: 0.0001
   statsCsvPath: 
   workspaceScale: 0.4
   targetObsScale: 1
@@ -1609,7 +1636,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_BrainParameters:
-    VectorObservationSize: 55
+    VectorObservationSize: 22
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 19
@@ -1620,7 +1647,7 @@ MonoBehaviour:
     hasUpgradedBrainParametersWithActionSpec: 1
   m_Model: {fileID: 5022602860645237092, guid: f44840d65280bd742bb8995780195c1c, type: 3}
   m_InferenceDevice: 0
-  m_BehaviorType: 2
+  m_BehaviorType: 1
   m_BehaviorName: Prosthetic
   TeamId: 0
   m_UseChildSensors: 1
@@ -1646,6 +1673,104 @@ Transform:
   - {fileID: 20218264}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: -3.12, y: 0, z: 0}
+--- !u!114 &770069245
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 770069238}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd8012d5925524537b27131fef517017, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.ML-Agents::Unity.MLAgents.Sensors.BufferSensorComponent
+  m_SensorName: JointTokens
+  m_ObservableSize: 13
+  m_MaxNumObservables: 16
+--- !u!114 &770069246
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 770069238}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e587fe75aa35be34b89cf2ff00daea9b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MorphologyManager
+  randomizeByDefault: 1
+  lengthScaleRange: {x: 0.8, y: 1.2}
+  fingerOmegaRange: {x: 12, y: 40}
+  fingerZetaRange: {x: 0.4, y: 0.9}
+  wristOmegaRange: {x: 8, y: 25}
+  wristZetaRange: {x: 0.5, y: 0.9}
+  inertiaScaleRange: {x: 0.5, y: 2}
+  maskActiveProbability: 0.8
+  minActiveGroups: 6
+  requireThumbActive: 1
+  maxStableOmega: 40
+  maxStableZeta: 0.9
+  density: 1000
+  lengthScale:
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  stiffness:
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  damping:
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  inertia:
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  mask: 0101010101010101010101010101
 --- !u!1 &775051848
 GameObject:
   m_ObjectHideFlags: 0
@@ -2801,6 +2926,104 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 2478712358241747475, guid: 89fcafe537c345041921dd79448fb634, type: 3}
   m_PrefabInstance: {fileID: 262892746}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1512828269
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1512828263}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd8012d5925524537b27131fef517017, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.ML-Agents::Unity.MLAgents.Sensors.BufferSensorComponent
+  m_SensorName: JointTokens
+  m_ObservableSize: 13
+  m_MaxNumObservables: 16
+--- !u!114 &1512828270
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1512828263}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e587fe75aa35be34b89cf2ff00daea9b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MorphologyManager
+  randomizeByDefault: 1
+  lengthScaleRange: {x: 0.8, y: 1.2}
+  fingerOmegaRange: {x: 12, y: 40}
+  fingerZetaRange: {x: 0.4, y: 0.9}
+  wristOmegaRange: {x: 8, y: 25}
+  wristZetaRange: {x: 0.5, y: 0.9}
+  inertiaScaleRange: {x: 0.5, y: 2}
+  maskActiveProbability: 0.8
+  minActiveGroups: 6
+  requireThumbActive: 1
+  maxStableOmega: 40
+  maxStableZeta: 0.9
+  density: 1000
+  lengthScale:
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  stiffness:
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  damping:
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  inertia:
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  mask: 0101010101010101010101010101
 --- !u!1 &1547287736
 GameObject:
   m_ObjectHideFlags: 0

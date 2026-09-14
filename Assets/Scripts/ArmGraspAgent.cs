@@ -127,6 +127,20 @@ public class ArmGraspAgent : Agent
     [Tooltip("Q is multiplied by this on each paying step; 1/50 with a 50-step budget caps quality pay at 1.0 per episode.")]
     public float qualityPayPerStep = 1f / 50f;
 
+    [Header("Impedance Actuation (14 finger groups + wrist flexion/pronation)")]
+    [Tooltip("Actions move each joint's equilibrium setpoint by up to this many deg/s; the joint follows through its spring-damper.")]
+    public float setpointRateDegPerSec = 180f;
+    [Tooltip("Neutral pose (deg) held rigidly by masked (non-actuated) finger groups. Order: index B/M/E, middle B/M/E, ring B/M/E, pinky B/M/E, thumb B/E.")]
+    public float[] neutralPoseDeg = { -30f, -20f, -10f, -30f, -20f, -10f, -30f, -20f, -10f, -30f, -20f, -10f, 20f, 20f };
+    [Tooltip("Wedge thresholds scale with handSpan / this reference span (m); 0 = measure the reference from the unscaled rig at Initialize.")]
+    public float wedgeHandSpanRef = 0f;
+
+    [Header("Effort / Safety (placeholders for sEMG and device limits)")]
+    [Tooltip("Per-step penalty = -effortWeight * sum(action^2) over all 19 actions.")]
+    public float effortWeight = 2e-5f;
+    [Tooltip("Per-step penalty = -safetyWeight * (number of joints whose setpoint or velocity command saturated at a joint limit this step). Penetration-clamp engagements are logged, not penalized.")]
+    public float safetyWeight = 1e-4f;
+
     [Header("Episode Stats")]
     [Tooltip("If set, one CSV row per episode is appended to this file (Editor diagnostics). Stats are always sent to the ML-Agents StatsRecorder.")]
     public string statsCsvPath = "";
@@ -152,7 +166,9 @@ public class ArmGraspAgent : Agent
     /// <summary>Commanded angle (deg) of an arm axis (0..4), for inspection.</summary>
     public float GetArmAngle(int axis) => m_ArmAxes != null ? m_ArmAxes[axis].angle : 0f;
     /// <summary>World position of the palm grasp point (palm pivot + graspPointOffset).</summary>
-    public Vector3 GraspPoint => m_Palm != null ? m_Palm.position + m_Palm.TransformDirection(graspPointOffset) : Vector3.zero;
+    /// <summary>graspPointOffset with its in-plane components (palm local X across the palm, Y along the fingers) scaled by handSpan / handSpanRef; the height above the palm (Z) is unchanged.</summary>
+    public Vector3 EffectiveGraspPointOffset => new Vector3(graspPointOffset.x * m_HandSpanRatio, graspPointOffset.y * m_HandSpanRatio, graspPointOffset.z);
+    public Vector3 GraspPoint => m_Palm != null ? m_Palm.position + m_Palm.TransformDirection(EffectiveGraspPointOffset) : Vector3.zero;
     /// <summary>Distance (m) from the grasp point to the cylinder center (0 at the reference grasp pose).</summary>
     public float GraspPointDistance => cylinderTransform != null ? Vector3.Distance(GraspPoint, cylinderTransform.position) : 0f;
 
@@ -175,7 +191,10 @@ public class ArmGraspAgent : Agent
         public Transform[] joints;          // transforms carrying the tag
         public Quaternion[] baseRotations;  // local rotation at 0 deg (captured each episode)
         public Collider[] colliders;        // segment colliders moved by this group (own + descendants)
-        public float angle;                 // commanded angle about local Z, degrees
+        public float angle;                 // realized angle about local Z, degrees
+        public float vel;                   // angular velocity, deg/s (impedance state)
+        public float setpoint;              // equilibrium setpoint, degrees (moved by the action)
+        public bool masked;                 // held rigidly at the neutral pose; no token, no dynamics
     }
 
     // One rotational axis of an arm bone. Several axes may share a bone; the bone's local rotation is
@@ -185,8 +204,69 @@ public class ArmGraspAgent : Agent
         public ArmBone bone;
         public int axis;                    // 0 = X, 1 = Y, 2 = Z
         public bool proximal;               // shoulder/elbow (subject to actuateProximalJoints)
-        public float angle;                 // commanded angle, degrees
+        public bool impedance;              // wrist axes: spring-damper on a setpoint; proximal axes: velocity command
+        public float angle;                 // realized angle, degrees
+        public float vel;                   // deg/s (impedance axes)
+        public float setpoint;              // degrees (impedance axes)
     }
+
+    // ---- morphology / impedance state ----
+    MorphologyManager m_Morph;
+    Unity.MLAgents.Sensors.BufferSensorComponent m_TokenSensor;
+    public const int TokenSize = 13;
+    public const int MaxTokens = GroupCount + 2;
+    static readonly int[] k_GroupParent = { -1, 0, 1, -1, 3, 4, -1, 6, 7, -1, 9, 10, -1, 12 };   // -1 = palm
+    static readonly int[] k_GroupSegment = { 0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1 };
+    float[] m_Token = new float[TokenSize];
+    float m_HandSpanRatio = 1f;
+    int m_ClampEvents, m_LimitEvents; float m_EffortReturn, m_SafetyReturn; int m_EpisodeClampEvents, m_EpisodeLimitEvents;
+    public float EffortReturn => m_EffortReturn;
+    public float SafetyReturn => m_SafetyReturn;
+    public int EpisodeClampEvents => m_EpisodeClampEvents;
+    public int EpisodeLimitEvents => m_EpisodeLimitEvents;
+    public float HandSpanRatio => m_HandSpanRatio;
+    public MorphologyManager Morphology => m_Morph;
+    /// <summary>Impedance state of a finger group (angle deg, velocity deg/s, setpoint deg), for diagnostics.</summary>
+    public Vector3 GetGroupState(int g) => m_Groups != null ? new Vector3(m_Groups[g].angle, m_Groups[g].vel, m_Groups[g].setpoint) : Vector3.zero;
+    public bool IsGroupMasked(int g) => m_Groups != null && m_Groups[g].masked;
+    public Vector3 GetArmState(int axis) => m_ArmAxes != null ? new Vector3(m_ArmAxes[axis].angle, m_ArmAxes[axis].vel, m_ArmAxes[axis].setpoint) : Vector3.zero;
+    // Per-group one-step transition matrices [[x->x, v->x],[x->v, v->v]] of the spring-damper x'' = -w^2 x - 2 zeta w x'
+    // over the fixed timestep, stored as Vector4 (Phi11, Phi12, Phi21, Phi22). Recomputed whenever (k, b, I) change.
+    Vector4[] m_Phi = new Vector4[MorphologyManager.GroupCount];
+
+    /// <summary>Closed-form transition matrix of the damped oscillator over h; branches on the damping regime.</summary>
+    public static Vector4 TransitionMatrix(float k, float b, float I, float h)
+    {
+        I = Mathf.Max(I, 1e-9f);
+        float w = Mathf.Sqrt(Mathf.Max(k, 0f) / I);
+        if (w < 1e-6f) return new Vector4(1f, h, 0f, 1f);                       // no spring: free drift
+        float zeta = b / (2f * I * w);
+        float a = zeta * w;                                                     // decay rate
+        float e = Mathf.Exp(-a * h);
+        if (Mathf.Abs(zeta - 1f) < 1e-3f)                                       // critically damped (and the near-critical guard)
+            return new Vector4(e * (1f + w * h), e * h, -e * w * w * h, e * (1f - w * h));
+        if (zeta < 1f)                                                          // underdamped
+        {
+            float wd = w * Mathf.Sqrt(1f - zeta * zeta); float c = Mathf.Cos(wd * h), s = Mathf.Sin(wd * h);
+            return new Vector4(e * (c + a / wd * s), e * s / wd, -e * (w * w / wd) * s, e * (c - a / wd * s));
+        }
+        {                                                                       // overdamped
+            float beta = w * Mathf.Sqrt(zeta * zeta - 1f); float ch = (float)System.Math.Cosh(beta * h), sh = (float)System.Math.Sinh(beta * h);
+            return new Vector4(e * (ch + a / beta * sh), e * sh / beta, -e * (w * w / beta) * sh, e * (ch - a / beta * sh));
+        }
+    }
+
+    /// <summary>Recompute the per-group transition matrices from the MorphologyManager's current (k, b, I).</summary>
+    public void RefreshImpedanceMatrices()
+    {
+        if (m_Morph == null) return;
+        float h = Time.fixedDeltaTime;
+        for (int g = 0; g < MorphologyManager.GroupCount; g++) m_Phi[g] = TransitionMatrix(m_Morph.stiffness[g], m_Morph.damping[g], m_Morph.inertia[g], h);
+    }
+
+    /// <summary>Diagnostics only: place a finger group's equilibrium setpoint (deg) directly, e.g. for a step-response test.</summary>
+    public void SetGroupSetpoint(int g, float deg) { if (m_Groups != null) { var lim = GetLimits(g); m_Groups[g].setpoint = Mathf.Clamp(deg, lim.x, lim.y); } }
+    public void SetArmSetpoint(int axis, float deg) { if (m_ArmAxes != null) { var lim = GetArmLimits(axis); m_ArmAxes[axis].setpoint = Mathf.Clamp(deg, lim.x, lim.y); } }
 
     class ArmBone
     {
@@ -313,6 +393,20 @@ public class ArmGraspAgent : Agent
             new ArmAxis { bone = palmBone,     axis = 1, proximal = false },   // wrist pronation    (palm.r Y)
         };
 
+        m_ArmAxes[3].impedance = true; m_ArmAxes[4].impedance = true;   // wrist flexion / pronation: transradial device joints
+
+        // Morphology manager (link scales, impedance parameters, mask) and the per-joint token sensor
+        m_Morph = GetComponent<MorphologyManager>();
+        if (m_Morph != null)
+        {
+            var groupJoints = new Transform[GroupCount][];
+            for (int g = 0; g < GroupCount; g++) groupJoints[g] = m_Groups[g].joints;
+            m_Morph.Initialize(groupJoints, m_Palm);
+            if (wedgeHandSpanRef <= 0f) wedgeHandSpanRef = m_Morph.HandSpanRef;
+        }
+        m_TokenSensor = GetComponent<Unity.MLAgents.Sensors.BufferSensorComponent>();
+        if (neutralPoseDeg == null || neutralPoseDeg.Length != GroupCount) neutralPoseDeg = new float[GroupCount];
+
         var requester = GetComponent<DecisionRequester>();
         m_DecisionPeriod = requester != null ? Mathf.Max(1, requester.DecisionPeriod) : 1;
         if (heuristicActions == null || heuristicActions.Length != ActionCount)
@@ -342,7 +436,7 @@ public class ArmGraspAgent : Agent
             bone.angles = Vector3.zero;
             bone.transform.localRotation = bone.baseRotation;
         }
-        foreach (var ax in m_ArmAxes) ax.angle = 0f;
+        foreach (var ax in m_ArmAxes) { ax.angle = 0f; ax.vel = 0f; ax.setpoint = 0f; }
 
         // Zero out Z-rotation on all finger joints; that pose is 0 deg for every group
         void ZeroZ(Transform[] group)
@@ -359,13 +453,34 @@ public class ArmGraspAgent : Agent
         {
             ZeroZ(grp.joints);
             for (int j = 0; j < grp.joints.Length; j++) grp.baseRotations[j] = grp.joints[j].localRotation;
-            grp.angle = 0f;
+            grp.angle = 0f; grp.vel = 0f; grp.setpoint = 0f; grp.masked = false;
         }
         ZeroZ(palmJoints);
         Physics.SyncTransforms();
 
         // Report the previous episode if it ended without success (MaxStep interruption)
         if (m_EpisodeActive) LogEpisode(false);
+
+        // Morphology for this episode: link scales, spring parameters, actuation mask; masked groups hold the neutral pose
+        m_HandSpanRatio = 1f;
+        if (m_Morph != null)
+        {
+            m_Morph.ApplyForEpisode();
+            m_HandSpanRatio = wedgeHandSpanRef > 0f ? m_Morph.HandSpan / wedgeHandSpanRef : 1f;
+            RefreshImpedanceMatrices();
+            for (int g = 0; g < GroupCount; g++)
+            {
+                m_Groups[g].masked = !m_Morph.mask[g];
+                if (m_Groups[g].masked)
+                {
+                    var lim = GetLimits(g);
+                    float neutral = Mathf.Clamp(neutralPoseDeg[g], lim.x, lim.y);
+                    SetGroupAngle(m_Groups[g], neutral); m_Groups[g].angle = neutral; m_Groups[g].setpoint = neutral;
+                }
+            }
+            Physics.SyncTransforms();
+        }
+        m_ClampEvents = m_LimitEvents = 0; m_EpisodeClampEvents = m_EpisodeLimitEvents = 0; m_EffortReturn = m_SafetyReturn = 0f;
 
         SpawnCylinder();
 
@@ -436,25 +551,21 @@ public class ArmGraspAgent : Agent
         // (no per-step guards needed with distance reward)
     }
 
+    // Fixed vector observation (22): palm-frame target 3, task progress 3, arm axes sin/cos 10, morphology summary 6.
+    // Per-joint tokens (BufferSensor, up to 16 x 13): one per ACTIVE finger group plus the two wrist axes.
     public override void CollectObservations(VectorSensor sensor)
     {
-        // 1) Finger joint angles as sin/cos (continuous, no wrap) - 2 per group = 28
-        foreach (var grp in m_Groups)
-        {
-            float rad = grp.angle * Mathf.Deg2Rad;
-            sensor.AddObservation(Mathf.Sin(rad));
-            sensor.AddObservation(Mathf.Cos(rad));
-        }
+        // 1) Cylinder position relative to the palm, in the palm's rotation frame - 3
+        Vector3 rel = (m_Palm != null && cylinderTransform != null)
+            ? m_Palm.InverseTransformDirection(cylinderTransform.position - m_Palm.position) / Mathf.Max(targetObsScale, 1e-4f)
+            : Vector3.zero;
+        sensor.AddObservation(Vector3.ClampMagnitude(rel, 1.5f));
 
-        // 2) Joint-to-cylinder distance (center-to-center) scaled to ~[0, 1] - 1 per group = 14
-        float scale = Mathf.Max(workspaceScale, 1e-4f);
-        foreach (var grp in m_Groups)
-        {
-            float d = grp.joints.Length > 0 && cylinderTransform != null
-                ? Vector3.Distance(grp.joints[0].position, cylinderTransform.position) / scale
-                : 0f;
-            sensor.AddObservation(Mathf.Clamp(d, 0f, 1.5f));
-        }
+        // 2) Task progress - 3: hold fraction, contacts / 14, quality budget spent
+        int holdNeeded = Mathf.Max(1, (HoldDecisions > 0 ? HoldDecisions : requiredHoldDecisions) * m_DecisionPeriod);
+        sensor.AddObservation(Mathf.Clamp01((float)m_HoldSteps / holdNeeded));
+        sensor.AddObservation(CurrentContacts / (float)GroupCount);
+        sensor.AddObservation(qualityBudgetSteps > 0 ? Mathf.Clamp01((float)m_QualityStepsPaid / qualityBudgetSteps) : 0f);
 
         // 3) Arm axis angles as sin/cos - 2 per axis = 10
         foreach (var ax in m_ArmAxes)
@@ -464,11 +575,49 @@ public class ArmGraspAgent : Agent
             sensor.AddObservation(Mathf.Cos(rad));
         }
 
-        // 4) Cylinder position relative to the palm, in the palm's rotation frame - 3
-        Vector3 rel = (m_Palm != null && cylinderTransform != null)
-            ? m_Palm.InverseTransformDirection(cylinderTransform.position - m_Palm.position) / Mathf.Max(targetObsScale, 1e-4f)
-            : Vector3.zero;
-        sensor.AddObservation(Vector3.ClampMagnitude(rel, 1.5f));
+        // 4) Morphology summary - 6: five link-length scales, active finger groups / 14
+        for (int f = 0; f < MorphologyManager.FingerCount; f++) sensor.AddObservation(m_Morph != null ? m_Morph.lengthScale[f] : 1f);
+        sensor.AddObservation(m_Morph != null ? m_Morph.ActiveCount / (float)GroupCount : 1f);
+
+        // 5) Joint tokens (variable length): active finger groups, then the wrist axes
+        if (m_TokenSensor == null) return;
+        float scale = Mathf.Max(workspaceScale, 1e-4f);
+        for (int g = 0; g < GroupCount; g++)
+        {
+            var grp = m_Groups[g];
+            if (grp.masked) continue;
+            var lim = GetLimits(g);
+            float d = grp.joints.Length > 0 && cylinderTransform != null ? Vector3.Distance(grp.joints[0].position, cylinderTransform.position) / scale : 0f;
+            FillToken(k_GroupParent[g] < 0 ? 0f : (k_GroupParent[g] + 1) / (float)MaxTokens, m_Morph != null ? m_Morph.LinkLength[g] : 0.08f,
+                      (m_Morph != null ? m_Morph.FingerOfGroup(g) : k_GroupFinger[g]) / 4f, k_GroupSegment[g] / 2f, lim, g, grp.angle, grp.vel, grp.setpoint, Mathf.Clamp(d, 0f, 1.5f));
+            m_TokenSensor.AppendObservation(m_Token);
+        }
+        for (int w = 0; w < 2; w++)
+        {
+            var ax = m_ArmAxes[3 + w]; var lim = GetArmLimits(3 + w);
+            float d = m_Palm != null && cylinderTransform != null ? Vector3.Distance(m_Palm.position, cylinderTransform.position) / scale : 0f;
+            FillToken(0f, m_Morph != null ? m_Morph.HandSpan : 0.45f, 5f / 4f, w / 2f, lim, GroupCount + w, ax.angle, ax.vel, ax.setpoint, Mathf.Clamp(d, 0f, 1.5f));
+            m_TokenSensor.AppendObservation(m_Token);
+        }
+    }
+
+    void FillToken(float parent, float length, float fingerCode, float segCode, Vector2 lim, int morphIndex, float angle, float vel, float setpoint, float dist)
+    {
+        float rad = angle * Mathf.Deg2Rad;
+        float k = m_Morph != null ? m_Morph.stiffness[morphIndex] : 1f, I = m_Morph != null ? m_Morph.inertia[morphIndex] : 1e-3f;
+        m_Token[0] = parent;
+        m_Token[1] = length / 0.15f;
+        m_Token[2] = fingerCode;
+        m_Token[3] = segCode;
+        m_Token[4] = lim.x / 90f;
+        m_Token[5] = lim.y / 90f;
+        m_Token[6] = Mathf.Log10(Mathf.Max(k, 1e-6f)) / 3f;      // k in N m/rad: ~1e-3 .. 1e1 -> -1 .. 0.33
+        m_Token[7] = Mathf.Log10(Mathf.Max(I, 1e-9f)) / 3f;      // I in kg m^2: ~1e-5 .. 1e-1 -> -1.7 .. -0.33
+        m_Token[8] = Mathf.Sin(rad);
+        m_Token[9] = Mathf.Cos(rad);
+        m_Token[10] = Mathf.Clamp(vel * Mathf.Deg2Rad / 10f, -2f, 2f);
+        m_Token[11] = Mathf.Clamp((setpoint - angle) / 90f, -2f, 2f);
+        m_Token[12] = dist;
     }
 
     public override void Heuristic(in ActionBuffers actionsOut)
@@ -483,24 +632,71 @@ public class ArmGraspAgent : Agent
         var a = actions.ContinuousActions;
         float dt = Time.deltaTime;
 
-        // Arm axes first (proximal to distal), each within its limits and stopping at contact with the cylinder
+        m_ClampEvents = 0; m_LimitEvents = 0;
+        float sumA2 = 0f;
+        for (int i = 0; i < a.Length; i++) sumA2 += a[i] * a[i];
+
+        // Arm axes first (proximal to distal), each within its limits and stopping at contact with the cylinder.
+        // Shoulder/elbow: velocity command (they emulate the user's arm). Wrist: impedance setpoint (transradial device).
         for (int i = 0; i < ArmAxisCount && GroupCount + i < a.Length; i++)
         {
             var ax = m_ArmAxes[i];
             if (ax.bone.transform == null) continue;
             if (ax.proximal && !actuateProximalJoints) continue;
             var lim = GetArmLimits(i);
-            float target = Mathf.Clamp(ax.angle + a[GroupCount + i] * armRotationSpeed * dt, lim.x, lim.y);
-            ApplyArmAngleWithContactClamp(ax, target);
+            float target;
+            if (ax.impedance && m_Morph != null)
+            {
+                float sp = ax.setpoint + a[GroupCount + i] * setpointRateDegPerSec * dt;
+                if (sp < lim.x || sp > lim.y) { m_LimitEvents++; sp = Mathf.Clamp(sp, lim.x, lim.y); }
+                ax.setpoint = sp;
+                int mi = GroupCount + (i - 3);
+                // exact one-step transition of the linear spring-damper about the setpoint
+                float x = ax.angle - ax.setpoint, v = ax.vel; var P = m_Phi[mi];
+                float nx = P.x * x + P.y * v; ax.vel = P.z * x + P.w * v;
+                target = ax.setpoint + nx;
+                if (target < lim.x || target > lim.y) { target = Mathf.Clamp(target, lim.x, lim.y); ax.vel = 0f; }
+                ApplyArmAngleWithContactClamp(ax, target);
+                if (!Mathf.Approximately(ax.angle, target)) { ax.vel = 0f; m_ClampEvents++; }
+            }
+            else
+            {
+                float raw = ax.angle + a[GroupCount + i] * armRotationSpeed * dt;
+                if (raw < lim.x || raw > lim.y) m_LimitEvents++;
+                target = Mathf.Clamp(raw, lim.x, lim.y);
+                ApplyArmAngleWithContactClamp(ax, target);
+                if (!Mathf.Approximately(ax.angle, target)) m_ClampEvents++;
+            }
         }
 
-        // Rotate each finger group within its limits, stopping at contact with the cylinder
+        // Finger groups: impedance on the equilibrium setpoint; masked groups hold the neutral pose.
+        // Integration: exact one-step transition of the linear spring-damper (closed-form matrix per (k, b, I), see
+        // TransitionMatrix); the penetration clamp realizes the target exactly as before; a stopped joint loses its velocity (inelastic).
         for (int g = 0; g < GroupCount; g++)
         {
+            var grp = m_Groups[g];
+            if (grp.masked) continue;
             var lim = GetLimits(g);
-            float target = Mathf.Clamp(m_Groups[g].angle + a[g] * rotationSpeed * dt, lim.x, lim.y);
-            ApplyAngleWithContactClamp(m_Groups[g], target);
+            if (m_Morph != null)
+            {
+                float sp = grp.setpoint + a[g] * setpointRateDegPerSec * dt;
+                if (sp < lim.x || sp > lim.y) { m_LimitEvents++; sp = Mathf.Clamp(sp, lim.x, lim.y); }
+                grp.setpoint = sp;
+                // exact one-step transition of the linear spring-damper about the setpoint
+                float x = grp.angle - grp.setpoint, v = grp.vel; var P = m_Phi[g];
+                float nx = P.x * x + P.y * v; grp.vel = P.z * x + P.w * v;
+                float target = grp.setpoint + nx;
+                if (target < lim.x || target > lim.y) { target = Mathf.Clamp(target, lim.x, lim.y); grp.vel = 0f; }
+                ApplyAngleWithContactClamp(grp, target);
+                if (!Mathf.Approximately(grp.angle, target)) { grp.vel = 0f; m_ClampEvents++; }
+            }
+            else
+            {   // no MorphologyManager on the object: legacy velocity actuation
+                float target = Mathf.Clamp(grp.angle + a[g] * rotationSpeed * dt, lim.x, lim.y);
+                ApplyAngleWithContactClamp(grp, target);
+            }
         }
+        m_EpisodeClampEvents += m_ClampEvents; m_EpisodeLimitEvents += m_LimitEvents;
 
         // ---- Reward ----
         // 1) Shaping: 15 potentials (14 segments + grasp point), each normalized by its episode-initial distance,
@@ -550,7 +746,11 @@ public class ArmGraspAgent : Agent
         float penalty = MaxStep > 0 ? -existentialPenaltyScale / MaxStep : 0f;
         m_ShapingReturn += shaping;
         m_PenaltyReturn += penalty;
-        AddReward(shaping + penalty);
+        // Effort (placeholder for sEMG cost) and safety (joint-limit saturation events); clamp events are logged only
+        float effort = -effortWeight * sumA2;
+        float safety = -safetyWeight * m_LimitEvents;
+        m_EffortReturn += effort; m_SafetyReturn += safety;
+        AddReward(shaping + penalty + effort + safety);
 
         // 2) Hold criterion (unchanged): >= N segments, >= M distinct fingers, thumb touching
         int distinctFingers = CountBits(fingerMask);
@@ -643,7 +843,9 @@ public class ArmGraspAgent : Agent
         // Opposition gate: the self-tightening mechanism requires opposed contacts. A one-sided contact set can relieve all of
         // its depenetration by lateral translation, so spread without opposition earns nothing: the credit is multiplied by
         // clamp(antipodality / qualityWedgeOppositionThreshold, 0, 1), saturating at the threshold.
-        float wedgeCredit = (palmTouching && qualityWedgeSpreadRamp > 0f) ? Mathf.Clamp01((LastVerticalSpread - qualityWedgeSpreadStart) / qualityWedgeSpreadRamp) : 0f;
+        // Thresholds scale with hand size (handSpan / reference span) so the wedge term is comparable across morphologies
+        float wedgeStart = qualityWedgeSpreadStart * m_HandSpanRatio, wedgeRamp = qualityWedgeSpreadRamp * m_HandSpanRatio;
+        float wedgeCredit = (palmTouching && wedgeRamp > 0f) ? Mathf.Clamp01((LastVerticalSpread - wedgeStart) / wedgeRamp) : 0f;
         float oppositionGate = qualityWedgeOppositionThreshold > 0f ? Mathf.Clamp01(antipodal / qualityWedgeOppositionThreshold) : 1f;
         float wedge = wedgeCredit * oppositionGate;
         LastWedge = wedge;
@@ -692,6 +894,20 @@ public class ArmGraspAgent : Agent
         rec.Add("Return/Bonus", m_BonusReturn);
         rec.Add("Return/Penalty", m_PenaltyReturn);
         rec.Add("Return/QualityStepsPaid", m_QualityStepsPaid);
+        rec.Add("Return/Effort", m_EffortReturn);
+        rec.Add("Return/Safety", m_SafetyReturn);
+        rec.Add("Grasp/ClampEvents", m_EpisodeClampEvents);
+        rec.Add("Grasp/LimitEvents", m_EpisodeLimitEvents);
+        if (m_Morph != null)
+        {
+            float lenMean = 0f; for (int f = 0; f < MorphologyManager.FingerCount; f++) lenMean += m_Morph.lengthScale[f] / MorphologyManager.FingerCount;
+            float wMean = 0f; for (int g = 0; g < GroupCount; g++) wMean += m_Morph.NaturalFrequency(g) / GroupCount;
+            rec.Add("Morph/LengthScaleMean", lenMean);
+            rec.Add("Morph/OmegaMean", wMean);
+            rec.Add("Morph/ActiveGroups", m_Morph.ActiveCount);
+            rec.Add("Morph/HandSpanRatio", m_HandSpanRatio);
+            rec.Add("Morph/ProjectionEvents", m_Morph.ProjectionEvents);
+        }
 
         if (!string.IsNullOrEmpty(statsCsvPath))
         {

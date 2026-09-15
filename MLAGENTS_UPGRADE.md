@@ -420,3 +420,15 @@ ReduceMean, ReduceSum, Pow, Sqrt, Less (the attention block).
    device, set at runtime (not saved). 5,884 Academy steps in ~100 s, one episode completed at MaxStep, the Editor
    answered all 12 watchdog polls, no ML-Agents model-check errors in the console. (With the run-009 model this
    configuration hung the Editor within seconds on 2026-09-09.)
+
+150k smoke (`results/010_smoke150k/`, K = 2, random theta, 858 s = about half the 009 trainer's speed because of the
+attention network and impedance physics): mean reward -2.9 -> -1.3..-1.5, shaping return -1.1 -> +0.43, minimum
+grasp-point distance 0.28 -> 0.08 m, no successful grasp yet (fresh lineage; 009 continued from 008's checkpoint). Effort
+return -0.21 and safety return -0.58..-0.75 per 5000-step episode (5.8k-7.5k joint-limit saturations). Morph stats confirm
+per-episode randomization (LengthScaleMean 0.99-1.03, ActiveGroups 11.3-11.7, OmegaMean 25.9, OutOfRangeEvents 0).
+
+**Run 010 config (`config/run_010.yaml`):** fresh lineage, 6M steps, `morph/randomize` 1, hold-decision curriculum
+2 -> 4 -> 6 -> 8 -> 10 with the lesson threshold restated on this reward scale: a completing grasp returns about 2.0
+(shaping 0.9 + Q 0.2 + bonus 1.0 minus step costs) and a non-grasping episode -1.5 to -2.0, so lessons advance at a
+smoothed mean reward of 1.0 (min lesson length 150), i.e. when a clear majority of episodes grasp. Launched 2026-09-15
+with `--env Builds/Prosthetic/Prosthetic.exe --num-envs 8 --no-graphics`; expected wall time about 9 h at the smoke's rate.

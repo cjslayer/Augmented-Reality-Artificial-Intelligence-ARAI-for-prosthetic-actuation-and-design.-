@@ -76,6 +76,10 @@ public class MorphologyManager : MonoBehaviour
     public float[] LinkLength { get; private set; } = new float[FingerGroupCount];   // world metres, after scaling
     public float HandSpan { get; private set; }
     public float HandSpanRef { get; private set; }
+    /// <summary>Sum of the 14 finger link lengths (world metres) at the reference scales, measured once at Initialize.</summary>
+    public float FingerLengthRef { get; private set; }
+    /// <summary>Sum of the current finger link lengths over FingerLengthRef (1 for the reference hand).</summary>
+    public float FingerLengthRatio { get { if (FingerLengthRef <= 1e-6f) return 1f; float t = 0f; for (int g = 0; g < FingerGroupCount; g++) t += LinkLength[g]; return t / FingerLengthRef; } }
     public bool Randomizing { get; private set; }
     public int ActiveCount { get { int n = 0; for (int g = 0; g < FingerGroupCount; g++) if (mask[g]) n++; return n; } }
 
@@ -106,6 +110,7 @@ public class MorphologyManager : MonoBehaviour
         m_PalmLength = m_PalmBox != null ? Mathf.Max(m_PalmBox.size.y * palm.lossyScale.y, m_PalmBox.size.z * palm.lossyScale.z) : 0.19f;
         ApplyLengthScales(new float[] { 1f, 1f, 1f, 1f, 1f });
         HandSpanRef = ComputeHandSpan();
+        FingerLengthRef = 0f; for (int g = 0; g < FingerGroupCount; g++) FingerLengthRef += LinkLength[g];
         ComputeNominalInertia();
         if (stiffness == null || stiffness.Length != GroupCount) stiffness = new float[GroupCount];
         if (damping == null || damping.Length != GroupCount) damping = new float[GroupCount];

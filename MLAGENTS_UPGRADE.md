@@ -330,3 +330,40 @@ actually follows; the reference x itself is also 3-5 cm beyond the most robust r
 the environment is feasible at scale 0.8 (10 contacts, thumb + 2 fingers, gate in 22 steps). (c) is false: the same
 scripted close gates as soon as the target is placed correctly. Contact rows with >= 6 contacts but gate = 0 (small x,
 small y at scales 1.0/1.2) failed the thumb / distinct-finger conditions of the gate, not the contact count.
+
+## Fix: grasp-point reference at the robust centre, finger-length-ratio scaling (2026-09-15)
+
+`graspPointOffset` reference is now **(0.14, 0.215, 0.078) m** (was (0.186, 0.205, 0.078)), the robust centre of the
+scale-1.0 forced-close placement grid: at x = 0.14 the y = 0.215 cell gives 9 contacts with the gate at step 27, versus
+7 contacts at step 132 for y = 0.20; the old reference sat at the edge of the workable region (5-7 contacts, gate late or
+never). `EffectiveGraspPointOffset` scales only x, by `MorphologyManager.FingerLengthRatio` (sum of the 14 link lengths
+over the reference sum); y and z are fixed, because the finger-base pivots and the palm do not move with the link
+scales. The wedge thresholds keep the hand-span scaling (they measure finger spread, not the closing radius). The axis
+comment is corrected: x = palm normal (closing direction), y = along the fingers, z = across the palm. The scene
+(`Dynamic_Scene.unity`) carries the new value on both ArmAnimation agents.
+
+Rationale for changing the reference rather than only its scaling: the offset feeds only the potential-based reach
+shaping and spawn sampling, both policy-invariant / task-neutral, and run 010 is a fresh lineage, so continuity with the
+run-009 reference protects nothing. Retro note: runs 004-009 trained with shaping aimed at that marginal grasp point.
+
+Verification (`results/010_verify/clean/fixedN_close_*.csv`; forced close, mask and scales reset, object teleported to
+`GraspPoint` and backed off along the palm normal until free of the open hand, 300 steps):
+
+| scale | rest-pose back-off | contacts (final) | gate first met (step) | finger penetration |
+|---|---|---|---|---|
+| 0.8 | 51 mm (open thumb blocks the target) | 7 | 68 | 0.50 mm |
+| 1.0 | 16 mm | 7 | 136 | 0.50 mm |
+| 1.2 | 0 mm | 7 | 64 | 0.50 mm |
+| 0.8, random mask seed 1 (12 active) | 51 mm | 6 | 129 | 0.50 mm |
+| 0.8, random mask seed 2 (12 active; middleBase + ringBase masked) | 51 mm | 5 | never | 0.50 mm |
+| 0.8, random mask seed 3 (11 active) | 51 mm | 6 | 67 | 0.50 mm |
+
+The gate holds until the end of every run that reaches it. The seed-2 draw masks two base joints; a scripted wrap cannot
+close those fingers, so this is a property of the mask distribution, not of the offset. The earlier variant that pushed
+the object out along the minimum-translation direction (`fixed_close_*.csv`) lands it in the marginal y band and is not
+used for the criterion. Placement grids without overlap resolution (`absgrid_*.csv`) overstate small-x cells, where the
+teleported object already intersects the thumb base at rest.
+
+Harness gotcha (repeated here because it invalidates older data): the first Play-mode episode samples theta when the
+scene has `randomizeByDefault` = 1, and a harness that only disables further sampling keeps that draw, mask included.
+All close/grid CSVs from 2026-09-09 (`results/010_verify/session2/`) were produced that way and carry unknown masks.

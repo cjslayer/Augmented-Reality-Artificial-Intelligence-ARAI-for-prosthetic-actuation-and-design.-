@@ -84,8 +84,8 @@ public class ArmGraspAgent : Agent
     public float shapingScale = 1f / 15f;
     [Tooltip("Floor (m) for the episode-initial distance each potential is normalized by.")]
     public float shapingFloorDistance = 0.05f;
-    [Tooltip("Offset (m, palm rotation frame) from the palm pivot to where the cylinder sits in a good grasp; used for reach shaping.")]
-    public Vector3 graspPointOffset = new Vector3(0.186f, 0.205f, 0.078f);
+    [Tooltip("Reference-hand offset (m, palm rotation frame: x = palm normal / closing direction, y = along the fingers, z = across the palm) from the palm pivot to the centre of the region the closed fingers enclose; used for reach shaping and spawn sampling. Robust centre of the forced-close placement grid (2026-09-14): x = 0.14, y = 0.215.")]
+    public Vector3 graspPointOffset = new Vector3(0.14f, 0.215f, 0.078f);
     [Tooltip("Terminal bonus when a grasp is held for requiredHoldDecisions decisions.")]
     public float successBonus = 1.0f;
     [Tooltip("Segments that must touch the cylinder simultaneously for a grasp.")]
@@ -166,8 +166,14 @@ public class ArmGraspAgent : Agent
     /// <summary>Commanded angle (deg) of an arm axis (0..4), for inspection.</summary>
     public float GetArmAngle(int axis) => m_ArmAxes != null ? m_ArmAxes[axis].angle : 0f;
     /// <summary>World position of the palm grasp point (palm pivot + graspPointOffset).</summary>
-    /// <summary>graspPointOffset with its in-plane components (palm local X across the palm, Y along the fingers) scaled by handSpan / handSpanRef; the height above the palm (Z) is unchanged.</summary>
-    public Vector3 EffectiveGraspPointOffset => new Vector3(graspPointOffset.x * m_HandSpanRatio, graspPointOffset.y * m_HandSpanRatio, graspPointOffset.z);
+    /// <summary>
+    /// graspPointOffset for the current morphology. Palm frame: x = palm normal (the closing direction), y = along the
+    /// fingers, z = across the palm. Only x scales, by the finger-length ratio (sum of link lengths / reference sum): the
+    /// closing radius follows the finger length, while the finger-base pivots and the palm do not move with the link
+    /// scales, so the along-finger (y) and across-palm (z) components stay fixed. (The wedge thresholds, which measure
+    /// finger spread, keep the hand-span scaling.)
+    /// </summary>
+    public Vector3 EffectiveGraspPointOffset => new Vector3(graspPointOffset.x * m_FingerLengthRatio, graspPointOffset.y, graspPointOffset.z);
     public Vector3 GraspPoint => m_Palm != null ? m_Palm.position + m_Palm.TransformDirection(EffectiveGraspPointOffset) : Vector3.zero;
     /// <summary>Distance (m) from the grasp point to the cylinder center (0 at the reference grasp pose).</summary>
     public float GraspPointDistance => cylinderTransform != null ? Vector3.Distance(GraspPoint, cylinderTransform.position) : 0f;
@@ -218,13 +224,14 @@ public class ArmGraspAgent : Agent
     static readonly int[] k_GroupParent = { -1, 0, 1, -1, 3, 4, -1, 6, 7, -1, 9, 10, -1, 12 };   // -1 = palm
     static readonly int[] k_GroupSegment = { 0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1 };
     float[] m_Token = new float[TokenSize];
-    float m_HandSpanRatio = 1f;
+    float m_HandSpanRatio = 1f, m_FingerLengthRatio = 1f;
     int m_ClampEvents, m_LimitEvents; float m_EffortReturn, m_SafetyReturn; int m_EpisodeClampEvents, m_EpisodeLimitEvents;
     public float EffortReturn => m_EffortReturn;
     public float SafetyReturn => m_SafetyReturn;
     public int EpisodeClampEvents => m_EpisodeClampEvents;
     public int EpisodeLimitEvents => m_EpisodeLimitEvents;
     public float HandSpanRatio => m_HandSpanRatio;
+    public float FingerLengthRatio => m_FingerLengthRatio;
     public MorphologyManager Morphology => m_Morph;
     /// <summary>Impedance state of a finger group (angle deg, velocity deg/s, setpoint deg), for diagnostics.</summary>
     public Vector3 GetGroupState(int g) => m_Groups != null ? new Vector3(m_Groups[g].angle, m_Groups[g].vel, m_Groups[g].setpoint) : Vector3.zero;
@@ -462,11 +469,12 @@ public class ArmGraspAgent : Agent
         if (m_EpisodeActive) LogEpisode(false);
 
         // Morphology for this episode: link scales, spring parameters, actuation mask; masked groups hold the neutral pose
-        m_HandSpanRatio = 1f;
+        m_HandSpanRatio = 1f; m_FingerLengthRatio = 1f;
         if (m_Morph != null)
         {
             m_Morph.ApplyForEpisode();
             m_HandSpanRatio = wedgeHandSpanRef > 0f ? m_Morph.HandSpan / wedgeHandSpanRef : 1f;
+            m_FingerLengthRatio = m_Morph.FingerLengthRatio;
             RefreshImpedanceMatrices();
             for (int g = 0; g < GroupCount; g++)
             {
@@ -906,6 +914,7 @@ public class ArmGraspAgent : Agent
             rec.Add("Morph/OmegaMean", wMean);
             rec.Add("Morph/ActiveGroups", m_Morph.ActiveCount);
             rec.Add("Morph/HandSpanRatio", m_HandSpanRatio);
+            rec.Add("Morph/FingerLengthRatio", m_FingerLengthRatio);
             rec.Add("Morph/OutOfRangeEvents", m_Morph.OutOfRangeEvents);
         }
 

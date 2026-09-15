@@ -746,6 +746,14 @@ PrefabInstance:
       propertyPath: MaxStep
       value: 5000
       objectReference: {fileID: 0}
+    - target: {fileID: 4641222132718660106, guid: 89fcafe537c345041921dd79448fb634, type: 3}
+      propertyPath: graspPointOffset.x
+      value: 0.14
+      objectReference: {fileID: 0}
+    - target: {fileID: 4641222132718660106, guid: 89fcafe537c345041921dd79448fb634, type: 3}
+      propertyPath: graspPointOffset.y
+      value: 0.215
+      objectReference: {fileID: 0}
     - target: {fileID: 6039628011695125485, guid: 89fcafe537c345041921dd79448fb634, type: 3}
       propertyPath: m_RootOrder
       value: 1
@@ -1561,7 +1569,7 @@ MonoBehaviour:
   palmDistanceRewardScale: 1
   shapingScale: 0.06666667
   shapingFloorDistance: 0.05
-  graspPointOffset: {x: 0.186, y: 0.205, z: 0.078}
+  graspPointOffset: {x: 0.14, y: 0.215, z: 0.078}
   successBonus: 1
   requiredContactSegments: 6
   requiredDistinctFingers: 2
@@ -1710,8 +1718,8 @@ MonoBehaviour:
   maskActiveProbability: 0.8
   minActiveGroups: 6
   requireThumbActive: 1
-  maxStableOmega: 40
-  maxStableZeta: 0.9
+  maxPlausibleOmega: 40
+  maxPlausibleZeta: 0.9
   density: 1000
   lengthScale:
   - 1
@@ -2963,8 +2971,8 @@ MonoBehaviour:
   maskActiveProbability: 0.8
   minActiveGroups: 6
   requireThumbActive: 1
-  maxStableOmega: 40
-  maxStableZeta: 0.9
+  maxPlausibleOmega: 40
+  maxPlausibleZeta: 0.9
   density: 1000
   lengthScale:
   - 1

@@ -392,3 +392,31 @@ period 5 as in training.
 
 Reward code path unchanged since run 009 apart from the added effort (-2e-5 * sum a^2 per step) and safety
 (-1e-4 per joint-limit saturation per step) terms, which are not in the per-episode CSV columns above.
+
+## Run 010 pipeline: player build, 10k smoke, ONNX-attention go/no-go (2026-09-15)
+
+**Scene interim setting changed from HeuristicOnly to Default with no model reference.** The 10k smoke against a
+HeuristicOnly build timed out (`UnityTimeOutException`: in HeuristicOnly the agents never request decisions from the
+trainer). Default is the normal training configuration; with the incompatible run-009 model reference cleared
+(`m_Model: {fileID: 0}`) the Editor falls back to the heuristic when no trainer is connected, so the documented hang
+cannot occur. `Assets/Models/Prosthetic.onnx` (run 009) stays in the project untouched and is re-referenced only once a
+compatible signed-off model exists.
+
+Player build: `unity command build` (StandaloneWindows64, `Builds/Prosthetic/Prosthetic.exe`), 0 errors, level0 and
+Assembly-CSharp.dll dated 2026-09-15 11:04.
+
+10k smoke (`results/010_smoke10k_b/`, fresh lineage, `hold_decisions` = 2, `morph/randomize` = 1, 8 envs, 62 s): trains
+and exports `Prosthetic-10096.onnx` (568 KB vs 138 KB for run 009). Mean reward -2.1 to -2.5 at this point is the
+existential, effort and safety terms under a near-random policy. Model inputs: `obs_0` [16 x 13] (JointTokens
+BufferSensor), `obs_1..obs_10` (the ten legacy ray sensors, 3 or 2 floats each), `obs_11` [22] (vector observation);
+outputs `continuous_actions` [19]. Opset 9, 178 nodes; new op types vs run 009: MatMul, Softmax, Transpose, Reshape,
+ReduceMean, ReduceSum, Pow, Sqrt, Less (the attention block).
+
+**ONNX-attention go/no-go: GO.**
+1. Edit mode, Inference Engine directly (`ModelLoader.Load` + `Worker(CPU)` + one `Schedule` on zero inputs): model
+   imports as 106 layers (Dense, MatMul, Softmax, Transpose, ReduceMean, Swish, ...), one inference 75 ms, 19 finite
+   outputs.
+2. Play mode, ML-Agents path: `BehaviorParameters.Model` = the smoke asset, `BehaviorType` = InferenceOnly, Burst
+   device, set at runtime (not saved). 5,884 Academy steps in ~100 s, one episode completed at MaxStep, the Editor
+   answered all 12 watchdog polls, no ML-Agents model-check errors in the console. (With the run-009 model this
+   configuration hung the Editor within seconds on 2026-09-09.)

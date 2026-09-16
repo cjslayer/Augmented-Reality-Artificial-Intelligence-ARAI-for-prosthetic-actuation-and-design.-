@@ -139,6 +139,17 @@ opposition gate), and 100% of real drop-test passers retain full wedge credit un
 Seeds 1001–1100 (analysis) and 2001–2100 (this comparison) have both been used for model
 decisions; final paper numbers will need a further held-out seed set.
 
+## Run 010: morphology-conditioned policy (2026-09-16)
+
+Run 010 trains a fresh lineage with a per-episode morphology vector theta (per-finger link-length scales 0.8-1.2,
+per-joint spring omega/zeta/inertia, a 14-bit finger actuation mask), impedance actuation with an exact discrete
+integrator, and morphology-conditioned observations (22-float vector + a 16 x 13 per-joint token BufferSensor with
+attention). 6M steps, hold-decision curriculum 2 -> 10. Held-out evaluation on seeds 3001-3100 with random theta:
+grasp success 0.90, drop-pass given hold 0.59 / 0.73 / 0.81 at mu 0.6 / 1.0 / 1.5, no theta bin collapsing (details
+and theta-binned tables in `results/010/validation/THETA_REPORT.md`, methods in `MLAGENTS_UPGRADE.md`). The grasp-point
+reference used for reach shaping was moved to the robust centre of a forced-close placement grid (x scaled by the
+finger-length ratio); runs 004-009 trained with shaping aimed at a marginal point. The deployed model remains run 009.
+
 ## Training
 
 The Python trainer is a source build (`C:\Users\chris\ml-agents`, Python 3.10 venv). Train against

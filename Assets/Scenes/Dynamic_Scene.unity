@@ -711,6 +711,14 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 2189632787672534430, guid: 89fcafe537c345041921dd79448fb634, type: 3}
+      propertyPath: m_Model
+      value: 
+      objectReference: {fileID: 5022602860645237092, guid: f44840d65280bd742bb8995780195c1c, type: 3}
+    - target: {fileID: 2189632787672534430, guid: 89fcafe537c345041921dd79448fb634, type: 3}
+      propertyPath: m_BehaviorType
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2189632787672534430, guid: 89fcafe537c345041921dd79448fb634, type: 3}
       propertyPath: m_InferenceDevice
       value: 0
       objectReference: {fileID: 0}
@@ -1653,9 +1661,9 @@ MonoBehaviour:
     VectorActionDescriptions: []
     VectorActionSpaceType: 1
     hasUpgradedBrainParametersWithActionSpec: 1
-  m_Model: {fileID: 0}
+  m_Model: {fileID: 5022602860645237092, guid: f44840d65280bd742bb8995780195c1c, type: 3}
   m_InferenceDevice: 0
-  m_BehaviorType: 0
+  m_BehaviorType: 2
   m_BehaviorName: Prosthetic
   TeamId: 0
   m_UseChildSensors: 1

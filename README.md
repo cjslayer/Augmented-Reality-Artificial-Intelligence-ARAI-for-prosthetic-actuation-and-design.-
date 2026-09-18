@@ -137,8 +137,9 @@ passive curled fingers scores 0.063 without meeting the gate; on synthetic conta
 gate-passing one-sided straddle scores 0.446 against 0.861 for a reference wrap (0.696 before the
 opposition gate), and 100% of real drop-test passers retain full wedge credit under the gate.
 
-Seeds 1001–1100 (analysis) and 2001–2100 (this comparison) have both been used for model
-decisions; final paper numbers will need a further held-out seed set.
+Seeds 1001–1100 (analysis), 2001–2100 (this comparison) and 3001–3100 (run 010 held-out) have all been used for
+model decisions; 4001–4100 is reserved for the morphology-optimization evaluations (`tools/bo_eval`); final paper
+numbers will need a further held-out seed set.
 
 ## Run 010: morphology-conditioned policy (2026-09-16; deployed 2026-09-18)
 
@@ -185,6 +186,27 @@ from 008 (lineage 004→009) and trained on the reference hand only. Seeds 2001�
 **Deployed 2026-09-18:** `Assets/Models/Prosthetic.onnx` is the run 010 final model (6,000,035 steps, sha256
 `cf75a06b…`), with `Dynamic_Scene` on InferenceOnly; run 009 stays under `results/009/`.
 
+## Evaluating a morphology (fixed θ): `tools/bo_eval`
+
+`evaluate(theta, n_episodes=20, mu_levels=(1.0,), seed_block=(4001, 4020))` runs the deployed run-010 policy on a
+fixed morphology θ (per-finger link scales, per-joint ω/ζ/inertia scale, 14-bit mask) in a headless player built from
+the committed scene (`Builds/BoEval/BoEval.exe`, harness `Assets/Scripts/BoEval/BoEvalHarness.cs`), with the drop test
+above as the metric, and returns success rate, drop-pass per μ (bootstrap 95% CIs), palm-contact rate, mean contact
+count, a forced-close feasibility flag and the per-episode CSV paths. Every candidate is evaluated on the same seeds
+(4001–4100 reserved; the spent blocks are refused). Validated 2026-09-18: Editor and player inference agree bitwise on
+a fixed observation set and decision for decision on a deterministic trajectory; the recorded reference-hand evaluation
+is reproduced within its CIs (0.663 / 0.747 / 0.840 vs 0.690 / 0.770 / 0.880 at μ 0.6 / 1.0 / 1.5, success 100/100);
+a 100-episode, three-μ evaluation takes about 20 s. Q is not reported. See `tools/bo_eval/README.md`.
+
+```
+python -m tools.bo_eval --theta reference --episodes 20 --mu 1.0 --seeds 4001 4020
+```
+
+Palm contact by θ (from the run 010 random-θ records, `tools/bo_eval/palm_by_theta.py`): 010 reaches the hold with the
+palm touching in 1 of 90 held episodes across random θ (1 of 10 at mean scale 0.80–0.93, 0 of 80 elsewhere) and
+0 of 100 on the reference hand, against 98 of 100 for 009, so the palm-less pinch grip is a property of the 010 policy
+rather than of the reference hand.
+
 ## Training
 
 The Python trainer is a source build (`C:\Users\chris\ml-agents`, Python 3.10 venv). Train against
@@ -214,4 +236,5 @@ tools\deploy_model.cmd <run-id>
 | `Assets/Models/Prosthetic.onnx` | Deployed policy (run 010) |
 | `Config/` | Trainer configurations |
 | `tools/deploy_model.cmd` | Copies `results/<run>/Prosthetic.onnx` into the scene asset |
+| `tools/bo_eval/`, `Assets/Scripts/BoEval/` | Fixed-θ evaluation endpoint for morphology optimization (headless player + Python `evaluate(theta)`) |
 | `MLAGENTS_UPGRADE.md`, `context.md` | Notes on the ML-Agents 4.1 upgrade and the tooling setup |

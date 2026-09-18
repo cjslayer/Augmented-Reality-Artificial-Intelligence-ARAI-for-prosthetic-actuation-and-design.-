@@ -537,3 +537,74 @@ no trainer): 1,706 Academy steps and 10 completed episodes in 34 s, agent steppi
 model, cumulative rewards 0.30-1.05 mid-episode, zero console errors, the Editor answered every poll (no hang), Play mode
 exited cleanly; the post-Play scene state was discarded, not saved.
 For the next `--env` training run the player must be rebuilt from a Default-behavior scene as before.
+
+## BO outer loop, Part A: fixed-theta evaluation endpoint (2026-09-18, `tools/bo_eval/`, `Assets/Scripts/BoEval/`)
+
+**Route: Unity-side harness in a headless player, driven by a job file, results read from CSVs** (the fallback route,
+chosen up front rather than after a failed ONNX-in-Python attempt). Reasons: (1) the ground-truth metric is the drop
+test, which is Unity-side physics on the live scene (`Physics.Simulate` from the pre-drop state, friction sweep) no
+matter where the policy runs, so a Python policy would still need a Unity-side harness for everything but the action;
+(2) the exported run-010 graph samples its `continuous_actions` head with a `RandomNormalLike` node (the
+`deterministic_continuous_actions` head is the mean), and the scene runs with `DeterministicInference = 0`, so the
+recorded evaluations used Unity's sampled head with the Inference Engine's noise stream, which a Python replica cannot
+match action for action; (3) running the deployed asset through the same ML-Agents `InferencePolicy` + Inference Engine
+CPU backend in a player is the recorded evaluation's code path by construction, and the drop-test code is the
+GraspDiagnostic v5 code verbatim. ONNX-in-Python was not built.
+
+Mechanics: `BoEvalBootstrap` (`RuntimeInitializeOnLoadMethod`) attaches `BoEvalHarness` to the active `ArmAnimation`
+only when the player is started with `-boEvalJob <job.json>` (in the Editor, a path in `Temp/boeval_job.txt` does the
+same at the same point of the Play timeline, for the fidelity check); the committed scene is used unchanged and the
+player is built from it (`unity command build --target StandaloneWindows64 --outputPath Builds/BoEval/BoEval.exe
+--confirm true`; `Builds/` is gitignored). Theta is pinned through the `MorphologyManager` serialized fields with
+`randomizeByDefault = false` before every episode (`k = I w^2`, `b = 2 zeta I w`, `I = nominalI * inertiaScale`; the
+harness resets twice at start so the nominal inertia is recomputed at the requested link scales before the first
+evaluated episode); a player without a trainer has no environment parameters, so the pinned fields are what
+`ApplyForEpisode` keeps. Episodes: `Random.InitState(seed)` before each reset, hold = 50 consecutive held steps
+(`requiredHoldDecisions` raised so the agent never ends on success), MaxStep ends are logged as failures and reseeded,
+exactly as GraspDiagnostic v5. Forced-close oracle (`feasible`): MorphVerify close mode under HeuristicOnly (object at
+`GraspPoint`, backed off along the palm normal, staged wrap, 300 steps), `feasible` = hold criterion met at any step;
+at the reference hand: gate at step 68, 8 contacts, 14 mm push-out (the 2026-09-15 `fixedR_close_1.0` run reported
+16 mm / 7 contacts / step 135 with the pre-fix grasp point). Outputs per call under `results/bo_eval/runs/<stamp>/`:
+`episodes.csv`, `drops.csv` (reference-evaluation columns), `oracle.json`, `result.json`, optional `decisions.csv`.
+Python (`tools/bo_eval`, stdlib only): `evaluate(theta, n_episodes=20, mu_levels=(1.0,), seed_block=(4001, 4020),
+deterministic=False, oracle=True, ...)` returns success (count, rate, bootstrap CI), drop-pass per mu (given hold and
+times success, CIs, any / 3-of-3), palm-contact rate, mean contacts, mean steps to hold, `feasible` + oracle record,
+CSV paths; `feasible(theta)` runs the oracle alone; `reference_theta()`, `random_theta(rng)` (training distribution).
+Q is not reported. **Seeds 4001-4100 are reserved for BO evaluations** (common random numbers across candidates);
+1001-1100 / 2001-2100 / 3001-3100 are refused unless `allow_spent_seeds=True`. 100 episodes x 3 mu ~ 20 s wall.
+
+**Gate 1, inference fidelity (deterministic head, tolerance 1e-3).** (a) Fixed observation set: 64 synthetic input sets
+(BufferSensor tokens with 6-16 active rows and zero padding, rays in [0, 1], vector observation in range) through the
+deployed asset with `Unity.InferenceEngine.Worker(BackendType.CPU)` in the Editor (edit mode) and in the player: max
+|difference| of `deterministic_continuous_actions` = 0.0 (bitwise); player run-to-run 0.0; the sampled head differs
+between Editor and player by up to 1.67 (different noise streams) but is identical between two player runs (the stream
+is seeded per process). (b) Trajectory: reference hand, seeds 2001-2002, deterministic head, harness attached at scene
+load in both: 267/267 decisions have identical vector observations and identical actions (max |difference| 0.0), steps to
+hold 143 / 125 in both, all 6 drops pass in both. A first attempt with the harness attached mid-Play in the Editor did
+not match (the arm state before the first evaluated episode differed) and was discarded.
+
+**Gate 2, reproduction of the recorded reference-hand evaluation (seeds 2001-2100, sampled head as recorded).**
+
+| mu | recorded (Editor, 2026-09-15) | endpoint (player) | per-seed pass-fraction match | per-repeat row match |
+|---|---|---|---|---|
+| 0.6 | 0.690 [0.600, 0.777] | 0.663 [0.567, 0.753] | 68 % | 70 % |
+| 1.0 | 0.770 [0.690, 0.850] | 0.747 [0.660, 0.827] | 72 % | 72 % |
+| 1.5 | 0.880 [0.817, 0.937] | 0.840 [0.767, 0.907] | 77 % | 80 % |
+
+Success 100/100 in both; spawn pose identical for 100/100 seeds; steps to hold identical for 6/100 (the sampled head's
+noise stream differs between the Editor session that produced the record and the player), mean 152.9 vs 150.3. All three
+endpoint means lie inside the recorded CIs. The endpoint is reproducible run to run: a second identical call gave
+900/900 identical drop rows and 100/100 identical steps to hold.
+
+**Gate 3, theta takes effect.** `random_theta(Random(7))`: scales 0.930 / 0.860 / 1.060 / 0.829 / 1.014, finger omega
+13.05-38.54 (mean 22.63), zeta mean 0.579, wrist omega mean 19.67, mask 11111110111110 (12 active). Every episode row
+reports exactly these values (`randomizing = 0`, lenMean 0.9387, handSpan 0.4295, fingerLengthRatio 0.9367) against
+1.000 / 25.00 / 0.700 / 15.00 / 14 / 0.4447 / 1.0009 for the reference hand. Result on seeds 4001-4020: feasible (gate at
+step 70, 7 contacts, 22 mm push-out), success 20/20, pass given hold 0.17 / 0.58 / 0.70 at mu 0.6 / 1.0 / 1.5.
+
+**Palm contact by theta (read-only, `tools/bo_eval/palm_by_theta.py`, `results/bo_eval/analysis/palm_by_theta.md`;
+records `results/010/validation/episodes.csv`, random theta, 90 of 100 held).** Palm-contact rate at hold: all random
+theta 0.01 (1/90); by mean link-length scale 0.80-0.93: 0.10 (n = 10), 0.93-1.07: 0.00 (75), 1.07-1.20: 0.00 (5); by
+active finger groups 6-9: 0.00 (9), 10-11: 0.00 (39), 12-13: 0.03 (34), 14: 0.00 (8); 010 reference hand 0.00 (100);
+009 reference hand 0.98 (100). Mean contacts at hold 7.7 (random theta) / 8.7 (010 reference) / 7.4 (009). The
+palm-less pinch grip is global to the 010 policy, not specific to the reference hand.

@@ -443,8 +443,8 @@ Fresh lineage, per-episode theta, hold-decision curriculum 2 -> 4 -> 6 -> 8 -> 1
 Last 500k steps (TensorBoard means): success 0.91, cumulative reward 1.75, shaping 0.87, quality 0.34, bonus 0.91,
 existential -0.14, effort -0.04, safety -0.19; contacts at end 7.3, Q at end 0.36, steps to success 276, episode length
 140 decisions; morphology stats confirm randomization (active groups 11.2, length-scale mean 1.00, omega mean 26.0).
-Final model `results/010/Prosthetic.onnx` (6,000,035 steps). NOT deployed: `Assets/Models/Prosthetic.onnx` stays run 009
-pending the held-out evaluation and sign-off.
+Final model `results/010/Prosthetic.onnx` (6,000,035 steps). NOT deployed at this point: `Assets/Models/Prosthetic.onnx` stays run 009
+pending the held-out evaluation and sign-off (deployed 2026-09-18, see below).
 
 ## Run 010: held-out evaluation, theta-binned (2026-09-16, `results/010/validation/`)
 
@@ -475,8 +475,65 @@ every bin with n >= 5), with the weakest cells at the short-finger end and for 1
 reference-hand numbers the mu = 1.0 pass is lower (0.73 vs 0.86), but the comparison is not like-for-like: 010 is a
 fresh lineage evaluated on random morphologies including masked joints and soft springs, 009 was fine-tuned from 008
 and evaluated on the reference hand only. A reference-hand evaluation of 010 (theta fixed) and a longer or 009-initialized
-lineage are the natural next comparisons. **Run 010 is not deployed**; `Assets/Models/Prosthetic.onnx` remains run 009.
+lineage are the natural next comparisons. **Run 010 is not deployed** at this point; `Assets/Models/Prosthetic.onnx` remains run 009
+(reference-hand evaluation and deployment: 2026-09-18 entry below).
 
 Cleanup: the temporary diagnostics (`MorphVerify`, `GraspHarness`, `GraspDiagnostic`) and the temporary model assets
 (`Smoke010.onnx`, `Run010.onnx`) were removed from `Assets/`; their sources and the runner scripts are archived in
 `results/010_verify/session3/` and `results/010/validation/`.
+
+## Run 010: trainer-log integrity check, reference-hand evaluation, deployment (2026-09-18)
+
+**Trainer-log integrity: exactly 8 environments.** Because eight orphaned player processes from the failed
+HeuristicOnly smoke ran alongside run 010 (see the training entry above), the trainer log was checked for the number of
+environments that actually registered. `results/010/010.log` opens with exactly eight registration pairs (lines 1-16),
+one per `--num-envs 8` worker:
+
+```
+[INFO] Connected to Unity environment with package version 4.1.0 and communication version 1.5.0   (x8)
+[INFO] Connected new brain: Prosthetic?team=0   (x8)
+```
+
+`results/010/run_logs/` holds `Player-0.log` .. `Player-7.log` (eight), each with `Registered Communicator in Agent.`;
+`010.err.log` is empty; training ran to step 6,000,035 and exported the final model. Sixteen registrations would have
+meant the orphans had joined the trainer; eight means they were CPU contention only (they roughly halved throughput and
+contributed no experience). The run is clean.
+
+**Reference-hand evaluation of run 010 (`results/010/validation/reference_hand/`, run 2026-09-15 22:11; diagnostic-grade).**
+`GraspDiagnostic` v5 with `referenceHand = true` (`GraspDiagnostic_v5_referenceHand.cs`, runner `runeval_ref.sh`): every
+episode on the fixed reference hand (all link-length scales 1.000, full 14-bit mask, 14 active groups, finger omega
+25 rad/s, zeta 0.7, wrist omega 15, theta sampling off; `episodes.csv` shows `randomizing = 0` and the nominal theta on
+every row), model `results/010/Prosthetic.onnx` assigned at runtime, InferenceOnly, Burst, drop test at mu = 0.6 / 1.0 /
+1.5 x 3 repeats. Seeds 2001-2100 (`seeds.txt`) are the seeds of the 008/009 comparison, so this evaluation is
+**diagnostic-grade** (those seeds were already used for a model decision; 1001-1100 and 3001-3100 are spent too).
+Summary: `SUMMARY.md` (`refhand_summary.py`); paired per-seed comparison at every mu: `PAIRED_MU.md` (`paired_mu.py`,
+the mu = 1.0 method applied to all three: per-seed pass fraction over the 3 repeats, 0 when the hold was not reached,
+bootstrap 95% CI with 4000 resamples). Both policies reached the hold in 100/100 episodes.
+
+| μ | 010 reference hand | 009 reference hand | paired 010 − 009 [95% CI] | 010 wins / losses / ties | 010 random θ (seeds 3001–3100, given hold) |
+|---|---|---|---|---|---|
+| 0.6 | 0.690 [0.600, 0.777] | 0.603 [0.520, 0.690] | +0.087 [−0.037, +0.207] | 36 / 22 / 42 | 0.59 |
+| **1.0** | 0.770 [0.690, 0.850] | **0.857 [0.800, 0.910]** | −0.087 [−0.190, +0.010] | 20 / 22 / 58 | 0.73 |
+| 1.5 | 0.880 [0.817, 0.937] | 0.980 [0.960, 0.997] | −0.100 [−0.167, −0.040] | 5 / 14 / 81 | 0.81 |
+
+Any-repeat / 3-of-3 pass: 010 70% / 68%, 77% / 77%, 89% / 86%; 009 72% / 47%, 94% / 75%, 100% / 95% (mu 0.6 / 1.0 / 1.5).
+010's higher mean at mu = 0.6 (0.69 vs 0.60) is, per seed, +0.087 [-0.037, +0.207] with 36 wins, 22 losses and 42 ties;
+at mu = 1.5 the difference is -0.100 [-0.167, -0.040]. Grasp statistics at hold, 010 on the reference hand (009 in
+parentheses): steps to hold 150 (009: 87), return 2.26 (2.72), mean Q 0.41 (0.83), contacts 8.7 (7.4), vertical spread 0.13 m (0.45), palm contact 0/100 (98/100), antipodality 0.44 (0.65). The comparison is not like-for-like (010: fresh 6M-step lineage trained on random
+morphologies; 009: fine-tuned from 008, reference hand only), and a fresh seed set is required for publication numbers.
+
+**Deployment (2026-09-18, user sign-off).** `results/010/Prosthetic.onnx` (final export, step 6,000,035) copied to
+`Assets/Models/Prosthetic.onnx` (asset GUID unchanged, no `.bak` left behind):
+
+```
+sha256  cf75a06b2ccd4e77f19d3f5aab9c84c9df4aa26b3972ab17e12265221d77a81f  Assets/Models/Prosthetic.onnx  (= results/010/Prosthetic.onnx)
+sha256  5ade5001fac461b7c097a26a3479ef5391434b0a3367df402d015b69955d5ea6  results/009/Prosthetic.onnx    (previous deployed model, kept)
+```
+
+`Dynamic_Scene.unity`: both `BehaviorParameters` (the `ArmAnimation` object and the inactive `New_ExperimentalSetup`
+prefab instance) set to Behavior Type InferenceOnly with the run-010 model referenced, reverting the interim
+Default / no-model setting of 2026-09-15. Play-mode check after the save (Editor 6000.3.18f1, Burst/CPU inference,
+no trainer): 1,706 Academy steps and 10 completed episodes in 34 s, agent stepping under InferenceOnly with the run-010
+model, cumulative rewards 0.30-1.05 mid-episode, zero console errors, the Editor answered every poll (no hang), Play mode
+exited cleanly; the post-Play scene state was discarded, not saved.
+For the next `--env` training run the player must be rebuilt from a Default-behavior scene as before.

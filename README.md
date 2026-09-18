@@ -57,10 +57,11 @@ StatsRecorder and, optionally, to a CSV (`statsCsvPath`).
 | 006 | 6M | Hold-length curriculum K = 2→10, init from 005 | 19/20 held grasps, box-collider failure at yaw 162° |
 | 007 | 6M | Box collider → capsule (yaw-invariant target), init from 006 | 41/41 held grasps, episodes ~16 decisions |
 | 008 | 2M | Quality-graded reward (normalized shaping + budgeted hold Q), init from 007, K = 10 fixed | 20/20 held grasps; drop-test pass 0.49 at μ = 1.0 |
-| **009** | 2M | Q revised from the drop-test analysis: opposition-gated wedge posture term, coverage recalibrated; init from 008 | drop-test pass 0.86 at μ = 1.0 (held-out seeds); see below |
+| 009 | 2M | Q revised from the drop-test analysis: opposition-gated wedge posture term, coverage recalibrated; init from 008 | drop-test pass 0.86 at μ = 1.0 (held-out seeds); see below |
+| **010** | 6M | Fresh lineage: per-episode morphology θ (link-length scales, spring ω/ζ, 14-bit mask), impedance actuation, BufferSensor + attention; hold curriculum K = 2→10 | random θ: success 0.90, drop-pass given hold 0.73 at μ = 1.0; reference hand: success 1.00, drop-pass 0.77 at μ = 1.0; deployed 2026-09-18 |
 
 Model files live under `results/<run>/` (not tracked); the deployed policy is
-`Assets/Models/Prosthetic.onnx` (currently run 009).
+`Assets/Models/Prosthetic.onnx` (currently run 010, deployed 2026-09-18).
 
 ## Evaluation: drop test as a pass-vs-μ curve
 
@@ -139,7 +140,7 @@ opposition gate), and 100% of real drop-test passers retain full wedge credit un
 Seeds 1001–1100 (analysis) and 2001–2100 (this comparison) have both been used for model
 decisions; final paper numbers will need a further held-out seed set.
 
-## Run 010: morphology-conditioned policy (2026-09-16)
+## Run 010: morphology-conditioned policy (2026-09-16; deployed 2026-09-18)
 
 Run 010 trains a fresh lineage with a per-episode morphology vector theta (per-finger link-length scales 0.8-1.2,
 per-joint spring omega/zeta/inertia, a 14-bit finger actuation mask), impedance actuation with an exact discrete
@@ -148,7 +149,41 @@ attention). 6M steps, hold-decision curriculum 2 -> 10. Held-out evaluation on s
 grasp success 0.90, drop-pass given hold 0.59 / 0.73 / 0.81 at mu 0.6 / 1.0 / 1.5, no theta bin collapsing (details
 and theta-binned tables in `results/010/validation/THETA_REPORT.md`, methods in `MLAGENTS_UPGRADE.md`). The grasp-point
 reference used for reach shaping was moved to the robust centre of a forced-close placement grid (x scaled by the
-finger-length ratio); runs 004-009 trained with shaping aimed at a marginal point. The deployed model remains run 009.
+finger-length ratio); runs 004-009 trained with shaping aimed at a marginal point.
+
+Training: 6M steps in 10.1 h on 8 headless environments (the trainer log shows exactly 8 environment registrations;
+eight orphaned player processes from an earlier failed smoke ran alongside as CPU contention only). Hold-decision
+curriculum lessons advanced at 1.82M / 1.88M / 1.94M / 2.00M steps, so 4M steps trained at K = 10. Last 500k steps:
+success 0.91, cumulative reward 1.75 (shaping 0.87, quality 0.34, bonus 0.91, existential −0.14, effort −0.04,
+safety −0.19), contacts at end 7.3, Q at end 0.36, 276 steps to success.
+
+### Run 010 on the reference hand vs run 009 (seeds 2001–2100, 100 episodes each, all reached the hold)
+
+Same drop test as above with θ fixed to the reference hand (all link-length scales 1.000, full 14-joint mask,
+ω = 25 rad/s, ζ = 0.7, θ sampling off). Mean per-episode pass fraction with bootstrap 95% CIs; the paired column is
+the per-seed difference against 009 on the same seeds, and the last column repeats the random-θ numbers from
+`THETA_REPORT.md` for reference.
+
+| μ | 010 reference hand | 009 reference hand | paired 010 − 009 [95% CI] | 010 wins / losses / ties | 010 random θ (seeds 3001–3100, given hold) |
+|---|---|---|---|---|---|
+| 0.6 | 0.690 [0.600, 0.777] | 0.603 [0.520, 0.690] | +0.087 [−0.037, +0.207] | 36 / 22 / 42 | 0.59 |
+| **1.0** | 0.770 [0.690, 0.850] | **0.857 [0.800, 0.910]** | −0.087 [−0.190, +0.010] | 20 / 22 / 58 | 0.73 |
+| 1.5 | 0.880 [0.817, 0.937] | 0.980 [0.960, 0.997] | −0.100 [−0.167, −0.040] | 5 / 14 / 81 | 0.81 |
+
+Any-repeat / all-three-repeats pass rates: 010 70% / 68%, 77% / 77%, 89% / 86%; 009 72% / 47%, 94% / 75%,
+100% / 95% (μ 0.6 / 1.0 / 1.5). Per seed, 010's higher mean at μ = 0.6 (0.69 vs 0.60) is a difference of
++0.087 [−0.037, +0.207] with 36 wins, 22 losses and 42 ties; at μ = 1.5 the difference is −0.100 [−0.167, −0.040].
+Grasp statistics at hold, 010 on the reference hand (009 in parentheses): steps to hold 150 (009: 87), return 2.26 (2.72), mean Q 0.41 (0.83), contacts 8.7 (7.4), vertical spread 0.13 m (0.45), palm contact 0/100 (98/100), antipodality 0.44 (0.65).
+Per-episode CSVs and scripts: `results/010/validation/reference_hand/` (`SUMMARY.md`, `PAIRED_MU.md`).
+
+**Caveats.** The comparison with 009 is not like-for-like: 010 is a fresh 6M-step lineage trained on random
+morphologies (masked joints, soft springs, scaled links) and evaluated here on one of them, whereas 009 was fine-tuned
+from 008 (lineage 004→009) and trained on the reference hand only. Seeds 2001–2100 were already used for the
+008/009 decision, so these numbers are diagnostic-grade; paper numbers need a further held-out seed set
+(1001–1100, 2001–2100 and 3001–3100 are all spent).
+
+**Deployed 2026-09-18:** `Assets/Models/Prosthetic.onnx` is the run 010 final model (6,000,035 steps, sha256
+`cf75a06b…`), with `Dynamic_Scene` on InferenceOnly; run 009 stays under `results/009/`.
 
 ## Training
 
@@ -176,7 +211,7 @@ tools\deploy_model.cmd <run-id>
 |---|---|
 | `Assets/Scripts/ArmGraspAgent.cs` | Agent: joints, penetration clamp, reward, quality score, episode stats |
 | `Assets/Scenes/Dynamic_Scene.unity` | Training / demo scene |
-| `Assets/Models/Prosthetic.onnx` | Deployed policy (run 009) |
+| `Assets/Models/Prosthetic.onnx` | Deployed policy (run 010) |
 | `Config/` | Trainer configurations |
 | `tools/deploy_model.cmd` | Copies `results/<run>/Prosthetic.onnx` into the scene asset |
 | `MLAGENTS_UPGRADE.md`, `context.md` | Notes on the ML-Agents 4.1 upgrade and the tooling setup |

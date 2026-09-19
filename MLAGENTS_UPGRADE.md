@@ -608,3 +608,19 @@ theta 0.01 (1/90); by mean link-length scale 0.80-0.93: 0.10 (n = 10), 0.93-1.07
 active finger groups 6-9: 0.00 (9), 10-11: 0.00 (39), 12-13: 0.03 (34), 14: 0.00 (8); 010 reference hand 0.00 (100);
 009 reference hand 0.98 (100). Mean contacts at hold 7.7 (random theta) / 8.7 (010 reference) / 7.4 (009). The
 palm-less pinch grip is global to the 010 policy, not specific to the reference hand.
+
+## BO outer loop, Part B: Bayesian morphology optimization campaign (2026-09-18, `tools/bo_optim/`, report `results/bo_optim/REPORT.md`)
+
+Objective: pass x success at mu = 1.0 from `tools/bo_eval.evaluate` (20 episodes, seeds 4001-4020, sampled action head), one
+player build (sha256 ff457d2c...) for the whole campaign, drift checks after every 25 objective evaluations all byte-identical
+to the anchor (5/5). Surrogate: exact GP (Matern-5/2 with one lengthscale per parameter block x exponential Hamming kernel on
+the mask, torch), acquisition EI x P(feasible) (L2 logistic feasibility model on the forced-close oracle outcomes) ranked over
+10,000 random constrained draws + 5,000 local perturbations per iteration. Arms: BO (reference anchor + 29 random, then 70
+iterations) and a 100-draw random baseline; confirmation of the top 5 of each arm on seeds 4021-4100 (80 episodes, mu 0.6 /
+1.0 / 1.5). 200 candidates, 126 oracle-feasible (63 %), 42 min wall. Headline (confirmation, mu = 1.0): BO top 5 confirm at
+0.988-1.000 (mean 0.993; two candidates at 80/80), random top 5 at 0.921-1.000 (mean 0.965); the reference hand scores 0.750
+on the optimization block. The 20-episode objective saturates (31/68 feasible BO candidates at 20/20), so the arms separate
+in the bulk and in confirmation rather than in best-so-far. The BO winners form one family (indexMiddle and ringBase masked,
+index and thumb scales 0.80-0.87, other fingers 1.05-1.20, omega 27-30 rad/s); palm contact stays at zero everywhere. The
+report, `candidates.csv`, `best_so_far.csv/.svg`, `build_hash.json`, `summary.json` and `records.jsonl` are force-added
+under `results/bo_optim/` (the `results/` tree is otherwise ignored); per-candidate CSVs stay local.

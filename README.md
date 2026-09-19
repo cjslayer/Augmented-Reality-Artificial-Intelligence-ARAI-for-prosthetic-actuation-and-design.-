@@ -237,4 +237,5 @@ tools\deploy_model.cmd <run-id>
 | `Config/` | Trainer configurations |
 | `tools/deploy_model.cmd` | Copies `results/<run>/Prosthetic.onnx` into the scene asset |
 | `tools/bo_eval/`, `Assets/Scripts/BoEval/` | Fixed-θ evaluation endpoint for morphology optimization (headless player + Python `evaluate(theta)`) |
+| `tools/bo_optim/`, `results/bo_optim/REPORT.md` | Bayesian morphology optimizer (GP + EI × P(feasible)) and its campaign report |
 | `MLAGENTS_UPGRADE.md`, `context.md` | Notes on the ML-Agents 4.1 upgrade and the tooling setup |

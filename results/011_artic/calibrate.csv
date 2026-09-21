@@ -1,0 +1,3 @@
+trial,mode,grip,mass,scale,seed,success,endReason,steps,gateStep,transitionStep,liftStart,stepsToLift,holdSteps,pulses,maxPulseN,weightN,contactsEnd,palm,forearm,bottomAboveTop,maxPenMm,maxJointSpeedDeg,nan,gripTorqueMean,retPhase,retHold,retBonus,retDrop,note
+1,calibrate,step,0,0,0,1,calib,100,-1,-1,-1,-1,0,0,0,0,0,0,0,0,0.00,1754,0,0,0,0,0,0,omegaRef=25.0 zetaRef=0.70 k=6.088Nm/rad b=0.3409 Inominal=9.74E-003 linkMass=0.160 dt=0.009999993 rise10-90=100ms (theory ~86ms per-rad at the nominal inertia; 11ms if per-deg) overshoot=4.9% angle@100=-31.5 tipTowardPalmNormal 0.031->0.117 (flexion -30 should increase it) driveForce=0.151Nm
+DONE

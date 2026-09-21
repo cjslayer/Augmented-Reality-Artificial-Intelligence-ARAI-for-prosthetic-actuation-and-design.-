@@ -755,6 +755,14 @@ PrefabInstance:
       value: 5000
       objectReference: {fileID: 0}
     - target: {fileID: 4641222132718660106, guid: 89fcafe537c345041921dd79448fb634, type: 3}
+      propertyPath: liftBudgetSteps
+      value: 200
+      objectReference: {fileID: 0}
+    - target: {fileID: 4641222132718660106, guid: 89fcafe537c345041921dd79448fb634, type: 3}
+      propertyPath: taskBudgetSteps
+      value: 350
+      objectReference: {fileID: 0}
+    - target: {fileID: 4641222132718660106, guid: 89fcafe537c345041921dd79448fb634, type: 3}
       propertyPath: graspPointOffset.x
       value: 0.14
       objectReference: {fileID: 0}
@@ -1495,7 +1503,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3a5c9d521e5ef4759a8246a07d52221e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  DecisionPeriod: 5
+  DecisionPeriod: 10
   DecisionStep: 0
   TakeActionsBetweenDecisions: 1
 --- !u!54 &770069241
@@ -1573,9 +1581,7 @@ MonoBehaviour:
   randomizeYaw: 1
   reachRange: {x: 1.1, y: 1.5}
   spawnAttempts: 50
-  penetrationTolerance: 0.0005
   contactDistance: 0.003
-  contactSolveIterations: 5
   distanceRewardScale: 1
   palmDistanceRewardScale: 1
   shapingScale: 0.06666667
@@ -1599,6 +1605,7 @@ MonoBehaviour:
   dropPenalty: 0.2
   dropDistance: 0.3
   dropBelowPlatform: 0.02
+  dropTiltDeg: 60
   massRange: {x: 0.2, y: 1.5}
   perturbPulses: 3
   perturbPulseSteps: 5
@@ -1607,10 +1614,6 @@ MonoBehaviour:
   perturbScale: 1
   perturbScaleOverride: -1
   objectFriction: 1
-  gripForceScale: 1
-  gripForceMax: 60
-  kinematicHandBodies: 1
-  dropTiltDeg: 60
   setpointRateDegPerSec: 180
   neutralPoseDeg:
   - -30
@@ -1684,6 +1687,8 @@ MonoBehaviour:
     verticalSpread: 0
     gripForceMean: 0
     gripForceEnd: 0
+    maxPenetration: 0
+    maxJointSpeed: 0
 --- !u!114 &770069243
 MonoBehaviour:
   m_ObjectHideFlags: 0

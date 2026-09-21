@@ -67,6 +67,10 @@ public class MorphologyManager : MonoBehaviour
     public float[] damping = new float[GroupCount];
     public float[] inertia = new float[GroupCount];
     public bool[] mask = { true, true, true, true, true, true, true, true, true, true, true, true, true, true };
+    /// <summary>Per-group inertia scale of this episode (multiplies the geometric nominal inertia; link mass on the articulation).</summary>
+    [System.NonSerialized] public float[] inertiaScale = { 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f };
+    /// <summary>Articulated rig (branch articulated-hand): length scales rebuild the link skeleton instead of moving bone transforms.</summary>
+    [System.NonSerialized] public ArticulatedHand rig;
 
     /// <summary>Number of externally supplied springs this episode that fell outside the plausibility bounds or had to be sanitized.</summary>
     public int OutOfRangeEvents { get; private set; }
@@ -89,7 +93,7 @@ public class MorphologyManager : MonoBehaviour
     Transform m_Palm; BoxCollider m_PalmBox; float m_PalmLength;
     bool m_Initialized;
 
-    public void Initialize(Transform[][] groupJoints, Transform palm)
+    void CaptureSegments(Transform[][] groupJoints, Transform palm)
     {
         m_Palm = palm; m_PalmBox = palm != null ? palm.GetComponent<BoxCollider>() : null;
         for (int g = 0; g < FingerGroupCount; g++)
@@ -108,6 +112,12 @@ public class MorphologyManager : MonoBehaviour
         }
         // palm length along the finger direction = the largest horizontal box extent (world), measured once
         m_PalmLength = m_PalmBox != null ? Mathf.Max(m_PalmBox.size.y * palm.lossyScale.y, m_PalmBox.size.z * palm.lossyScale.z) : 0.19f;
+    }
+
+    public void Initialize(Transform[][] groupJoints, Transform palm)
+    {
+        CaptureSegments(groupJoints, palm);
+        for (int g = 0; g < GroupCount; g++) inertiaScale[g] = 1f;
         ApplyLengthScales(new float[] { 1f, 1f, 1f, 1f, 1f });
         HandSpanRef = ComputeHandSpan();
         FingerLengthRef = 0f; for (int g = 0; g < FingerGroupCount; g++) FingerLengthRef += LinkLength[g];
@@ -128,35 +138,39 @@ public class MorphologyManager : MonoBehaviour
         var ep = Academy.Instance.EnvironmentParameters;
         Randomizing = ep.GetWithDefault("morph/randomize", randomizeByDefault ? 1f : 0f) > 0.5f;
         OutOfRangeEvents = 0;
-        if (Randomizing) Sample();
+        // (omega, zeta) of this episode: sampled, or the reference values implied by the current (k, b, I) arrays
+        float[] omega = new float[GroupCount], zeta = new float[GroupCount];
+        for (int g = 0; g < GroupCount; g++) { omega[g] = NaturalFrequency(g); zeta[g] = DampingRatio(g); if (omega[g] <= 0f) { omega[g] = g < FingerGroupCount ? 25f : 15f; zeta[g] = 0.7f; } }
+        if (Randomizing) Sample(omega, zeta);
+        else for (int g = 0; g < GroupCount; g++) inertiaScale[g] = 1f;
         // env-param overrides (present keys win)
         for (int f = 0; f < FingerCount; f++) lengthScale[f] = ep.GetWithDefault("morph/len_" + FingerNames[f], lengthScale[f]);
-        ApplyLengthScales(lengthScale);
+        ApplyLengthScales(lengthScale);   // rebuilds the articulation when a rig is attached (link masses use inertiaScale)
         ComputeNominalInertia();
         for (int g = 0; g < GroupCount; g++)
         {
-            float k = ep.GetWithDefault("morph/k_" + GroupNames[g], stiffness[g]);
-            float b = ep.GetWithDefault("morph/b_" + GroupNames[g], damping[g]);
-            float I = ep.GetWithDefault("morph/I_" + GroupNames[g], inertia[g]);
+            float I0 = NominalInertia[g] * inertiaScale[g];
+            float k = ep.GetWithDefault("morph/k_" + GroupNames[g], I0 * omega[g] * omega[g]);
+            float b = ep.GetWithDefault("morph/b_" + GroupNames[g], 2f * zeta[g] * I0 * omega[g]);
+            float I = ep.GetWithDefault("morph/I_" + GroupNames[g], I0);
             CheckPlausibility(GroupNames[g], ref k, ref b, ref I);
             stiffness[g] = k; damping[g] = b; inertia[g] = I;
+            if (NominalInertia[g] > 1e-9f) inertiaScale[g] = I / NominalInertia[g];
         }
         for (int g = 0; g < FingerGroupCount; g++) mask[g] = ep.GetWithDefault("morph/mask_" + GroupNames[g], mask[g] ? 1f : 0f) > 0.5f;
         HandSpan = ComputeHandSpan();
     }
 
-    void Sample()
+    /// <summary>Draw this episode's theta: link scales, inertia scales, (omega, zeta) per group, actuation mask. Applied by ApplyForEpisode.</summary>
+    void Sample(float[] omega, float[] zeta)
     {
         for (int f = 0; f < FingerCount; f++) lengthScale[f] = Random.Range(lengthScaleRange.x, lengthScaleRange.y);
-        ApplyLengthScales(lengthScale);
-        ComputeNominalInertia();
         for (int g = 0; g < GroupCount; g++)
         {
             bool wrist = g >= FingerGroupCount;
-            float w = wrist ? Random.Range(wristOmegaRange.x, wristOmegaRange.y) : Random.Range(fingerOmegaRange.x, fingerOmegaRange.y);
-            float z = wrist ? Random.Range(wristZetaRange.x, wristZetaRange.y) : Random.Range(fingerZetaRange.x, fingerZetaRange.y);
-            float I = NominalInertia[g] * Random.Range(inertiaScaleRange.x, inertiaScaleRange.y);
-            inertia[g] = I; stiffness[g] = I * w * w; damping[g] = 2f * z * I * w;
+            omega[g] = wrist ? Random.Range(wristOmegaRange.x, wristOmegaRange.y) : Random.Range(fingerOmegaRange.x, fingerOmegaRange.y);
+            zeta[g] = wrist ? Random.Range(wristZetaRange.x, wristZetaRange.y) : Random.Range(fingerZetaRange.x, fingerZetaRange.y);
+            inertiaScale[g] = Random.Range(inertiaScaleRange.x, inertiaScaleRange.y);
         }
         for (int attempt = 0; attempt < 100; attempt++)
         {
@@ -203,6 +217,21 @@ public class MorphologyManager : MonoBehaviour
 
     void ApplyLengthScales(float[] s)
     {
+        if (rig != null)
+        {   // articulated rig: rebuild the link skeleton (anchor offsets and capsule lengths scaled, masses x inertiaScale), then re-capture it
+            rig.Rebuild(s, inertiaScale);
+            var joints = new Transform[FingerGroupCount][];
+            for (int g = 0; g < FingerGroupCount; g++) joints[g] = rig.Groups[g] != null ? new Transform[] { rig.Groups[g].transform } : new Transform[0];
+            CaptureSegments(joints, rig.PalmLink);
+            for (int g = 0; g < FingerGroupCount; g++)
+            {
+                var seg = m_Segments[g]; if (seg.joint == null) continue;
+                Transform child = null; foreach (Transform c in seg.joint) if (c.GetComponent<ArticulationBody>() != null) { child = c; break; }
+                LinkLength[g] = child != null ? Vector3.Distance(seg.joint.position, child.position)
+                    : (seg.capsule != null ? seg.capsule.center.y + 0.5f * seg.capsule.height : 0.05f);
+            }
+            return;
+        }
         for (int g = 0; g < FingerGroupCount; g++)
         {
             var seg = m_Segments[g]; if (seg.joint == null) continue;

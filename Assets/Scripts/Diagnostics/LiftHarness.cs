@@ -86,8 +86,6 @@ public class LiftHarness : MonoBehaviour
         agent = GetComponent<ArmGraspAgent>(); mm = GetComponent<MorphologyManager>(); bp = GetComponent<BehaviorParameters>();
         if (agent == null || mm == null) { Debug.LogError("[LiftHarness] agent/MorphologyManager missing"); enabled = false; return; }
         bp.BehaviorType = BehaviorType.HeuristicOnly;
-        if (cfg.gripForceScale >= 0f) agent.gripForceScale = cfg.gripForceScale;
-        if (cfg.gripForceMax >= 0f) agent.gripForceMax = cfg.gripForceMax;
         mm.randomizeByDefault = false;
         for (int f = 0; f < MorphologyManager.FingerCount; f++) mm.lengthScale[f] = 1f;
         for (int g = 0; g < MorphologyManager.FingerGroupCount; g++) mm.mask[g] = true;

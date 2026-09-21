@@ -53,6 +53,15 @@ public class MorphologyWatchOverlay : MonoBehaviour
         }
     }
 
+    void RefreshTips(Watched w)
+    {   // the articulated skeleton is rebuilt every episode: re-find the tip colliders when they have been destroyed
+        for (int i = 0; i < 5; i++)
+        {
+            if (w.tips[i] != null) continue;
+            foreach (var tagged in GameObject.FindGameObjectsWithTag(k_TipTags[i]))
+                if (tagged.transform.IsChildOf(w.agent.transform) || tagged.transform.root == w.agent.transform.root) { if (tagged.TryGetComponent<Collider>(out var col)) { w.tips[i] = col; break; } }
+        }
+    }
     bool TipTouching(Watched w, Collider col)
     {
         if (col == null || w.cylinderCollider == null) return false;
@@ -96,6 +105,7 @@ public class MorphologyWatchOverlay : MonoBehaviour
                     .Append("   wrist omega ").Append(m.NaturalFrequency(MorphologyManager.FingerGroupCount).ToString("F1"))
                     .Append(" / ").Append(m.NaturalFrequency(MorphologyManager.FingerGroupCount + 1).ToString("F1")).Append('\n');
             }
+            RefreshTips(w);
             m_Sb.Append("palm ").Append(a.LastPalmTouching ? "<color=#7CFC00>TOUCH</color>" : "<color=#808080>----</color>").Append("   tips ");
             for (int i = 0; i < 5; i++)
             {

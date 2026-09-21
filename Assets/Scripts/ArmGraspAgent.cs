@@ -99,33 +99,53 @@ public class ArmGraspAgent : Agent
     [Tooltip("Per-step penalty = -existentialPenaltyScale / MaxStep (faster grasps score higher).")]
     public float existentialPenaltyScale = 1.0f;
 
-    [Header("Grasp Quality Q (paid while the hold criterion is met)")]
-    [Tooltip("Weight of the saturating contact-count term (segments only; saturates at qualityContactSaturation).")]
-    public float qualityContactWeight = 0.25f;
-    [Tooltip("Weight of the azimuthal-coverage term: 0 while the largest angular gap between contacts is >= qualityCoverageRampStartDeg, ramping to 1 over qualityCoverageRampDeg.")]
-    public float qualityCoverageWeight = 0.15f;
-    [Tooltip("Largest-gap value (deg) at which coverage credit starts; recalibrated to the reachable range (observed gaps 186-220 deg).")]
-    public float qualityCoverageRampStartDeg = 240f;
-    [Tooltip("Coverage credit reaches 1 when the largest gap is qualityCoverageRampDeg below the ramp start.")]
-    public float qualityCoverageRampDeg = 60f;
-    [Tooltip("Weight of the thumb antipodality term: angle between the thumb contact azimuth and the mean finger azimuth, peak at 180 deg.")]
-    public float qualityAntipodalWeight = 0.10f;
-    [Tooltip("Weight of the binary palm-contact term (palm collider touching; never counts toward the success gate).")]
-    public float qualityPalmWeight = 0.20f;
-    [Tooltip("Weight of the wedge-posture term: vertical spread of the contact heights (palm-low / fingertips-high), paid only while the palm touches. From the drop-test analysis: spread predicts the sustained normal force.")]
-    public float qualityWedgeWeight = 0.30f;
-    [Tooltip("Vertical contact spread (m) at which the wedge term starts paying.")]
-    public float qualityWedgeSpreadStart = 0.42f;
-    [Tooltip("Wedge term reaches 1 at qualityWedgeSpreadStart + this ramp (m).")]
-    public float qualityWedgeSpreadRamp = 0.03f;
-    [Tooltip("Opposition gate on the wedge term: the wedge credit is multiplied by clamp(antipodality / this, 0, 1). The self-tightening mechanism needs opposed contacts; a one-sided contact set can relieve all depenetration by lateral translation, so spread without opposition earns nothing.")]
-    public float qualityWedgeOppositionThreshold = 0.5f;
-    [Tooltip("Contact count at which the contact term saturates; segments beyond this pay nothing.")]
-    public int qualityContactSaturation = 8;
-    [Tooltip("Maximum number of steps per episode on which Q is paid (anti-farming cap).")]
-    public int qualityBudgetSteps = 50;
-    [Tooltip("Q is multiplied by this on each paying step; 1/50 with a 50-step budget caps quality pay at 1.0 per episode.")]
-    public float qualityPayPerStep = 1f / 50f;
+    [Header("Lift Task (run 011: the object is released at the gate, must be lifted clear of the pedestal and held under perturbation)")]
+    [Tooltip("Name of the pedestal GameObject; the top of its collider defines the resting height and the lift threshold.")]
+    public string platformName = "Platform";
+    [Tooltip("Spawn the object resting on the pedestal (bottom = platform top + restClearance); spawnHeightRange is ignored while set.")]
+    public bool restOnPlatform = true;
+    public float restClearance = 0.001f;
+    [Tooltip("Lifted = the object's world AABB bottom is at least this (m) above the platform top (defeats edge and tilted resting).")]
+    public float liftClearance = 0.08f;
+    [Tooltip("One-time reward when the gate first fires (phase 1 -> 2). Not the bonus.")]
+    public float phaseReward = 0.1f;
+    [Tooltip("Steps after the transition within which the object must first count as lifted; expiry ends the episode with the drop penalty.")]
+    public int liftBudgetSteps = 200;
+    [Tooltip("Steps after the transition within which the hold must complete; expiry ends the episode with the drop penalty.")]
+    public int taskBudgetSteps = 350;
+    [Tooltip("Reward per lifted (phase 3) step, paid on at most holdRewardBudgetSteps steps per episode (anti-farming cap, run-008 pattern).")]
+    public float holdRewardPerStep = 0.004f;
+    public int holdRewardBudgetSteps = 50;
+    [Tooltip("Penalty (positive, subtracted) when the object is dropped after the transition or a budget expires; the episode ends.")]
+    public float dropPenalty = 0.2f;
+    [Tooltip("Drop = object centre farther than this (m) from the grasp point, or object bottom below platform top - dropBelowPlatform.")]
+    public float dropDistance = 0.3f;
+    public float dropBelowPlatform = 0.02f;
+    [Tooltip("Object mass (kg) drawn log-uniform in [x, y] per episode; env params mass/min and mass/max override the bounds.")]
+    public Vector2 massRange = new Vector2(0.2f, 1.5f);
+    [Tooltip("Perturbation pulses per hold window (phase 3), each lasting perturbPulseSteps physics steps from a random start step.")]
+    public int perturbPulses = 3;
+    public int perturbPulseSteps = 5;
+    [Tooltip("Peak horizontal force = perturbScale x this x m g; each pulse draws its magnitude uniformly in [0.5, 1] x peak.")]
+    public float perturbPeakWeightRatio = 1.5f;
+    [Tooltip("Pulse torque magnitude = force magnitude x this lever (m), about a random axis.")]
+    public float perturbTorqueLever = 0.15f;
+    [Tooltip("Perturbation scale in [0, 1]; the env param perturb/scale overrides it (curriculum ramp).")]
+    public float perturbScale = 1f;
+    [Tooltip("Diagnostics only: >= 0 overrides the perturbation scale (field and env param).")]
+    public float perturbScaleOverride = -1f;
+    [Tooltip("Friction coefficient given to the object's collider (static = dynamic, Maximum combine); <= 0 leaves the scene material. The drop-test standard's primary value is 1.0.")]
+    public float objectFriction = 1.0f;
+    [Tooltip("Impedance grip model: while the object is dynamic, a finger group whose spring is stalled at the object's surface presses on it with its spring torque k (setpoint - angle) divided by the pivot-to-contact lever, split over the group's touching segments; the set of contact forces is projected to zero net wrench (fingers squeeze, they cannot accelerate the object) and the inward component of each is the normal preload N of that contact. Friction is then explicit: a Coulomb impulse against the relative tangential velocity (finger surface velocity from its pose change), capacity mu N, with torsional friction mu N x patch radius. PhysX's own friction on hand contacts is zeroed (PhysX has no preload: balanced squeeze forces produce no contact impulse). 0 disables friction entirely.")]
+    public float gripForceScale = 1f;
+    [Tooltip("Cap on the impedance contact force per touching segment (N).")]
+    public float gripForceMax = 60f;
+    [Tooltip("Contact patch radius (m) for torsional friction at a squeezing contact (torque capacity = mu N x this).")]
+    public float gripPatchRadius = 0.008f;
+    [Tooltip("Compliant finger: how far (deg) a group may open per step toward the contact angle when the dynamic object has moved into it.")]
+    public float yieldRangeDeg = 10f;
+    [Tooltip("Drop criterion: the object's axis has tilted more than this (deg) from its orientation at the transition (loss of orientation control); 180 disables.")]
+    public float dropTiltDeg = 60f;
 
     [Header("Impedance Actuation (14 finger groups + wrist flexion/pronation)")]
     [Tooltip("Actions move each joint's equilibrium setpoint by up to this many deg/s; the joint follows through its spring-damper.")]
@@ -201,6 +221,7 @@ public class ArmGraspAgent : Agent
         public float vel;                   // angular velocity, deg/s (impedance state)
         public float setpoint;              // equilibrium setpoint, degrees (moved by the action)
         public bool masked;                 // held rigidly at the neutral pose; no token, no dynamics
+        public bool clamped;                // this step the penetration clamp stopped the spring short of its target
     }
 
     // One rotational axis of an arm bone. Several axes may share a bone; the bone's local rotation is
@@ -304,33 +325,74 @@ public class ArmGraspAgent : Agent
     private int m_DecisionPeriod = 1;
 
     // One contact sample per touching collider (segments, plus the palm for quality only)
-    struct ContactSample { public float azimuthDeg; public float height; public bool isThumb; public bool isPalm; }
+    struct ContactSample { public float azimuthDeg; public float height; public bool isThumb; public bool isPalm; public Vector3 point, normal; }
     private List<ContactSample> m_Contacts = new List<ContactSample>();
     private List<float> m_Azimuths = new List<float>();
 
     // Per-episode bookkeeping (reset in OnEpisodeBegin, reported at episode end)
-    private int m_QualityStepsPaid;
-    private float m_ShapingReturn, m_QualityReturn, m_PenaltyReturn, m_BonusReturn;
+    private float m_ShapingReturn, m_PenaltyReturn, m_BonusReturn;
     private int m_StepsToFirstSixContacts = -1, m_StepsToFirstHoldCriterion = -1;
     private float m_MinGraspPointDistance, m_MaxPenetration, m_SpawnDistance;
     private int m_HoldWindowCount; private double m_HoldWindowSum, m_HoldWindowSumSq;
     private bool m_EpisodeActive;
 
-    /// <summary>Latest quality score Q in [0,1] (computed every step, paid only while the hold criterion is met).</summary>
-    public float LastQuality { get; private set; }
+    // ---- run 011 lift task ----
+    public enum TaskPhase { Reach = 0, Lift = 1, Hold = 2 }
+    TaskPhase m_Phase;
+    Rigidbody m_CylRb; RigidbodyConstraints m_CylConstraints0; RigidbodyInterpolation m_CylInterp0; float m_CylHalfHeight = 0.388f;
+    Collider m_ForearmCollider; float m_PlatformTop; bool m_ObjectDynamic;
+    float m_Mass = 1f, m_MassObs, m_PerturbScale = 1f;
+    int m_TransitionStep = -1, m_StepsToLift = -1, m_HoldStepsPaid, m_HoldEntries, m_PulsesApplied;
+    float m_PhaseReturn, m_HoldReturn, m_DropReturn, m_MaxPulseForce; string m_EndReason = "";
+    int[] m_PulseStart = new int[0]; Vector3[] m_PulseForce = new Vector3[0], m_PulseTorque = new Vector3[0];
+    float m_GripForce, m_GripForceSum; int m_GripForceSteps; PhysicsMaterial m_ObjectMaterial;
+    struct GripContact { public Vector3 p, f, n; public Collider col; }
+    readonly List<GripContact> m_Grip = new List<GripContact>();
+    readonly Dictionary<Collider, (Vector3 pos, Quaternion rot)> m_PrevPose = new Dictionary<Collider, (Vector3, Quaternion)>();
+    float m_FrictionForce, m_FrictionSum; Vector3 m_ObjectUp0;
+    public float FrictionForce => m_FrictionForce;   // sum of the explicit friction forces applied this step (N)
+    public Vector3 NetFrictionForce { get; private set; }   // vector sum of the friction forces this step (N)
+    public Vector3 NetSqueezeForce { get; private set; }    // vector sum of the projected squeeze forces this step (N, should be ~0)
+    public float GripForce => m_GripForce;   // sum of the impedance contact forces applied this step (N)
+
+    // Contact statistics (diagnostics only since run 011; nothing here enters the reward)
     public float LastCoverageGapDeg { get; private set; }
     public float LastAntipodality { get; private set; }
     public float LastVerticalSpread { get; private set; }
-    public float LastWedge { get; private set; }
     public bool LastPalmTouching { get; private set; }
+    public bool LastForearmTouching { get; private set; }
     public int LastDistinctFingers { get; private set; }
     public bool LastThumbTouching { get; private set; }
     public bool LastHoldCriterionMet { get; private set; }
-    public int QualityStepsPaid => m_QualityStepsPaid;
     public float ShapingReturn => m_ShapingReturn;
-    public float QualityReturn => m_QualityReturn;
     public float PenaltyReturn => m_PenaltyReturn;
     public float BonusReturn => m_BonusReturn;
+    public float PhaseReturn => m_PhaseReturn;
+    public float HoldReturn => m_HoldReturn;
+    public float DropReturn => m_DropReturn;
+    public int HoldStepsPaid => m_HoldStepsPaid;
+    public int HoldSteps => m_HoldSteps;
+    public TaskPhase Phase => m_Phase;
+    public bool ObjectDynamic => m_ObjectDynamic;
+    public float ObjectMass => m_Mass;
+    public float PerturbScaleInEffect => m_PerturbScale;
+    public float PlatformTop => m_PlatformTop;
+    public string EndReason => m_EndReason;
+    /// <summary>Snapshot of the last completed episode (filled in LogEpisode; survives the reset, for harnesses).</summary>
+    public EpisodeRecord LastEpisode;
+    [System.Serializable]
+    public struct EpisodeRecord
+    {
+        public bool success; public string endReason; public int steps, transitionStep, stepsToLift, holdSteps, holdEntries, contacts, distinctFingers, pulsesApplied, holdStepsPaid;
+        public bool thumb, palm, forearm; public float mass, perturbScale, maxPulseForce, retShaping, retPhase, retHold, retBonus, retDrop, retPenalty, retEffort, bottomAboveTop, coverageGapDeg, antipodality, verticalSpread, gripForceMean, gripForceEnd;
+    }
+    public bool Lifted => IsLifted();
+    // run-010 compatibility: Q was removed from the task in run 011; BoEvalHarness (the 010 evaluation endpoint) still reads these
+    public float LastQuality => 0f;
+    public float LastWedge => 0f;
+    public int QualityStepsPaid => 0;
+    public float QualityReturn => 0f;
+    [System.NonSerialized] public float qualityPayPerStep = 0f;
     public float MaxPenetration => m_MaxPenetration;
     public float SpawnDistance => m_SpawnDistance;
     /// <summary>Sum of the 14 segment distances after the last action.</summary>
@@ -352,7 +414,19 @@ public class ArmGraspAgent : Agent
         {
             cylinderTransform = cylObj.transform;
             cylinderCollider = cylObj.GetComponent<Collider>();
+            m_CylRb = cylObj.GetComponent<Rigidbody>();
+            if (m_CylRb != null) { m_CylConstraints0 = m_CylRb.constraints; m_CylInterp0 = m_CylRb.interpolation; }
+            if (cylinderCollider != null) m_CylHalfHeight = cylinderTransform.position.y - cylinderCollider.bounds.min.y;
+            if (cylinderCollider != null && objectFriction > 0f)
+            {
+                m_ObjectMaterial = new PhysicsMaterial("ObjectMu") { staticFriction = objectFriction, dynamicFriction = objectFriction, frictionCombine = PhysicsMaterialCombine.Average, bounciness = 0f, bounceCombine = PhysicsMaterialCombine.Minimum };
+                cylinderCollider.sharedMaterial = m_ObjectMaterial;
+            }
         }
+        // Pedestal: its collider top is the resting height and the reference for the lift threshold
+        var plat = !string.IsNullOrEmpty(platformName) ? GameObject.Find(platformName) : null;
+        if (plat != null && plat.TryGetComponent<Collider>(out var platCol)) m_PlatformTop = platCol.bounds.max.y;
+        else { m_PlatformTop = spawnCenter.y - m_CylHalfHeight; Debug.LogWarning("[ArmGraspAgent] platform '" + platformName + "' not found: platform top taken as the spawn-centre bottom " + m_PlatformTop.ToString("F3")); }
 
         // Collect all segment colliders for nearest-point / contact queries
         segmentColliders.Clear();
@@ -380,10 +454,16 @@ public class ArmGraspAgent : Agent
         m_Forearm = transform.Find(forearmPath);
         m_Palm = transform.Find(palmPath);
         armColliders.Clear();
-        if (m_Forearm != null && m_Forearm.TryGetComponent<Collider>(out var foreCol)) armColliders.Add(foreCol);
+        if (m_Forearm != null && m_Forearm.TryGetComponent<Collider>(out var foreCol)) { armColliders.Add(foreCol); m_ForearmCollider = foreCol; }
         if (m_Palm != null && m_Palm.TryGetComponent<Collider>(out var palmCol)) armColliders.Add(palmCol);
 
         var allHand = new List<Collider>(armColliders); allHand.AddRange(segmentColliders);
+        if (objectFriction > 0f)
+        {   // hand-object friction is explicit (ApplyGripForces); PhysX's own friction on the hand is zeroed (Multiply combine with 0
+            // takes precedence over the object's Average) so the two never act on the same contact
+            var handMat = new PhysicsMaterial("HandNoFriction") { staticFriction = 0f, dynamicFriction = 0f, frictionCombine = PhysicsMaterialCombine.Multiply, bounciness = 0f, bounceCombine = PhysicsMaterialCombine.Minimum };
+            foreach (var c in allHand) c.sharedMaterial = handMat;
+        }
         var palmAndFingers = new List<Collider>(segmentColliders);
         if (m_Palm != null && m_Palm.TryGetComponent<Collider>(out var pc)) { palmAndFingers.Insert(0, pc); m_PalmCollider = pc; }
         // Capture the scene pose once: it is 0 deg for every arm axis
@@ -466,7 +546,22 @@ public class ArmGraspAgent : Agent
         Physics.SyncTransforms();
 
         // Report the previous episode if it ended without success (MaxStep interruption)
-        if (m_EpisodeActive) LogEpisode(false);
+        if (m_EpisodeActive) { if (string.IsNullOrEmpty(m_EndReason)) m_EndReason = "maxStep"; LogEpisode(false); }
+
+        // Lift task: object back to its supported (kinematic) state; mass and perturbation scale for this episode
+        var epp = Academy.Instance.EnvironmentParameters;
+        m_Phase = TaskPhase.Reach; m_ObjectDynamic = false; m_TransitionStep = -1; m_StepsToLift = -1; m_HoldStepsPaid = 0; m_HoldEntries = 0; m_PulsesApplied = 0;
+        m_PhaseReturn = m_HoldReturn = m_DropReturn = 0f; m_MaxPulseForce = 0f; m_EndReason = ""; LastForearmTouching = false;
+        m_GripForce = m_GripForceSum = 0f; m_GripForceSteps = 0; m_FrictionForce = m_FrictionSum = 0f;
+        m_PulseStart = new int[0];
+        float mMin = Mathf.Max(1e-3f, epp.GetWithDefault("mass/min", massRange.x)), mMax = Mathf.Max(mMin, epp.GetWithDefault("mass/max", massRange.y));
+        m_Mass = Mathf.Exp(Random.Range(Mathf.Log(mMin), Mathf.Log(mMax)));
+        m_MassObs = massRange.y > massRange.x ? Mathf.Clamp01(Mathf.Log(m_Mass / massRange.x) / Mathf.Log(massRange.y / massRange.x)) : 0f;
+        m_PerturbScale = perturbScaleOverride >= 0f ? perturbScaleOverride : Mathf.Clamp01(epp.GetWithDefault("perturb/scale", perturbScale));
+        if (m_CylRb != null)
+        {
+            m_CylRb.isKinematic = true; m_CylRb.useGravity = false; m_CylRb.constraints = m_CylConstraints0; m_CylRb.interpolation = m_CylInterp0; m_CylRb.mass = m_Mass;
+        }
 
         // Morphology for this episode: link scales, spring parameters, actuation mask; masked groups hold the neutral pose
         m_HandSpanRatio = 1f; m_FingerLengthRatio = 1f;
@@ -491,6 +586,7 @@ public class ArmGraspAgent : Agent
         m_ClampEvents = m_LimitEvents = 0; m_EpisodeClampEvents = m_EpisodeLimitEvents = 0; m_EffortReturn = m_SafetyReturn = 0f;
 
         SpawnCylinder();
+        StorePrevPoses();
 
         // Initialize potentials for the shaping rewards; each is normalized by its episode-initial value
         previousDistances.Clear();
@@ -506,14 +602,13 @@ public class ArmGraspAgent : Agent
 
         m_HoldSteps = 0;
         CurrentContacts = 0;
-        m_QualityStepsPaid = 0;
-        m_ShapingReturn = m_QualityReturn = m_PenaltyReturn = m_BonusReturn = 0f;
+        m_ShapingReturn = m_PenaltyReturn = m_BonusReturn = 0f;
         m_StepsToFirstSixContacts = m_StepsToFirstHoldCriterion = -1;
         m_MinGraspPointDistance = previousGraspPointDistance;
         m_MaxPenetration = 0f;
         m_SpawnDistance = (m_Shoulder != null && cylinderTransform != null) ? Vector3.Distance(m_Shoulder.position, cylinderTransform.position) : 0f;
         m_HoldWindowCount = 0; m_HoldWindowSum = m_HoldWindowSumSq = 0;
-        LastQuality = 0f; LastCoverageGapDeg = 360f; LastAntipodality = 0f; LastVerticalSpread = 0f; LastWedge = 0f; LastPalmTouching = false; LastDistinctFingers = 0; LastThumbTouching = false; LastHoldCriterionMet = false;
+        LastCoverageGapDeg = 360f; LastAntipodality = 0f; LastVerticalSpread = 0f; LastPalmTouching = false; LastDistinctFingers = 0; LastThumbTouching = false; LastHoldCriterionMet = false;
         m_EpisodeActive = true;
         HoldDecisions = Mathf.Max(1, Mathf.RoundToInt(Academy.Instance.EnvironmentParameters.GetWithDefault(
             "hold_decisions", requiredHoldDecisions)));
@@ -527,13 +622,14 @@ public class ArmGraspAgent : Agent
         if (cylinderTransform == null) return;
         float radius = Academy.Instance.EnvironmentParameters.GetWithDefault("spawn_radius", spawnRadius);
         Vector3 shoulder = m_Shoulder != null ? m_Shoulder.position : transform.position;
-        Vector3 chosen = spawnCenter;
+        float restY = restOnPlatform ? m_PlatformTop + m_CylHalfHeight + restClearance : spawnCenter.y;
+        Vector3 chosen = new Vector3(spawnCenter.x, restY, spawnCenter.z);
         Quaternion chosenRot = cylinderTransform.rotation;
         Quaternion baseRot = Quaternion.Euler(cylinderTransform.eulerAngles.x, 0f, cylinderTransform.eulerAngles.z);
         for (int attempt = 0; attempt < Mathf.Max(1, spawnAttempts); attempt++)
         {
             Vector2 disk = Random.insideUnitCircle * radius;
-            Vector3 candidate = spawnCenter + new Vector3(disk.x, Random.Range(0f, spawnHeightRange), disk.y);
+            Vector3 candidate = new Vector3(spawnCenter.x + disk.x, restOnPlatform ? restY : spawnCenter.y + Random.Range(0f, spawnHeightRange), spawnCenter.z + disk.y);
             float reach = Vector3.Distance(shoulder, candidate);
             if (reach < reachRange.x || reach > reachRange.y) continue;
             Quaternion rot = randomizeYaw ? Quaternion.Euler(0f, Random.Range(0f, 360f), 0f) * baseRot : baseRot;
@@ -559,7 +655,7 @@ public class ArmGraspAgent : Agent
         // (no per-step guards needed with distance reward)
     }
 
-    // Fixed vector observation (22): palm-frame target 3, task progress 3, arm axes sin/cos 10, morphology summary 6.
+    // Fixed vector observation (24): palm-frame target 3, task progress 5, arm axes sin/cos 10, morphology summary 6.
     // Per-joint tokens (BufferSensor, up to 16 x 13): one per ACTIVE finger group plus the two wrist axes.
     public override void CollectObservations(VectorSensor sensor)
     {
@@ -569,11 +665,13 @@ public class ArmGraspAgent : Agent
             : Vector3.zero;
         sensor.AddObservation(Vector3.ClampMagnitude(rel, 1.5f));
 
-        // 2) Task progress - 3: hold fraction, contacts / 14, quality budget spent
-        int holdNeeded = Mathf.Max(1, (HoldDecisions > 0 ? HoldDecisions : requiredHoldDecisions) * m_DecisionPeriod);
+        // 2) Task progress - 5: lifted-hold fraction, contacts / 14, hold-reward budget spent, task phase (0 / 0.5 / 1), object mass (log-normalized)
+        int holdNeeded = HoldStepsNeeded();
         sensor.AddObservation(Mathf.Clamp01((float)m_HoldSteps / holdNeeded));
         sensor.AddObservation(CurrentContacts / (float)GroupCount);
-        sensor.AddObservation(qualityBudgetSteps > 0 ? Mathf.Clamp01((float)m_QualityStepsPaid / qualityBudgetSteps) : 0f);
+        sensor.AddObservation(holdRewardBudgetSteps > 0 ? Mathf.Clamp01((float)m_HoldStepsPaid / holdRewardBudgetSteps) : 0f);
+        sensor.AddObservation(0.5f * (int)m_Phase);
+        sensor.AddObservation(m_MassObs);
 
         // 3) Arm axis angles as sin/cos - 2 per axis = 10
         foreach (var ax in m_ArmAxes)
@@ -696,7 +794,8 @@ public class ArmGraspAgent : Agent
                 float target = grp.setpoint + nx;
                 if (target < lim.x || target > lim.y) { target = Mathf.Clamp(target, lim.x, lim.y); grp.vel = 0f; }
                 ApplyAngleWithContactClamp(grp, target);
-                if (!Mathf.Approximately(grp.angle, target)) { grp.vel = 0f; m_ClampEvents++; }
+                grp.clamped = !Mathf.Approximately(grp.angle, target);
+                if (grp.clamped) { grp.vel = 0f; m_ClampEvents++; }
             }
             else
             {   // no MorphologyManager on the object: legacy velocity actuation
@@ -705,6 +804,8 @@ public class ArmGraspAgent : Agent
             }
         }
         m_EpisodeClampEvents += m_ClampEvents; m_EpisodeLimitEvents += m_LimitEvents;
+        if (m_ObjectDynamic) ApplyGripForces();
+        StorePrevPoses();
 
         // ---- Reward ----
         // 1) Shaping: 15 potentials (14 segments + grasp point), each normalized by its episode-initial distance,
@@ -760,7 +861,7 @@ public class ArmGraspAgent : Agent
         m_EffortReturn += effort; m_SafetyReturn += safety;
         AddReward(shaping + penalty + effort + safety);
 
-        // 2) Hold criterion (unchanged): >= N segments, >= M distinct fingers, thumb touching
+        // 2) Gate (unchanged): >= N segments, >= M distinct fingers, thumb touching. Since run 011 it is the phase 1 -> 2 transition.
         int distinctFingers = CountBits(fingerMask);
         bool grasp = contacts >= requiredContactSegments
                   && distinctFingers >= requiredDistinctFingers
@@ -768,45 +869,258 @@ public class ArmGraspAgent : Agent
         if (contacts >= requiredContactSegments && m_StepsToFirstSixContacts < 0) m_StepsToFirstSixContacts = StepCount;
         if (grasp && m_StepsToFirstHoldCriterion < 0) m_StepsToFirstHoldCriterion = StepCount;
 
-        // 3) Quality Q (computed every step for diagnostics; paid only on held steps, capped per episode)
-        float q = ComputeQuality(contacts, thumbTouching, palmTouching);
-        LastQuality = q; LastPalmTouching = palmTouching; LastDistinctFingers = distinctFingers; LastThumbTouching = thumbTouching; LastHoldCriterionMet = grasp;
-        if (grasp)
+        // 3) Contact statistics (diagnostics only; nothing here is rewarded)
+        ComputeContactStats(thumbTouching);
+        LastPalmTouching = palmTouching; LastDistinctFingers = distinctFingers; LastThumbTouching = thumbTouching; LastHoldCriterionMet = grasp;
+        LastForearmTouching = m_ForearmCollider != null && TryGetContact(m_ForearmCollider, out _);
+        if (grasp) { m_HoldWindowCount++; m_HoldWindowSum += contacts; m_HoldWindowSumSq += (double)contacts * contacts; }
+        else { m_HoldWindowCount = 0; m_HoldWindowSum = m_HoldWindowSumSq = 0; }
+
+        // 4) Phase machine: Reach -(gate)-> Lift -(object clear of the pedestal)-> Hold -(K decisions under perturbation)-> success
+        int holdNeeded = HoldStepsNeeded();
+        if (m_Phase == TaskPhase.Reach)
         {
-            if (m_QualityStepsPaid < qualityBudgetSteps)
+            if (grasp)
             {
-                float pay = q * qualityPayPerStep;
-                AddReward(pay);
-                m_QualityReturn += pay;
-                m_QualityStepsPaid++;
+                m_Phase = TaskPhase.Lift; m_TransitionStep = StepCount;
+                AddReward(phaseReward); m_PhaseReturn += phaseReward;
+                ReleaseObject();
             }
-            m_HoldWindowCount++; m_HoldWindowSum += contacts; m_HoldWindowSumSq += (double)contacts * contacts;
         }
         else
         {
-            m_HoldWindowCount = 0; m_HoldWindowSum = m_HoldWindowSumSq = 0;
-        }
-
-        // 4) Success: grasp held for K consecutive decisions (unchanged)
-        m_HoldSteps = grasp ? m_HoldSteps + 1 : 0;
-        if (grasp && m_HoldSteps >= (HoldDecisions > 0 ? HoldDecisions : requiredHoldDecisions) * m_DecisionPeriod)
-        {
-            SuccessCount++;
-            AddReward(successBonus);
-            m_BonusReturn += successBonus;
-            LogEpisode(true);
-            EndEpisode();
+            int sinceTransition = StepCount - m_TransitionStep;
+            bool lifted = IsLifted();
+            if (lifted && m_StepsToLift < 0) m_StepsToLift = StepCount;
+            if (IsDropped()) { FailEpisode("drop"); return; }
+            if (!lifted && m_StepsToLift < 0 && sinceTransition >= liftBudgetSteps) { FailEpisode("liftBudget"); return; }
+            if (sinceTransition >= taskBudgetSteps) { FailEpisode("taskBudget"); return; }
+            if (lifted)
+            {
+                if (m_Phase == TaskPhase.Lift) { m_Phase = TaskPhase.Hold; m_HoldSteps = 0; m_HoldEntries++; SchedulePerturbations(holdNeeded); }
+                m_HoldSteps++;
+                if (m_HoldStepsPaid < holdRewardBudgetSteps) { AddReward(holdRewardPerStep); m_HoldReturn += holdRewardPerStep; m_HoldStepsPaid++; }
+                ApplyPerturbation();
+                if (m_HoldSteps >= holdNeeded)
+                {
+                    SuccessCount++;
+                    AddReward(successBonus);
+                    m_BonusReturn += successBonus;
+                    m_EndReason = "success";
+                    LogEpisode(true);
+                    EndEpisode();
+                    return;
+                }
+            }
+            else if (m_Phase == TaskPhase.Hold) { m_Phase = TaskPhase.Lift; m_HoldSteps = 0; m_PulseStart = new int[0]; }
         }
     }
 
-    // ---- grasp quality ----
+    // ---- lift task mechanics ----
 
-    /// <summary>Q in [0,1] from the contact samples gathered this step. Weights are serialized and sum to 1 by default.</summary>
-    private float ComputeQuality(int contacts, bool thumbTouching, bool palmTouching)
+    int HoldStepsNeeded() => Mathf.Max(1, (HoldDecisions > 0 ? HoldDecisions : requiredHoldDecisions) * m_DecisionPeriod);
+
+    /// <summary>Object dynamic under gravity at this episode's mass; the arm's penetration clamp against it is off from here on.</summary>
+    void ReleaseObject()
     {
-        float contactScore = qualityContactSaturation > 0 ? Mathf.Clamp01((float)Mathf.Min(contacts, qualityContactSaturation) / qualityContactSaturation) : 0f;
+        m_ObjectDynamic = true;
+        if (m_CylRb == null) return;
+        m_CylRb.mass = m_Mass; m_CylRb.interpolation = RigidbodyInterpolation.None; m_CylRb.constraints = RigidbodyConstraints.None;
+        m_CylRb.isKinematic = false; m_CylRb.useGravity = true;
+        m_CylRb.linearVelocity = Vector3.zero; m_CylRb.angularVelocity = Vector3.zero; m_CylRb.WakeUp();
+        m_ObjectUp0 = cylinderTransform.up;
+    }
 
-        // Azimuthal coverage: largest circular gap between contact azimuths (segments + palm)
+    void StorePrevPoses()
+    {
+        foreach (var col in segmentColliders) m_PrevPose[col] = (col.transform.position, col.transform.rotation);
+        if (m_PalmCollider != null) m_PrevPose[m_PalmCollider] = (m_PalmCollider.transform.position, m_PalmCollider.transform.rotation);
+    }
+
+    /// <summary>Diagnostics only: force the phase-1 transition regardless of the gate (scripted calibration / exploit checks).</summary>
+    public void DiagnosticForceTransition()
+    {
+        if (m_Phase != TaskPhase.Reach) return;
+        m_Phase = TaskPhase.Lift; m_TransitionStep = StepCount; ReleaseObject();
+    }
+    /// <summary>Diagnostics only: set this episode's object mass (kg); applied immediately if the object is already dynamic.</summary>
+    public void DiagnosticSetMass(float kg)
+    {
+        m_Mass = Mathf.Max(1e-3f, kg);
+        m_MassObs = massRange.y > massRange.x ? Mathf.Clamp01(Mathf.Log(m_Mass / massRange.x) / Mathf.Log(massRange.y / massRange.x)) : 0f;
+        if (m_CylRb != null) m_CylRb.mass = m_Mass;
+    }
+    /// <summary>Diagnostics only: set this episode's perturbation scale.</summary>
+    public void DiagnosticSetPerturbScale(float scale) { m_PerturbScale = Mathf.Max(0f, scale); }
+
+    /// <summary>
+    /// Impedance grip model (see gripForceScale). Squeeze: a finger group whose spring is stalled against the object (clamp
+    /// engaged) presses with its spring torque k (setpoint - angle) over the pivot-to-contact lever, split over the group's
+    /// touching segments and capped at gripForceMax; the contact-force set is projected onto the null space of the grasp map
+    /// (net force and net torque removed by the minimal-norm correction), so an unopposed contact yields nothing and opposed
+    /// contacts yield a preload N each. Friction: per contact a Coulomb impulse against the relative tangential velocity
+    /// (object point velocity minus the finger surface velocity from its pose change, with this step's gravity anticipated so
+    /// a held object does not creep), capacity mu N, plus torsional friction about the normal (capacity mu N patch radius).
+    /// PhysX keeps the geometry (depenetration); PhysX friction on hand contacts is zero. Masked groups are rigid and exert nothing.
+    /// </summary>
+    void ApplyGripForces()
+    {
+        m_GripForce = 0f; m_FrictionForce = 0f; m_Grip.Clear(); NetFrictionForce = Vector3.zero; NetSqueezeForce = Vector3.zero;
+        if (m_CylRb == null || m_Morph == null || gripForceScale <= 0f) { m_GripForceSteps++; return; }
+        for (int g = 0; g < GroupCount; g++)
+        {
+            var grp = m_Groups[g];
+            if (grp.masked || !grp.clamped || grp.joints.Length == 0) continue;
+            float tau = Mathf.Abs(m_Morph.stiffness[g] * (grp.setpoint - grp.angle) * Mathf.Deg2Rad) * gripForceScale;
+            if (tau <= 0f) continue;
+            int touching = 0;
+            foreach (var col in grp.colliders) if (TryGetContact(col, out _)) touching++;
+            if (touching == 0) continue;
+            Vector3 pivot = grp.joints[0].position;
+            foreach (var col in grp.colliders)
+            {
+                if (!TryGetContact(col, out ContactSample c)) continue;
+                float lever = Mathf.Max(Vector3.Distance(pivot, c.point), 0.01f);
+                float F = Mathf.Min(tau / lever / touching, gripForceMax);
+                m_Grip.Add(new GripContact { p = c.point, f = -c.normal * F, n = c.normal, col = col });
+            }
+        }
+        // the palm (no spring) reacts passively: a touching palm joins the contact set with no preload of its own and takes its share of
+        // the balancing correction, so fingers squeezing the object against the palm produce a real preload on both sides
+        if (m_Grip.Count >= 1 && m_PalmCollider != null && TryGetContact(m_PalmCollider, out ContactSample pc))
+            m_Grip.Add(new GripContact { p = pc.point, f = Vector3.zero, n = pc.normal, col = m_PalmCollider });
+        if (m_Grip.Count >= 2)
+        {
+            // minimal-norm correction removing the net wrench: solve (G G^T) lambda = w, subtract G_i^T lambda from each force
+            Vector3 com = m_CylRb.worldCenterOfMass;
+            double[,] M = new double[6, 7];
+            foreach (var gc in m_Grip)
+            {
+                Vector3 r = gc.p - com; Vector3 F = gc.f;
+                double[,] R = { { 0, -r.z, r.y }, { r.z, 0, -r.x }, { -r.y, r.x, 0 } };
+                for (int a = 0; a < 3; a++)
+                {
+                    M[a, a] += 1.0;
+                    for (int b = 0; b < 3; b++)
+                    {
+                        M[3 + a, b] += R[a, b];
+                        M[a, 3 + b] += R[b, a];
+                        double sum = 0; for (int k = 0; k < 3; k++) sum += R[a, k] * R[b, k];
+                        M[3 + a, 3 + b] += sum;
+                    }
+                }
+                Vector3 t = Vector3.Cross(r, F);
+                M[0, 6] += F.x; M[1, 6] += F.y; M[2, 6] += F.z; M[3, 6] += t.x; M[4, 6] += t.y; M[5, 6] += t.z;
+            }
+            for (int a = 0; a < 6; a++) M[a, a] += 1e-6;
+            for (int c = 0; c < 6; c++)
+            {
+                int piv = c; for (int rr = c + 1; rr < 6; rr++) if (System.Math.Abs(M[rr, c]) > System.Math.Abs(M[piv, c])) piv = rr;
+                if (piv != c) for (int k = 0; k < 7; k++) { double tmp = M[c, k]; M[c, k] = M[piv, k]; M[piv, k] = tmp; }
+                double d = M[c, c]; if (System.Math.Abs(d) < 1e-12) continue;
+                for (int rr = 0; rr < 6; rr++) { if (rr == c) continue; double f = M[rr, c] / d; for (int k = c; k < 7; k++) M[rr, k] -= f * M[c, k]; }
+            }
+            Vector3 lf = new Vector3((float)(M[0, 6] / M[0, 0]), (float)(M[1, 6] / M[1, 1]), (float)(M[2, 6] / M[2, 2]));
+            Vector3 lt = new Vector3((float)(M[3, 6] / M[3, 3]), (float)(M[4, 6] / M[4, 4]), (float)(M[5, 6] / M[5, 5]));
+            float dt = Time.fixedDeltaTime, mu = Mathf.Max(objectFriction, 0f), mass = m_CylRb.mass; int nc = m_Grip.Count;
+            bool onPedestal = cylinderCollider.bounds.min.y - m_PlatformTop < 0.003f;
+            Quaternion toInertia = Quaternion.Inverse(m_CylRb.rotation * m_CylRb.inertiaTensorRotation); Vector3 Iten = m_CylRb.inertiaTensor;
+            float[] Ns = new float[nc]; float Nsum = 0f;
+            for (int i = 0; i < nc; i++)
+            {
+                var gc = m_Grip[i]; Vector3 r = gc.p - com;
+                Vector3 f = gc.f - (lf + Vector3.Cross(lt, r));   // projected squeeze; only its preload matters (PhysX ignores balanced forces)
+                Ns[i] = Mathf.Max(0f, Vector3.Dot(f, -gc.n)); Nsum += Ns[i]; NetSqueezeForce += f;
+            }
+            m_GripForce = Nsum;
+            for (int i = 0; i < nc; i++)
+            {
+                var gc = m_Grip[i]; float N = Ns[i];
+                if (N <= 0f || mu <= 0f || Nsum <= 0f) continue;
+                float w = N / Nsum;   // the friction demand is shared in proportion to each contact's capacity
+                Vector3 vSurf = Vector3.zero;
+                if (m_PrevPose.TryGetValue(gc.col, out var prev))
+                {   // finger surface velocity at the contact point from the segment's pose change over the last step
+                    Vector3 pPrev = prev.pos + prev.rot * (Quaternion.Inverse(gc.col.transform.rotation) * (gc.p - gc.col.transform.position));
+                    vSurf = (gc.p - pPrev) / dt;
+                }
+                Vector3 vRel = m_CylRb.GetPointVelocity(gc.p) - vSurf;
+                Vector3 vT = vRel - Vector3.Dot(vRel, gc.n) * gc.n;
+                // anticipate this step's gravity (static friction carries the weight) unless the pedestal still supports the object and this
+                // finger surface is not moving upward: a supported object squeezed by a still hand keeps its weight on the pedestal
+                bool carry = !onPedestal || vSurf.y > 0.005f;
+                Vector3 gT = carry ? Physics.gravity - Vector3.Dot(Physics.gravity, gc.n) * gc.n : Vector3.zero;
+                Vector3 dv = vT + gT * dt;
+                if (dv.sqrMagnitude < 1e-12f) continue;
+                // effective mass of the object at this point along the impulse direction (translation + rotation), as a contact solver uses
+                Vector3 tdir = dv.normalized; Vector3 rxt = toInertia * Vector3.Cross(gc.p - com, tdir);
+                float invMeff = 1f / mass + rxt.x * rxt.x / Mathf.Max(Iten.x, 1e-6f) + rxt.y * rxt.y / Mathf.Max(Iten.y, 1e-6f) + rxt.z * rxt.z / Mathf.Max(Iten.z, 1e-6f);
+                Vector3 J = -(w / invMeff) * dv;
+                float cap = mu * N * dt; if (J.magnitude > cap) J = J.normalized * cap;
+                m_CylRb.AddForceAtPosition(J / dt, gc.p, ForceMode.Force);
+                m_FrictionForce += J.magnitude / dt; NetFrictionForce += J / dt;
+                float wRel = Vector3.Dot(m_CylRb.angularVelocity, gc.n);
+                Vector3 nl = toInertia * gc.n; float In = Mathf.Max(nl.x * nl.x * Iten.x + nl.y * nl.y * Iten.y + nl.z * nl.z * Iten.z, 1e-6f);
+                float Jt = -(In * w) * wRel; float capT = mu * N * gripPatchRadius * dt;
+                if (Mathf.Abs(Jt) > capT) Jt = Mathf.Sign(Jt) * capT;
+                m_CylRb.AddTorque(gc.n * (Jt / dt), ForceMode.Force);
+            }
+        }
+        m_GripForceSum += m_GripForce; m_FrictionSum += m_FrictionForce; m_GripForceSteps++;
+    }
+
+    bool IsLifted() => cylinderCollider != null && m_ObjectDynamic && cylinderCollider.bounds.min.y >= m_PlatformTop + liftClearance;
+
+    bool IsDropped()
+    {
+        if (cylinderCollider == null || m_CylRb == null) return false;
+        if (Vector3.Distance(m_CylRb.position, GraspPoint) > dropDistance) return true;
+        if (dropTiltDeg < 180f && Vector3.Angle(cylinderTransform.up, m_ObjectUp0) > dropTiltDeg) return true;
+        return cylinderCollider.bounds.min.y < m_PlatformTop - dropBelowPlatform;
+    }
+
+    void FailEpisode(string reason)
+    {
+        AddReward(-dropPenalty); m_DropReturn -= dropPenalty; m_EndReason = reason;
+        LogEpisode(false);
+        EndEpisode();
+    }
+
+    /// <summary>Draw the hold window's pulses: random start step, random horizontal direction, magnitude in [0.5, 1] x peak, torque about a random axis.</summary>
+    void SchedulePerturbations(int holdNeeded)
+    {
+        int n = Mathf.Max(0, perturbPulses), len = Mathf.Max(1, perturbPulseSteps);
+        m_PulseStart = new int[n]; m_PulseForce = new Vector3[n]; m_PulseTorque = new Vector3[n];
+        float peak = m_PerturbScale * perturbPeakWeightRatio * m_Mass * Physics.gravity.magnitude;
+        for (int i = 0; i < n; i++)
+        {
+            m_PulseStart[i] = Random.Range(1, Mathf.Max(2, holdNeeded - len + 1));   // 1-based window step at which the pulse starts
+            float mag = peak * Random.Range(0.5f, 1f);
+            Vector2 d = Random.insideUnitCircle.normalized; if (d.sqrMagnitude < 1e-6f) d = Vector2.right;
+            m_PulseForce[i] = new Vector3(d.x, 0f, d.y) * mag;
+            m_PulseTorque[i] = Random.onUnitSphere * (mag * perturbTorqueLever);
+        }
+    }
+
+    void ApplyPerturbation()
+    {
+        if (m_CylRb == null || !m_ObjectDynamic) return;
+        int len = Mathf.Max(1, perturbPulseSteps);
+        for (int i = 0; i < m_PulseStart.Length; i++)
+        {
+            if (m_HoldSteps < m_PulseStart[i] || m_HoldSteps >= m_PulseStart[i] + len) continue;
+            m_CylRb.AddForce(m_PulseForce[i], ForceMode.Force);
+            m_CylRb.AddTorque(m_PulseTorque[i], ForceMode.Force);
+            float f = m_PulseForce[i].magnitude; if (f > m_MaxPulseForce) m_MaxPulseForce = f;
+            if (m_HoldSteps == m_PulseStart[i]) m_PulsesApplied++;
+        }
+    }
+
+    // ---- contact statistics (diagnostics) ----
+
+    /// <summary>Coverage gap, thumb antipodality and vertical spread of the contact samples gathered this step. Logged only.</summary>
+    private void ComputeContactStats(bool thumbTouching)
+    {
         m_Azimuths.Clear();
         foreach (var c in m_Contacts) m_Azimuths.Add(c.azimuthDeg);
         float largestGap = 360f;
@@ -817,9 +1131,6 @@ public class ArmGraspAgent : Agent
             for (int i = 1; i < m_Azimuths.Count; i++) largestGap = Mathf.Max(largestGap, m_Azimuths[i] - m_Azimuths[i - 1]);
             largestGap = Mathf.Max(largestGap, 360f - (m_Azimuths[m_Azimuths.Count - 1] - m_Azimuths[0]));
         }
-        float coverage = qualityCoverageRampDeg > 0f ? Mathf.Clamp01((qualityCoverageRampStartDeg - largestGap) / qualityCoverageRampDeg) : 0f;
-
-        // Thumb antipodality: circular mean of thumb contacts vs circular mean of finger contacts, peak at 180 deg
         float antipodal = 0f;
         if (thumbTouching)
         {
@@ -834,35 +1145,14 @@ public class ArmGraspAgent : Agent
             if (fingerCount > 0)
             {
                 float thumbAz = Mathf.Atan2(ts, tc) * Mathf.Rad2Deg, fingerAz = Mathf.Atan2(fs, fc) * Mathf.Rad2Deg;
-                float diff = Mathf.Abs(Mathf.DeltaAngle(thumbAz, fingerAz));   // [0, 180]
-                antipodal = Mathf.Clamp01(diff / 180f);
+                antipodal = Mathf.Clamp01(Mathf.Abs(Mathf.DeltaAngle(thumbAz, fingerAz)) / 180f);
             }
         }
-
-        // Vertical spread of contacts along the cylinder axis (segments + palm)
         float minH = float.MaxValue, maxH = float.MinValue;
         foreach (var c in m_Contacts) { if (c.height < minH) minH = c.height; if (c.height > maxH) maxH = c.height; }
         LastVerticalSpread = m_Contacts.Count > 0 ? maxH - minH : 0f;
         LastCoverageGapDeg = largestGap;
         LastAntipodality = antipodal;
-
-        // Wedge posture: palm-low / fingertips-high spread, paid only while the palm touches (the spread means something
-        // else without a palm contact). Ramps from qualityWedgeSpreadStart to qualityWedgeSpreadStart + qualityWedgeSpreadRamp.
-        // Opposition gate: the self-tightening mechanism requires opposed contacts. A one-sided contact set can relieve all of
-        // its depenetration by lateral translation, so spread without opposition earns nothing: the credit is multiplied by
-        // clamp(antipodality / qualityWedgeOppositionThreshold, 0, 1), saturating at the threshold.
-        // Thresholds scale with hand size (handSpan / reference span) so the wedge term is comparable across morphologies
-        float wedgeStart = qualityWedgeSpreadStart * m_HandSpanRatio, wedgeRamp = qualityWedgeSpreadRamp * m_HandSpanRatio;
-        float wedgeCredit = (palmTouching && wedgeRamp > 0f) ? Mathf.Clamp01((LastVerticalSpread - wedgeStart) / wedgeRamp) : 0f;
-        float oppositionGate = qualityWedgeOppositionThreshold > 0f ? Mathf.Clamp01(antipodal / qualityWedgeOppositionThreshold) : 1f;
-        float wedge = wedgeCredit * oppositionGate;
-        LastWedge = wedge;
-
-        return Mathf.Clamp01(qualityContactWeight * contactScore
-                           + qualityCoverageWeight * coverage
-                           + qualityAntipodalWeight * antipodal
-                           + qualityPalmWeight * (palmTouching ? 1f : 0f)
-                           + qualityWedgeWeight * wedge);
     }
 
     // ---- episode stats ----
@@ -870,6 +1160,15 @@ public class ArmGraspAgent : Agent
     private void LogEpisode(bool success)
     {
         m_EpisodeActive = false;
+        LastEpisode = new EpisodeRecord
+        {
+            success = success, endReason = m_EndReason, steps = StepCount, transitionStep = m_TransitionStep, stepsToLift = m_StepsToLift, holdSteps = m_HoldSteps, holdEntries = m_HoldEntries,
+            contacts = CurrentContacts, distinctFingers = LastDistinctFingers, pulsesApplied = m_PulsesApplied, holdStepsPaid = m_HoldStepsPaid, thumb = LastThumbTouching, palm = LastPalmTouching, forearm = LastForearmTouching,
+            mass = m_Mass, perturbScale = m_PerturbScale, maxPulseForce = m_MaxPulseForce, retShaping = m_ShapingReturn, retPhase = m_PhaseReturn, retHold = m_HoldReturn, retBonus = m_BonusReturn, retDrop = m_DropReturn,
+            retPenalty = m_PenaltyReturn, retEffort = m_EffortReturn, bottomAboveTop = cylinderCollider != null ? cylinderCollider.bounds.min.y - m_PlatformTop : 0f,
+            gripForceMean = m_GripForceSteps > 0 ? m_GripForceSum / m_GripForceSteps : 0f, gripForceEnd = m_GripForce,
+            coverageGapDeg = LastCoverageGapDeg, antipodality = LastAntipodality, verticalSpread = LastVerticalSpread
+        };
         float holdStd = 0f;
         if (m_HoldWindowCount > 1)
         {
@@ -885,12 +1184,31 @@ public class ArmGraspAgent : Agent
         rec.Add("Grasp/DistinctFingersAtEnd", LastDistinctFingers);
         rec.Add("Grasp/ThumbAtEnd", LastThumbTouching ? 1f : 0f);
         rec.Add("Grasp/PalmAtEnd", LastPalmTouching ? 1f : 0f);
+        rec.Add("Grasp/ForearmAtEnd", LastForearmTouching ? 1f : 0f);
         rec.Add("Grasp/CoverageGapDeg", LastCoverageGapDeg);
         rec.Add("Grasp/Antipodality", LastAntipodality);
         rec.Add("Grasp/VerticalSpread", LastVerticalSpread);
-        rec.Add("Grasp/WedgeAtEnd", LastWedge);
         rec.Add("Grasp/HoldContactStd", holdStd);
-        rec.Add("Grasp/QualityAtEnd", LastQuality);
+        rec.Add("Task/PhaseReached", (int)m_Phase);
+        rec.Add("Task/Transitioned", m_TransitionStep >= 0 ? 1f : 0f);
+        rec.Add("Task/Lifted", m_StepsToLift >= 0 ? 1f : 0f);
+        rec.Add("Task/StepsToTransition", m_TransitionStep);
+        rec.Add("Task/StepsToLift", m_StepsToLift);
+        rec.Add("Task/HoldSteps", m_HoldSteps);
+        rec.Add("Task/HoldEntries", m_HoldEntries);
+        rec.Add("Task/EndDrop", m_EndReason == "drop" ? 1f : 0f);
+        rec.Add("Task/EndLiftBudget", m_EndReason == "liftBudget" ? 1f : 0f);
+        rec.Add("Task/EndTaskBudget", m_EndReason == "taskBudget" ? 1f : 0f);
+        rec.Add("Task/EndMaxStep", m_EndReason == "maxStep" ? 1f : 0f);
+        rec.Add("Task/ObjectMass", m_Mass);
+        rec.Add("Task/PerturbScale", m_PerturbScale);
+        rec.Add("Task/PulsesApplied", m_PulsesApplied);
+        rec.Add("Task/MaxPulseForce", m_MaxPulseForce);
+        rec.Add("Task/ObjectBottomAboveTop", cylinderCollider != null ? cylinderCollider.bounds.min.y - m_PlatformTop : 0f);
+        rec.Add("Task/GripForceMean", m_GripForceSteps > 0 ? m_GripForceSum / m_GripForceSteps : 0f);
+        rec.Add("Task/GripForceAtEnd", m_GripForce);
+        rec.Add("Task/FrictionForceMean", m_GripForceSteps > 0 ? m_FrictionSum / m_GripForceSteps : 0f);
+        rec.Add("Task/EndTilt", m_EndReason == "drop" && m_ObjectDynamic && cylinderTransform != null ? Vector3.Angle(cylinderTransform.up, m_ObjectUp0) : 0f);
         rec.Add("Grasp/MinGraspPointDistance", m_MinGraspPointDistance);
         rec.Add("Grasp/FinalGraspPointDistance", previousGraspPointDistance);
         rec.Add("Grasp/ResidualSegmentDistance", ResidualSegmentDistance);
@@ -898,10 +1216,12 @@ public class ArmGraspAgent : Agent
         rec.Add("Grasp/SpawnDistance", m_SpawnDistance);
         rec.Add("Grasp/CylinderYaw", yaw);
         rec.Add("Return/Shaping", m_ShapingReturn);
-        rec.Add("Return/Quality", m_QualityReturn);
+        rec.Add("Return/Phase", m_PhaseReturn);
+        rec.Add("Return/Hold", m_HoldReturn);
         rec.Add("Return/Bonus", m_BonusReturn);
+        rec.Add("Return/Drop", m_DropReturn);
         rec.Add("Return/Penalty", m_PenaltyReturn);
-        rec.Add("Return/QualityStepsPaid", m_QualityStepsPaid);
+        rec.Add("Return/HoldStepsPaid", m_HoldStepsPaid);
         rec.Add("Return/Effort", m_EffortReturn);
         rec.Add("Return/Safety", m_SafetyReturn);
         rec.Add("Grasp/ClampEvents", m_EpisodeClampEvents);
@@ -923,13 +1243,15 @@ public class ArmGraspAgent : Agent
             try
             {
                 if (!System.IO.File.Exists(statsCsvPath))
-                    System.IO.File.WriteAllText(statsCsvPath, "episode,success,steps,stepsToFirstSixContacts,stepsToHoldCriterion,contacts,distinctFingers,thumb,palm,coverageGapDeg,antipodality,verticalSpread,holdContactStd,qualityAtEnd,minGraspDist,finalGraspDist,residualSegDist,maxPenetration,spawnDistance,cylYaw,retShaping,retQuality,retBonus,retPenalty,qualityStepsPaid\n");
+                    System.IO.File.WriteAllText(statsCsvPath, "episode,success,endReason,steps,stepsToFirstSixContacts,stepsToHoldCriterion,stepsToTransition,stepsToLift,holdSteps,holdEntries,contacts,distinctFingers,thumb,palm,forearm,coverageGapDeg,antipodality,verticalSpread,holdContactStd,minGraspDist,finalGraspDist,residualSegDist,maxPenetration,spawnDistance,cylYaw,mass,perturbScale,pulsesApplied,maxPulseForce,retShaping,retPhase,retHold,retBonus,retDrop,retPenalty,holdStepsPaid\n");
                 System.IO.File.AppendAllText(statsCsvPath, string.Join(",", new string[] {
-                    CompletedEpisodes.ToString(), success ? "1" : "0", StepCount.ToString(), m_StepsToFirstSixContacts.ToString(), m_StepsToFirstHoldCriterion.ToString(),
-                    CurrentContacts.ToString(), LastDistinctFingers.ToString(), LastThumbTouching ? "1" : "0", LastPalmTouching ? "1" : "0",
-                    LastCoverageGapDeg.ToString("F1"), LastAntipodality.ToString("F3"), LastVerticalSpread.ToString("F4"), holdStd.ToString("F3"), LastQuality.ToString("F4"),
+                    CompletedEpisodes.ToString(), success ? "1" : "0", m_EndReason, StepCount.ToString(), m_StepsToFirstSixContacts.ToString(), m_StepsToFirstHoldCriterion.ToString(),
+                    m_TransitionStep.ToString(), m_StepsToLift.ToString(), m_HoldSteps.ToString(), m_HoldEntries.ToString(),
+                    CurrentContacts.ToString(), LastDistinctFingers.ToString(), LastThumbTouching ? "1" : "0", LastPalmTouching ? "1" : "0", LastForearmTouching ? "1" : "0",
+                    LastCoverageGapDeg.ToString("F1"), LastAntipodality.ToString("F3"), LastVerticalSpread.ToString("F4"), holdStd.ToString("F3"),
                     m_MinGraspPointDistance.ToString("F4"), previousGraspPointDistance.ToString("F4"), ResidualSegmentDistance.ToString("F4"), m_MaxPenetration.ToString("F5"),
-                    m_SpawnDistance.ToString("F3"), yaw.ToString("F0"), m_ShapingReturn.ToString("F4"), m_QualityReturn.ToString("F4"), m_BonusReturn.ToString("F2"), m_PenaltyReturn.ToString("F4"), m_QualityStepsPaid.ToString() }) + "\n");
+                    m_SpawnDistance.ToString("F3"), yaw.ToString("F0"), m_Mass.ToString("F3"), m_PerturbScale.ToString("F2"), m_PulsesApplied.ToString(), m_MaxPulseForce.ToString("F2"),
+                    m_ShapingReturn.ToString("F4"), m_PhaseReturn.ToString("F3"), m_HoldReturn.ToString("F4"), m_BonusReturn.ToString("F2"), m_DropReturn.ToString("F2"), m_PenaltyReturn.ToString("F4"), m_HoldStepsPaid.ToString() }) + "\n");
             }
             catch (System.Exception e) { Debug.LogWarning("[ArmGraspAgent] stats CSV: " + e.Message); }
         }
@@ -942,7 +1264,7 @@ public class ArmGraspAgent : Agent
     private void ApplyAngleWithContactClamp(JointGroup grp, float target)
     {
         float from = grp.angle;
-        if (Mathf.Approximately(target, from)) return;
+        if (Mathf.Approximately(target, from)) { if (m_ObjectDynamic) YieldToObject(grp, from, target); return; }
 
         SetGroupAngle(grp, target);
         if (!Penetrates(grp.colliders)) { grp.angle = target; return; }
@@ -956,6 +1278,30 @@ public class ArmGraspAgent : Agent
         }
         SetGroupAngle(grp, lo);
         grp.angle = lo;
+        if (m_ObjectDynamic) YieldToObject(grp, lo, target);
+    }
+
+    /// <summary>
+    /// Compliant finger (dynamic object only): when the group penetrates the object at the angle it is holding, because the
+    /// object moved into it (arm motion, perturbation, the object settling), the finger opens to the contact angle instead of
+    /// pushing with the clamp's infinite force. The spring's bounded squeeze (ApplyGripForces) is then the only force the
+    /// finger exerts. Searches up to yieldRangeDeg toward open.
+    /// </summary>
+    private void YieldToObject(JointGroup grp, float angle, float target)
+    {
+        if (!Penetrates(grp.colliders)) return;
+        float openDir = target <= angle ? 1f : -1f;   // away from the spring's target
+        float a = angle, b = angle + openDir * yieldRangeDeg;
+        SetGroupAngle(grp, b);
+        if (Penetrates(grp.colliders)) { grp.angle = b; grp.clamped = true; return; }   // still penetrating after the full range: leave it there
+        for (int i = 0; i < contactSolveIterations; i++)
+        {
+            float mid = 0.5f * (a + b);
+            SetGroupAngle(grp, mid);
+            if (Penetrates(grp.colliders)) a = mid; else b = mid;
+        }
+        SetGroupAngle(grp, b);
+        grp.angle = b; grp.clamped = true; grp.vel = 0f;
     }
 
     private void SetGroupAngle(JointGroup grp, float angle)
@@ -973,6 +1319,8 @@ public class ArmGraspAgent : Agent
         float from = ax.angle;
         if (Mathf.Approximately(target, from)) return;
 
+        // Once the object is dynamic the arm moves freely and carries it through the contact solver (fingers keep their clamp)
+        if (m_ObjectDynamic) { SetArmAngle(ax, target); ax.angle = target; return; }
         SetArmAngle(ax, target);
         if (!Penetrates(ax.bone.colliders)) { ax.angle = target; return; }
 
@@ -1059,6 +1407,7 @@ public class ArmGraspAgent : Agent
         if (az < 0f) az += 360f;
         sample.azimuthDeg = az;
         sample.height = Vector3.Dot(onCylinder - cylinderTransform.position, cylinderTransform.up);
+        sample.point = onCylinder; sample.normal = normal.sqrMagnitude > 1e-12f ? normal.normalized : radial.normalized;   // outward normal of the object at the contact
         return true;
     }
 

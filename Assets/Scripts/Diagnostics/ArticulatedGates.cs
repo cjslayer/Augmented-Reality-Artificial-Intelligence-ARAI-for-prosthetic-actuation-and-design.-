@@ -1,0 +1,304 @@
+#if UNITY_EDITOR
+// Scripted gates for the articulated hand (Editor Play mode only; compiled out of players). Attaches itself to the active
+// ArmGraspAgent when Temp/gates.json exists at scene load, switches the behavior to HeuristicOnly (actions zero: the harness
+// drives the joints through the agent's diagnostic setters and the rig's velocity drives) and writes one CSV row per trial.
+// modes
+//   calibrate  step response of one finger group (index base): rise time / overshoot for the reference (omega, zeta), the
+//              flexion direction relative to the palm normal, and the sign convention of the drive angle
+//   lift       object placed on the palm (kinematic, on the pedestal), fingers driven to enveloping / pinch targets, the
+//              real contact gate (or a forced transition after settleSteps) releases the object, the shoulder raises the
+//              hand until the object bottom is liftClearance + liftExtra above the pedestal, then holds for holdSteps under
+//              the agent's own perturbation schedule (scale per trial): G1 / G2 / G3
+//   stability  theta sweep (randomizeByDefault on) with random target walks for stepsPerTrial steps: NaN, max joint speed,
+//              max penetration into the kinematic object: G4
+//   push       object released between the fingers, all drives to their closing limits at the force limit, then an
+//              external force through the hand: max penetration and whether the object escapes through the fingers: G6
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using UnityEngine;
+using Unity.MLAgents.Policies;
+
+[DefaultExecutionOrder(-100)]
+public class ArticulatedGates : MonoBehaviour
+{
+    [System.Serializable]
+    public class Config
+    {
+        public string mode = "lift";
+        public string csv = "Temp/gates.csv";
+        public float[] masses = { 0.6f };
+        public float[] scales = { 0f };
+        public string[] grips = { "envelope" };
+        public int seeds = 1;
+        public int settleSteps = 150;       // steps of closing before the transition is forced if the gate has not fired
+        public int liftBudget = 400;        // steps allowed for the lift
+        public int holdSteps = 500;         // 50 decisions at 10 ms
+        public int holdDecisions = 50;      // agent hold requirement (decisions) for the gates
+        public float liftExtra = 0.04f;     // raise until bottom >= liftClearance + this
+        public float liftSpeedDeg = 20f;    // shoulder flexion velocity (deg/s) during the lift
+        public float palmGap = 0.001f;
+        public float placeUp = 0.20f;       // object centre this far from the palm pivot along the finger direction (0 = over the palm box centre)
+        public float timeScale = 20f;
+        public int stepsPerTrial = 2000;    // stability
+        public int draws = 20;              // stability
+        public float pushForce = 60f;       // push: external force (N) on the object toward the palm normal, then away
+        public int maxTrialSteps = 4000;
+        public int debugEvery = 0;
+        public bool freezeAtHold = false;
+        public int dumpAt = 0;              // step within the trial at which to dump every joint and freeze (0 = off)
+    }
+    public static ArticulatedGates Instance;
+    Config cfg; ArmGraspAgent agent; ArticulatedHand hand; MorphologyManager mm; BehaviorParameters bp;
+    Transform cyl; Collider cylCol; Rigidbody cylRb; Transform palm;
+    struct Trial { public float mass, scale; public string grip; public int seed; }
+    readonly List<Trial> trials = new List<Trial>();
+    int trial = -1, lastCompleted, lastSuccess, stepsInTrial, phaseStep, warmup = 2; string phase = "idle";
+    readonly StringBuilder sb = new StringBuilder();
+    float restY, objRadius = 0.0647f, liftSign = 1f, maxPen, maxSpeed, maxAbsAngle; bool nanSeen; int liftStartStep = -1, holdStart = -1, gateStep = -1, transitionStep = -1;
+    // calibrate
+    readonly List<float> resp = new List<float>(); float tipDot0; Vector3 tipRel0;
+    float[] walkTarget = new float[ArmGraspAgent.GroupCount]; float[] armAct = new float[3];
+
+    static readonly float[] k_Envelope = { -75f, -85f, -60f, -75f, -85f, -60f, -75f, -85f, -60f, -75f, -85f, -60f, 45f, 60f };
+    static readonly float[] k_Pinch    = { -60f, -80f, -60f, -60f, -80f, -60f, 5f, 0f, 0f, 5f, 0f, 0f, 45f, 60f };   // index + middle + thumb; ring / pinky open
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    static void Boot()
+    {
+        const string path = "Temp/gates.json";
+        if (!File.Exists(path)) return;
+        Config c; try { c = JsonUtility.FromJson<Config>(File.ReadAllText(path)); } catch (System.Exception e) { Debug.LogError("[Gates] bad config: " + e.Message); return; }
+        foreach (var a in FindObjectsByType<ArmGraspAgent>(FindObjectsSortMode.None)) if (a.isActiveAndEnabled) { var h = a.gameObject.AddComponent<ArticulatedGates>(); h.cfg = c; Instance = h; return; }
+        Debug.LogError("[Gates] no active ArmGraspAgent");
+    }
+
+    void Start()
+    {
+        agent = GetComponent<ArmGraspAgent>(); mm = GetComponent<MorphologyManager>(); bp = GetComponent<BehaviorParameters>();
+        bp.BehaviorType = BehaviorType.HeuristicOnly;
+        if (cfg.holdDecisions > 0) agent.requiredHoldDecisions = cfg.holdDecisions;   // gate: 50 decisions of hold (5 s at 0.1 s)
+        agent.taskBudgetSteps = 1500; agent.liftBudgetSteps = 600;   // gates: the 50-decision hold must fit inside the task budget
+        if (cfg.mode == "push") { agent.dropDistance = 10f; agent.dropTiltDeg = 180f; agent.taskBudgetSteps = 5000; agent.liftBudgetSteps = 5000; }   // push: the agent must not end the episode
+        if (cfg.mode != "stability") { mm.randomizeByDefault = false; for (int f = 0; f < MorphologyManager.FingerCount; f++) mm.lengthScale[f] = 1f; for (int g = 0; g < MorphologyManager.FingerGroupCount; g++) mm.mask[g] = true; }
+        else mm.randomizeByDefault = true;
+        cyl = GameObject.FindGameObjectWithTag("Cylinder").transform; cylCol = cyl.GetComponent<Collider>(); cylRb = cyl.GetComponent<Rigidbody>();
+        foreach (var grip in cfg.grips) foreach (var m in cfg.masses) foreach (var sc in cfg.scales) for (int sd = 0; sd < Mathf.Max(1, cfg.seeds); sd++) trials.Add(new Trial { mass = m, scale = sc, grip = grip, seed = sd });
+        if (cfg.mode == "stability") { trials.Clear(); for (int i = 0; i < cfg.draws; i++) trials.Add(new Trial { mass = 0.6f, scale = 0f, grip = "walk", seed = i }); }
+        Time.timeScale = cfg.timeScale;
+        sb.AppendLine("trial,mode,grip,mass,scale,seed,success,endReason,steps,gateStep,transitionStep,liftStart,stepsToLift,holdSteps,pulses,maxPulseN,weightN,contactsEnd,palm,forearm,bottomAboveTop,maxPenMm,maxJointSpeedDeg,nan,gripTorqueMean,retPhase,retHold,retBonus,retDrop,note");
+        Flush();
+        Debug.Log("[Gates] mode=" + cfg.mode + " trials=" + trials.Count + " dt=" + Time.fixedDeltaTime);
+    }
+
+    void FixedUpdate()
+    {
+        if (warmup > 0) { warmup--; if (warmup == 0) { hand = agent.Hand; palm = hand.PalmLink; float halfH = cyl.position.y - cylCol.bounds.min.y; restY = agent.PlatformTop + halfH + agent.restClearance; objRadius = 0.5f * cylCol.bounds.size.x; /* upright object at warmup */ lastCompleted = agent.CompletedEpisodes; lastSuccess = agent.SuccessCount; agent.EndEpisode(); } return; }
+        int completed = agent.CompletedEpisodes;
+        if (completed != lastCompleted) { bool success = agent.SuccessCount != lastSuccess; lastSuccess = agent.SuccessCount; lastCompleted = completed; EndTrial(success, ""); BeginTrial(); return; }
+        if (phase == "idle") return;
+        var acts = agent.heuristicActions; for (int i = 0; i < acts.Length; i++) acts[i] = 0f;
+        stepsInTrial++; phaseStep++;
+        hand = agent.Hand; palm = hand.PalmLink;
+        var h = hand.Health(); if (!h.finite) nanSeen = true; if (h.maxJointSpeedDeg > maxSpeed) maxSpeed = h.maxJointSpeedDeg;
+        for (int g = 0; g < ArmGraspAgent.GroupCount; g++) maxAbsAngle = Mathf.Max(maxAbsAngle, Mathf.Abs(agent.GetGroupAngle(g)));
+        if (agent.MaxPenetration > maxPen) maxPen = agent.MaxPenetration;
+        if (agent.LastHoldCriterionMet && gateStep < 0) gateStep = agent.StepCount;
+        if (agent.Phase != ArmGraspAgent.TaskPhase.Reach && transitionStep < 0) transitionStep = agent.StepCount;
+        if (cfg.debugEvery > 0 && stepsInTrial % cfg.debugEvery == 0)
+            Debug.Log("[Gates] dbg step=" + agent.StepCount + " phase=" + phase + "/" + agent.Phase + " cyl=" + cyl.position.ToString("F3") + " v=" + (cylRb.isKinematic ? "kin" : cylRb.linearVelocity.ToString("F2")) + " bottom=" + (cylCol.bounds.min.y - agent.PlatformTop).ToString("F3") + " contacts=" + agent.CurrentContacts + " palm=" + agent.LastPalmTouching + " grip=" + agent.GripForce.ToString("F2") + "Nm imp=" + agent.FrictionForce.ToString("F1") + "N arm=" + agent.GetArmAngle(0).ToString("F1") + "/" + agent.GetArmAngle(1).ToString("F1") + "/" + agent.GetArmAngle(2).ToString("F1") + "/" + agent.GetArmAngle(3).ToString("F1") + "/" + agent.GetArmAngle(4).ToString("F1") + " idx=" + agent.GetGroupAngle(0).ToString("F0") + "/" + agent.GetGroupAngle(1).ToString("F0") + "/" + agent.GetGroupAngle(2).ToString("F0") + " thb=" + agent.GetGroupAngle(12).ToString("F0") + "/" + agent.GetGroupAngle(13).ToString("F0") + " maxV=" + h.maxJointSpeedDeg.ToString("F0") + " pen=" + (agent.MaxPenetration * 1000f).ToString("F1") + "mm lifted=" + agent.Lifted);
+        if (stepsInTrial > cfg.maxTrialSteps) { Debug.LogWarning("[Gates] trial timeout"); agent.EndEpisode(); return; }
+        if (cfg.dumpAt > 0 && stepsInTrial == cfg.dumpAt) { DumpJoints(); RenderCloseups(); }
+        var t = trials[trial];
+        switch (cfg.mode)
+        {
+            case "calibrate": Calibrate(); break;
+            case "lift": Lift(t); break;
+            case "stability": Stability(); break;
+            case "push": Push(t); break;
+        }
+    }
+
+    void BeginTrial()
+    {
+        trial++;
+        if (trial >= trials.Count) { Finish(); return; }
+        var t = trials[trial];
+        hand = agent.Hand; palm = hand.PalmLink;   // the skeleton was rebuilt by OnEpisodeBegin
+        Random.InitState(2000 + trial * 7919 + t.seed);
+        agent.DiagnosticSetMass(t.mass); agent.DiagnosticSetPerturbScale(t.scale); agent.perturbScaleOverride = t.scale;
+        stepsInTrial = 0; phaseStep = 0; maxPen = 0f; maxSpeed = 0f; maxAbsAngle = 0f; nanSeen = false; liftStartStep = -1; holdStart = -1; gateStep = -1; transitionStep = -1; resp.Clear();
+        if (cfg.mode == "stability") { phase = "walk"; for (int g = 0; g < ArmGraspAgent.GroupCount; g++) walkTarget[g] = 0f; return; }
+        // object on the palm surface over the palm centre, at rest height on the pedestal; the hand is at its rest pose
+        var pb = palm.GetComponent<BoxCollider>(); Vector3 pcen = palm.TransformPoint(pb.center); float half = 0.5f * pb.size.x; float r = objRadius;   // not the AABB: a tumbled object's AABB is its tilted extent
+        Vector3 n = palm.right; Vector3 pos = pcen + n * (half + r + cfg.palmGap);
+        if (cfg.placeUp > 0f) { Vector3 alongFingers = palm.up; alongFingers.y = 0f; alongFingers.Normalize(); pos += alongFingers * (cfg.placeUp - Vector3.Dot(pcen - palm.position, palm.up)); }
+        pos.y = restY;
+        float pushed = 0f; while (OverlapsHand(pos, Quaternion.identity) && pushed < 0.15f) { pos += n * 0.001f; pushed += 0.001f; }
+        cyl.SetPositionAndRotation(pos, Quaternion.identity); Physics.SyncTransforms();
+        Debug.Log("[Gates] trial " + (trial + 1) + "/" + trials.Count + " " + cfg.mode + " grip=" + t.grip + " m=" + t.mass + " scale=" + t.scale + ": object at " + pos.ToString("F3") + " (pushed out " + (pushed * 1000f).ToString("F0") + " mm), palm normal " + n.ToString("F2") + " palmPos=" + palm.position.ToString("F3") + " pcen=" + pcen.ToString("F3") + " rebuilds=" + hand.RebuildCount + " arm=" + agent.GetArmAngle(0).ToString("F1") + "/" + agent.GetArmAngle(2).ToString("F1") + "/" + agent.GetArmAngle(3).ToString("F1") + "/" + agent.GetArmAngle(4).ToString("F1") + " step=" + agent.StepCount);
+        phase = cfg.mode == "calibrate" ? "step" : "close";
+        if (cfg.mode == "calibrate")
+        {
+            var tip = hand.Groups[2].transform; tipRel0 = tip.position - palm.position; tipDot0 = Vector3.Dot(tipRel0, palm.right);
+            agent.SetGroupSetpoint(0, -30f);
+        }
+    }
+
+    bool OverlapsHand(Vector3 pos, Quaternion rot)
+    {
+        foreach (var b in hand.Groups) { if (b == null) continue; var c = b.GetComponent<Collider>(); if (c != null && Physics.ComputePenetration(c, c.transform.position, c.transform.rotation, cylCol, pos, rot, out _, out _)) return true; }
+        var pc = palm.GetComponent<Collider>(); if (pc != null && Physics.ComputePenetration(pc, pc.transform.position, pc.transform.rotation, cylCol, pos, rot, out _, out _)) return true;
+        return false;
+    }
+
+    void Calibrate()
+    {
+        resp.Add(agent.GetGroupAngle(0));
+        if (phaseStep == 100)
+        {
+            // rise (10 % -> 90 % of -30), peak overshoot, settled value
+            float target = -30f; int i10 = -1, i90 = -1; float peak = 0f;
+            for (int i = 0; i < resp.Count; i++) { float f = resp[i] / target; if (i10 < 0 && f >= 0.1f) i10 = i; if (i90 < 0 && f >= 0.9f) i90 = i; if (f > peak) peak = f; }
+            var tip = hand.Groups[2].transform; float tipDot = Vector3.Dot(tip.position - palm.position, palm.right);
+            string note = "omegaRef=" + mm.NaturalFrequency(0).ToString("F1") + " zetaRef=" + mm.DampingRatio(0).ToString("F2") + " k=" + mm.stiffness[0].ToString("F3") + "Nm/rad b=" + mm.damping[0].ToString("F4") + " Inominal=" + mm.NominalInertia[0].ToString("E2") + " linkMass=" + hand.Groups[0].mass.ToString("F3") + " dt=" + Time.fixedDeltaTime + " rise10-90=" + ((i90 - i10) * Time.fixedDeltaTime * 1000f).ToString("F0") + "ms (theory ~" + (2.16f / mm.NaturalFrequency(0) * 1000f).ToString("F0") + "ms per-rad at the nominal inertia; " + (2.16f / (mm.NaturalFrequency(0) * Mathf.Sqrt(57.3f)) * 1000f).ToString("F0") + "ms if per-deg) overshoot=" + ((peak - 1f) * 100f).ToString("F1") + "% angle@100=" + resp[resp.Count - 1].ToString("F1") + " tipTowardPalmNormal " + tipDot0.ToString("F3") + "->" + tipDot.ToString("F3") + " (flexion -30 should increase it) driveForce=" + hand.GroupDriveForce(0).ToString("F3") + "Nm";
+            Debug.Log("[Gates] calibrate: " + note);
+            sb.AppendLine((trial + 1) + ",calibrate,step,0,0,0,1,calib," + stepsInTrial + ",-1,-1,-1,-1,0,0,0,0,0,0,0,0," + (maxPen * 1000f).ToString("F2") + "," + maxSpeed.ToString("F0") + "," + (nanSeen ? 1 : 0) + ",0,0,0,0,0," + note.Replace(",", ";"));
+            Flush(); agent.EndEpisode();
+        }
+    }
+
+    void Lift(Trial t)
+    {
+        var acts = agent.heuristicActions;
+        float[] targets = t.grip == "pinch" ? k_Pinch : k_Envelope;
+        // closing targets ramp at the agent's setpoint rate (via the diagnostic setter: same drives the policy would move)
+        for (int g = 0; g < ArmGraspAgent.GroupCount; g++)
+        {
+            float cur = agent.GetGroupState(g).z; float step = agent.setpointRateDegPerSec * Time.fixedDeltaTime;
+            agent.SetGroupSetpoint(g, Mathf.MoveTowards(cur, targets[g], step));
+        }
+        switch (phase)
+        {
+            case "close":
+                if (agent.Phase != ArmGraspAgent.TaskPhase.Reach) { phase = "lift"; phaseStep = 0; liftStartStep = agent.StepCount; liftSign = LiftSign(); Debug.Log("[Gates] released by gate at step " + agent.StepCount + " contacts=" + agent.CurrentContacts + " grip=" + agent.GripForce.ToString("F2") + "Nm liftSign=" + liftSign); }
+                else if (phaseStep >= cfg.settleSteps) { agent.DiagnosticForceTransition(); phase = "lift"; phaseStep = 0; liftStartStep = agent.StepCount; liftSign = LiftSign(); Debug.Log("[Gates] transition forced at step " + agent.StepCount + " contacts=" + agent.CurrentContacts + " grip=" + agent.GripForce.ToString("F2") + "Nm liftSign=" + liftSign); }
+                break;
+            case "lift":
+                {
+                    float bottom = cylCol.bounds.min.y - agent.PlatformTop;
+                    if (bottom >= agent.liftClearance + cfg.liftExtra) { acts[ArmGraspAgent.GroupCount] = 0f; phase = "hold"; phaseStep = 0; holdStart = agent.StepCount; Debug.Log("[Gates] lifted: bottom=" + bottom.ToString("F3") + " at step " + agent.StepCount + " contacts=" + agent.CurrentContacts + " palm=" + agent.LastPalmTouching); if (cfg.freezeAtHold) { Time.timeScale = 0f; phase = "frozen"; } }
+                    else if (phaseStep > cfg.liftBudget) { Debug.Log("[Gates] lift budget exhausted: bottom=" + bottom.ToString("F3")); agent.EndEpisode(); }
+                    else acts[ArmGraspAgent.GroupCount] = liftSign * cfg.liftSpeedDeg / agent.armRotationSpeed;
+                    break;
+                }
+            case "hold":
+                if (phaseStep >= cfg.holdSteps + 20) { Debug.Log("[Gates] hold window elapsed without the agent ending the episode; ending"); agent.EndEpisode(); }
+                break;
+        }
+    }
+
+    float LiftSign()
+    {   // sign of shoulder flexion velocity that raises the palm: v = omega x r with omega along the bicep's twist axis (its x)
+        var bicep = hand.Bicep.transform; Vector3 axis = bicep.right; Vector3 r = palm.position - bicep.position;
+        return Vector3.Cross(axis, r).y >= 0f ? 1f : -1f;
+    }
+
+    void Stability()
+    {
+        // random walk of finger and wrist targets every 25 steps, arm velocities random every 50 steps; object stays kinematic on the pedestal
+        if (phaseStep % 25 == 1)
+            for (int g = 0; g < ArmGraspAgent.GroupCount; g++) { walkTarget[g] += Random.Range(-40f, 40f); walkTarget[g] = Mathf.Clamp(walkTarget[g], -100f, 60f); agent.SetGroupSetpoint(g, walkTarget[g]); }
+        if (phaseStep % 50 == 1) { agent.SetArmSetpoint(3, Random.Range(-60f, 60f)); agent.SetArmSetpoint(4, Random.Range(-60f, 60f)); for (int a = 0; a < 3; a++) armAct[a] = Random.Range(-0.33f, 0.33f); }
+        for (int a = 0; a < 3; a++) agent.heuristicActions[ArmGraspAgent.GroupCount + a] = armAct[a];
+        if (phaseStep >= cfg.stepsPerTrial)
+        {
+            for (int a = 0; a < 3; a++) agent.heuristicActions[ArmGraspAgent.GroupCount + a] = 0f;
+            string note = "omegaMean=" + Mean(mm.NaturalFrequency, MorphologyManager.GroupCount).ToString("F1") + " zetaMean=" + Mean(mm.DampingRatio, MorphologyManager.GroupCount).ToString("F2") + " lenMean=" + Mean(f => mm.lengthScale[f], 5).ToString("F2") + " active=" + mm.ActiveCount + " maxAbsAngle=" + maxAbsAngle.ToString("F0");
+            Debug.Log("[Gates] stability draw " + (trial + 1) + ": nan=" + nanSeen + " maxJointSpeed=" + maxSpeed.ToString("F0") + " deg/s maxPen=" + (maxPen * 1000f).ToString("F1") + " mm " + note);
+            sb.AppendLine((trial + 1) + ",stability,walk,0.6,0," + trial + "," + (nanSeen ? 0 : 1) + ",walk," + stepsInTrial + ",-1,-1,-1,-1,0,0,0,0," + agent.CurrentContacts + ",0,0,0," + (maxPen * 1000f).ToString("F2") + "," + maxSpeed.ToString("F0") + "," + (nanSeen ? 1 : 0) + ",0,0,0,0,0," + note.Replace(",", ";"));
+            Flush(); agent.EndEpisode();
+        }
+    }
+    static float Mean(System.Func<int, float> f, int n) { float s = 0f; for (int i = 0; i < n; i++) s += f(i); return s / n; }
+
+    void Push(Trial t)
+    {
+        for (int g = 0; g < ArmGraspAgent.GroupCount; g++) agent.SetGroupSetpoint(g, k_Envelope[g] * 1.3f);   // beyond the closing targets: drives at the force limit against the object
+        switch (phase)
+        {
+            case "close":
+                if (phaseStep >= cfg.settleSteps) { agent.DiagnosticForceTransition(); phase = "squeeze"; phaseStep = 0; }
+                break;
+            case "squeeze":
+                if (phaseStep == 200) { Debug.Log("[Gates] push: squeeze only, maxPen=" + (maxPen * 1000f).ToString("F2") + " mm contacts=" + agent.CurrentContacts + " grip=" + agent.GripForce.ToString("F2") + "Nm"); phase = "pushIn"; phaseStep = 0; }
+                break;
+            case "pushIn":   // external force toward the palm (into the hand), then away from it (out through the fingers)
+                cylRb.AddForce(-palm.right * cfg.pushForce, ForceMode.Force);
+                if (phaseStep == 200) { Debug.Log("[Gates] push: " + cfg.pushForce + " N toward the palm for 2 s: maxPen=" + (maxPen * 1000f).ToString("F2") + " mm dropped=" + (agent.Phase == ArmGraspAgent.TaskPhase.Reach)); phase = "pushOut"; phaseStep = 0; }
+                break;
+            case "pushOut":
+                cylRb.AddForce(palm.right * cfg.pushForce, ForceMode.Force);
+                if (phaseStep == 200) { Debug.Log("[Gates] push: " + cfg.pushForce + " N away from the palm for 2 s: maxPen=" + (maxPen * 1000f).ToString("F2") + " mm contacts=" + agent.CurrentContacts + " objInPalmNormal=" + Vector3.Dot(cyl.position - palm.position, palm.right).ToString("F3")); agent.EndEpisode(); }
+                break;
+        }
+    }
+
+    void EndTrial(bool success, string note)
+    {
+        if (phase == "idle" || trial < 0 || trial >= trials.Count) return;
+        var t = trials[trial]; var r = agent.LastEpisode;
+        if (cfg.mode == "calibrate" || cfg.mode == "stability") { phase = "idle"; return; }
+        float weight = t.mass * Physics.gravity.magnitude;
+        sb.AppendLine(string.Join(",", new string[] { (trial + 1).ToString(), cfg.mode, t.grip, t.mass.ToString("F3"), t.scale.ToString("F2"), t.seed.ToString(), success ? "1" : "0", r.endReason, r.steps.ToString(), gateStep.ToString(), r.transitionStep.ToString(), liftStartStep.ToString(), r.stepsToLift.ToString(), r.holdSteps.ToString(), r.pulsesApplied.ToString(), r.maxPulseForce.ToString("F2"), weight.ToString("F2"), r.contacts.ToString(), r.palm ? "1" : "0", r.forearm ? "1" : "0", r.bottomAboveTop.ToString("F4"), (r.maxPenetration * 1000f).ToString("F2"), r.maxJointSpeed.ToString("F0"), nanSeen ? "1" : "0", r.gripForceMean.ToString("F3"), r.retPhase.ToString("F2"), r.retHold.ToString("F3"), r.retBonus.ToString("F2"), r.retDrop.ToString("F2"), note }));
+        Flush();
+        Debug.Log("[Gates] trial " + (trial + 1) + "/" + trials.Count + " " + cfg.mode + " grip=" + t.grip + " m=" + t.mass + " scale=" + t.scale + " -> " + r.endReason + " hold=" + r.holdSteps + " pulses=" + r.pulsesApplied + " maxF=" + r.maxPulseForce.ToString("F1") + "N contacts=" + r.contacts + " palm=" + r.palm + " maxPen=" + (r.maxPenetration * 1000f).ToString("F1") + "mm maxV=" + r.maxJointSpeed.ToString("F0"));
+        phase = "idle";
+    }
+
+    void DumpJoints()
+    {
+        var sbd = new StringBuilder("[Gates] joint dump step=" + agent.StepCount + "\n");
+        for (int g = 0; g < ArgCount; g++)
+        {
+            var b = hand.Groups[g]; if (b == null) continue; var d = b.xDrive;
+            sbd.Append(ArticulatedHand.GroupTags[g]).Append(": angle=").Append(hand.GroupAngle(g).ToString("F1")).Append(" target=").Append(d.target.ToString("F1")).Append(" vel=").Append(hand.GroupVelocity(g).ToString("F1"))
+               .Append(" drive=").Append(hand.GroupDriveForce(g).ToString("F3")).Append("Nm k=").Append(d.stiffness.ToString("F0")).Append(" c=").Append(d.damping.ToString("F1")).Append(" lim=").Append(d.lowerLimit).Append("/").Append(d.upperLimit).Append(" fmax=").Append(d.forceLimit).Append(" type=").Append(d.driveType)
+               .Append(" touch=").Append(agent.IsGroupTouching(g) ? 1 : 0).Append(" mass=").Append(b.mass.ToString("F3")).Append(" dof=").Append(b.dofCount).Append(" pos=").Append(b.transform.position.ToString("F3")).Append('\n');
+        }
+        foreach (var (name, b) in new[] { ("bicep", hand.Bicep), ("forearm", hand.Forearm), ("palm", hand.Palm) })
+        {
+            var jp = b.jointPosition; var jv = b.jointVelocity; var sbj = new StringBuilder();
+            for (int i = 0; i < jp.dofCount; i++) sbj.Append((jp[i] * Mathf.Rad2Deg).ToString("F1")).Append("(").Append((jv[i] * Mathf.Rad2Deg).ToString("F1")).Append(") ");
+            sbd.Append(name).Append(": joints=").Append(sbj).Append(" x[").Append(b.xDrive.driveType).Append(" k=").Append(b.xDrive.stiffness).Append(" c=").Append(b.xDrive.damping).Append(" tv=").Append(b.xDrive.targetVelocity).Append(" f=").Append(b.xDrive.forceLimit).Append(" lim=").Append(b.xDrive.lowerLimit).Append("/").Append(b.xDrive.upperLimit).Append("] y[").Append(b.yDrive.driveType).Append(" tv=").Append(b.yDrive.targetVelocity).Append("] z[").Append(b.zDrive.driveType).Append(" tv=").Append(b.zDrive.targetVelocity).Append("] twist=").Append(b.twistLock).Append(" swY=").Append(b.swingYLock).Append(" swZ=").Append(b.swingZLock).Append(" mass=").Append(b.mass.ToString("F2")).Append(" pos=").Append(b.transform.position.ToString("F3")).Append('\n');
+        }
+        sbd.Append("object=").Append(cyl.position.ToString("F3")).Append(" kin=").Append(cylRb.isKinematic).Append(" contacts=").Append(agent.CurrentContacts).Append(" palm=").Append(agent.LastPalmTouching);
+        Debug.Log(sbd.ToString());
+    }
+    const int ArgCount = ArmGraspAgent.GroupCount;
+
+    void RenderCloseups()
+    {
+        var camGo = new GameObject("CloseupCam"); var cam = camGo.AddComponent<Camera>(); cam.fieldOfView = 40f; cam.nearClipPlane = 0.02f;
+        var rt = new RenderTexture(1024, 768, 24); cam.targetTexture = rt;
+        Vector3[] offs = { new Vector3(0.6f, 0.25f, 0f), new Vector3(0f, 0.25f, 0.6f), new Vector3(-0.6f, 0.25f, 0f), new Vector3(0.3f, 0.7f, 0.3f) };
+        string[] names = { "plusX", "plusZ", "minusX", "top" };
+        for (int i = 0; i < offs.Length; i++)
+        {
+            cam.transform.position = cyl.position + offs[i]; cam.transform.LookAt(cyl.position); cam.Render();
+            var prev = RenderTexture.active; RenderTexture.active = rt;
+            var tex = new Texture2D(1024, 768, TextureFormat.RGB24, false); tex.ReadPixels(new Rect(0, 0, 1024, 768), 0, 0); tex.Apply(); RenderTexture.active = prev;
+            File.WriteAllBytes("Temp/closeup_" + names[i] + ".png", tex.EncodeToPNG()); Destroy(tex);
+        }
+        Destroy(camGo); rt.Release(); Debug.Log("[Gates] closeups written to Temp/closeup_*.png");
+    }
+
+    void Flush() { try { File.WriteAllText(cfg.csv, sb.ToString()); } catch (System.Exception e) { Debug.LogWarning(e.Message); } }
+    void Finish()
+    {
+        sb.AppendLine("DONE"); Flush(); Debug.Log("[Gates] done: " + cfg.csv); phase = "idle"; enabled = false; Time.timeScale = 1f;
+        UnityEditor.EditorApplication.isPlaying = false;
+    }
+    void OnDestroy() { Time.timeScale = 1f; }
+}
+#endif

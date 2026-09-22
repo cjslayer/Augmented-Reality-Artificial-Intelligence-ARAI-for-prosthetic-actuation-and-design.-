@@ -733,3 +733,57 @@ front of the palm with no CMC joint, cannot pass over the object in any fixed pl
 the close and shoves the object distally at release (thumb contact normals (1.0, 0.07, 0)). Both are collider /
 armature geometry defects (palmar flesh offsets, palm thickness, missing CMC), outside anchor-frame fixes; no preload /
 cap tuning was done.
+
+## Articulated hand, spike 5 (2026-09-22, branch `articulated-hand`): spec-driven skeleton (HandSpec) — gates pass
+
+**HandSpec.** The finger, thumb and palm skeleton is generated from a serialized anthropometric table
+(`ArticulatedHand.spec`, class `HandSpec`, dump in `results/011_artic2/handspec_reference.txt`, sources in
+`hand_anthropometry_survey.md` and `hand_axes_survey.md`) instead of the armature bones; the bone capture is kept only
+for the arm (modelScale 0.36 still scales the armature) and for the mesh follow. Per finger: PP / MP / DP lengths
+(Santoso 2026), MCP joint centre on the metacarpal-head arch (21 mm spacing derived from breadth 85 mm; middle most
+distal, little 13 mm proximal), rest abduction +8 / 0 / -6 / -14 deg, Lister-cascade flexion-plane tilt +2 / +3 / +8 /
++13 deg, AAOS limits, capsule radii 9 / 8 / 7.5 mm with the palmar skin 10 mm from the bone axis, 4 mm tip pad, density
+1000. Thumb: CMC (trapezium) at (25, 5, 32) mm from the wrist pivot, MC1 46 / PP 30 / DP 21 mm, open rest pose 60 deg
+palmar / 35 deg radial abduction, MCP fixed at 20 deg (a FixedJoint link whose contacts and mass count with the CMC
+group; 14 driven groups unchanged), IP driven; the single CMC opposition DoF is the normal of the plane through the MC1
+rest direction and an opposition target on the outer surface of a 5 cm object over the palm centre (measured axis
+(0.47, -0.76, 0.44) in the palm frame, 62 deg from the finger axes). Palm: 85 x 104 x 28 mm box with the palmar face
+10 mm from the metacarpal plane, mass 0.30 kg.
+
+**theta <-> spec mapping.** `MorphologyManager.lengthScale[f]` multiplies the spec phalanx lengths of finger f (thumb:
+PP and DP, not MC1); k / zeta / I as in spike 2 (I from the generated link masses, including the thumb PP extra link);
+the mask and the drive plumbing are unchanged. Future theta candidates exposed by the spec: thumb CMC position and
+opposition target / axis, thumb rest abduction, MCP spacing and arch offsets, rest abduction and cascade tilts, capsule
+radii and palmar flesh offset, palm thickness / face offset, phalanx ratios, joint limits (still mirrored in
+ArmGraspAgent's limit fields, which remain the drive authority).
+
+**Anthropometrics (bone-derived spike 2 -> spec -> target).** Hand length 187.5 -> 194.1 -> 190 mm; palm width 82.3 ->
+85 (spec; 80.5 across the index / pinky capsules) -> 85; hand mass 0.420 -> 0.411 -> 0.40-0.45 kg; index links 33.9 /
+28.1 / 18.5 -> 39.2 / 21.3 / 15.3 (+4 pad); middle 26.9 / 34.8 / 21.4 -> 43.6 / 25.8 / 16.2; ring 31.0 / 29.2 / 18.0 ->
+41.0 / 24.5 / 16.6; pinky 27.3 / 27.6 / 12.9 -> 31.9 / 17.1 / 14.9; thumb 37.9 / 48.6 -> 46 / 30 / 21. Mesh-follow
+deviation between the imported bone pivots and the generated link pivots: index 19, middle 18, ring 6, pinky 42,
+thumb 35 mm (cosmetic; the skinned mesh follows the links).
+
+**Arm servo.** The shoulder / elbow PhysX Velocity drives (damping 1e6) cannot hold a static load: an implicit velocity
+drive only cancels the velocity gained in one step, so the joint sags at g dt / I. On the giant arm this was invisible; at
+human scale the elbow drifted 8 deg/s under 4 N m with a 200 N m limit and set every held object back down. Shoulder
+and elbow are now Force drives whose position target integrates the commanded velocity (clamped to the limits and to
+5 deg of lead); the agent's velocity-action semantics are unchanged. Arm force limits back to 300 / 200 N m.
+
+**Gates (10 ms, solver 16 / 4, contact offset 3.6 mm, close-until-contact controller: 90 deg/s, preload 12 deg, caps
+60 / 70 / 30, thumb 45 / 45, object 80 mm from the palm pivot, lift to 8 cm).** G1 9/9 at 0.2 / 0.6 / 1.5 kg (8-10
+contacts, palm contact, 500-step holds), 0/3 at 2.0 and 2.5 kg. G2 at 0.6 kg 3/3 at every scale from 0.25 to 4.0
+(peak pulse 34 N = 5.8 mg). G3 pinch (index + thumb): 3/3 at 0.2 / 0.6 / 1.0 kg, 1/3 at 1.5 kg; 3/3 to scale 3.0, 2/3
+at 4.0 -> strictly below the envelope on both axes. G4 20 draws x 2000 steps over the k / zeta / I / mask ranges: 20/20
+finite at 10 ms (max joint speed 3.9-14.2 kdeg/s, penetration <= 12.5 mm) and 20/20 at 5 ms (6.6-24.0 kdeg/s,
+<= 8.3 mm); 10 ms kept. G5 8-env headless probe on the Dynamic_Scene_Train player: 20k decisions in 43.9 s, 504
+decisions/s steady state (5k-20k), ratio 1.05 vs the kinematic 481. G6 with every drive at its limit on the 0.6 kg
+cylinder (grip 4.6 N m): penetration 22.9 mm, held 10 and 20 N toward and away from the palm, pushed out at 40 N;
+one tuning pass at 32 / 16 solver iterations: 21.6 mm, held 10 N, out at 40 N (no improvement: the fist targets drive
+the fingertips into the object at the force limits; the controller's preloaded grasp penetrates 10-17 mm in G1 / G2).
+Fist check: all fingers reach -70 to -90 deg, no finger-finger crossing; the thumb placed over the flexed middle finger
+presses into it 6-8 mm under 0.27 N m (contact under load, not a crossing).
+
+**Separation.** ArmGraspAgent.cs zero diff. MorphologyManager.cs: only the extra-link mass in the subtree inertia.
+Harness: trace-to-file logging, arm drive state in the trace, `agent.MaxStep` raised to 20000 for scripted holds,
+placement 80 mm.

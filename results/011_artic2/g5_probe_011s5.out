@@ -1,0 +1,76 @@
+[INFO] Connected to Unity environment with package version 4.1.0 and communication version 1.5.0
+[INFO] Connected to Unity environment with package version 4.1.0 and communication version 1.5.0
+[INFO] Connected to Unity environment with package version 4.1.0 and communication version 1.5.0
+[INFO] Connected new brain: Prosthetic?team=0
+[INFO] Connected new brain: Prosthetic?team=0
+[INFO] Connected to Unity environment with package version 4.1.0 and communication version 1.5.0
+[INFO] Connected to Unity environment with package version 4.1.0 and communication version 1.5.0
+[INFO] Connected new brain: Prosthetic?team=0
+[INFO] Connected to Unity environment with package version 4.1.0 and communication version 1.5.0
+[INFO] Connected new brain: Prosthetic?team=0
+[INFO] Connected to Unity environment with package version 4.1.0 and communication version 1.5.0
+[INFO] Connected new brain: Prosthetic?team=0
+[INFO] Connected to Unity environment with package version 4.1.0 and communication version 1.5.0
+[INFO] Connected new brain: Prosthetic?team=0
+[INFO] Connected new brain: Prosthetic?team=0
+[INFO] Connected new brain: Prosthetic?team=0
+
+
+	Unity Technologies
+
+ Version information:
+  ml-agents: 1.2.0.dev0,
+  ml-agents-envs: 1.2.0.dev0,
+  Communicator API: 1.5.0,
+  PyTorch: 2.8.0+cpu
+[INFO] Hyperparameters for behavior name Prosthetic: 
+	trainer_type:	ppo
+	hyperparameters:	
+	  batch_size:	2048
+	  buffer_size:	20480
+	  learning_rate:	0.0003
+	  beta:	0.005
+	  epsilon:	0.2
+	  lambd:	0.95
+	  num_epoch:	3
+	  shared_critic:	False
+	  learning_rate_schedule:	linear
+	  beta_schedule:	linear
+	  epsilon_schedule:	linear
+	checkpoint_interval:	500000
+	network_settings:	
+	  normalize:	True
+	  hidden_units:	128
+	  num_layers:	2
+	  vis_encode_type:	simple
+	  memory:	None
+	  goal_conditioning_type:	hyper
+	  deterministic:	False
+	reward_signals:	
+	  extrinsic:	
+	    gamma:	0.99
+	    strength:	1.0
+	    network_settings:	
+	      normalize:	False
+	      hidden_units:	128
+	      num_layers:	2
+	      vis_encode_type:	simple
+	      memory:	None
+	      goal_conditioning_type:	hyper
+	      deterministic:	False
+	init_path:	None
+	keep_checkpoints:	1
+	even_checkpoints:	False
+	max_steps:	20000
+	time_horizon:	128
+	summary_freq:	5000
+	threaded:	True
+	self_play:	None
+	behavioral_cloning:	None
+[INFO] Parameter 'morph/randomize' is in lesson 'morph/randomize' and has value 'Float: value=1.0'.
+[INFO] Prosthetic. Step: 5000. Time Elapsed: 14.130 s. Mean Reward: -4.349. Std of Reward: 1.784. Training.
+[INFO] Prosthetic. Step: 10000. Time Elapsed: 24.055 s. Mean Reward: -4.904. Std of Reward: 2.987. Training.
+[INFO] Prosthetic. Step: 15000. Time Elapsed: 34.286 s. Mean Reward: -3.872. Std of Reward: 2.756. Training.
+[INFO] Prosthetic. Step: 20000. Time Elapsed: 43.912 s. Mean Reward: -3.279. Std of Reward: 1.597. Training.
+[INFO] Exported results\throughput_011s5\Prosthetic\Prosthetic-20083.onnx
+[INFO] Copied results\throughput_011s5\Prosthetic\Prosthetic-20083.onnx to results\throughput_011s5\Prosthetic.onnx.

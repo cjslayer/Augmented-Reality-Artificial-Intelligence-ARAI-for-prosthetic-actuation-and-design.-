@@ -129,6 +129,8 @@ public class ArticulatedHand : MonoBehaviour
     public int solverIterations = 16, solverVelocityIterations = 4;
     [Tooltip("Contact offset (m) of every link collider and of the object: the project default 0.01 m was set for the 2.5x hand; 0.0036 = 0.01 x modelScale.")]
     public float contactOffset = 0.0036f;
+    [Tooltip("Max depenetration velocity (m/s) of every link; 0 = PhysX / project default (10).")]
+    public float maxDepenetrationVelocity = 0f;
     public float density = 1000f;
     [Tooltip("Bicep link: no bone collider exists; a capsule of this radius (m, human scale) and mass (kg, human upper arm) gives it inertia.")]
     public float bicepRadius = 0.016f, bicepMass = 2f;
@@ -362,7 +364,7 @@ public class ArticulatedHand : MonoBehaviour
             if (ignoreAllSelfCollision) ignore = true;
             if (ignore) { var ca = a.GetComponent<Collider>(); var cb = b.GetComponent<Collider>(); if (ca != null && cb != null) Physics.IgnoreCollision(ca, cb, true); }
         }
-        foreach (var a in all) { if (a == null) continue; var col = a.GetComponent<Collider>(); if (col != null) col.contactOffset = contactOffset; a.solverIterations = solverIterations; a.solverVelocityIterations = solverVelocityIterations; a.useGravity = true; a.jointFriction = 0f; a.linearDamping = 0f; a.angularDamping = 0.05f; a.sleepThreshold = 0f; a.ResetInertiaTensor(); a.ResetCenterOfMass(); }
+        foreach (var a in all) { if (a == null) continue; var col = a.GetComponent<Collider>(); if (col != null) col.contactOffset = contactOffset; if (maxDepenetrationVelocity > 0f) a.maxDepenetrationVelocity = maxDepenetrationVelocity; a.solverIterations = solverIterations; a.solverVelocityIterations = solverVelocityIterations; a.useGravity = true; a.jointFriction = 0f; a.linearDamping = 0f; a.angularDamping = 0.05f; a.sleepThreshold = 0f; a.ResetInertiaTensor(); a.ResetCenterOfMass(); }
         Physics.SyncTransforms();
         RebuildCount++;
         if (RebuildCount == 1)

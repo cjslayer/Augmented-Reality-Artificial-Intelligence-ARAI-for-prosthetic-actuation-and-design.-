@@ -1,0 +1,41 @@
+step=11 phase=close/Reach v=kin bottom=0.000 contacts=1 palm=False grip=0.03Nm imp=0.0N idx=-12/-14/-16 thb=12/14 maxV=189 pen=0.0mm graspDist=0.023 tilt=0 objY=0.711
+step=21 phase=close/Reach v=kin bottom=0.000 contacts=1 palm=False grip=0.40Nm imp=0.0N idx=-16/-29/-34 thb=20/23 maxV=182 pen=0.0mm graspDist=0.025 tilt=0 objY=0.711
+step=31 phase=close/Reach v=kin bottom=0.000 contacts=0 palm=False grip=0.00Nm imp=0.0N idx=-20/-43/-51 thb=21/30 maxV=326 pen=0.0mm graspDist=0.027 tilt=0 objY=0.711
+step=41 phase=close/Reach v=kin bottom=0.000 contacts=2 palm=False grip=0.05Nm imp=7.7N idx=-42/-65/-58 thb=29/39 maxV=643 pen=0.7mm graspDist=0.035 tilt=0 objY=0.711
+step=51 phase=close/Reach v=kin bottom=0.000 contacts=0 palm=False grip=0.00Nm imp=0.0N idx=-66/-83/-60 thb=31/34 maxV=293 pen=0.7mm graspDist=0.040 tilt=0 objY=0.711
+step=61 phase=close/Reach v=kin bottom=0.000 contacts=1 palm=False grip=0.08Nm imp=5.2N idx=-68/-83/-60 thb=31/35 maxV=304 pen=3.7mm graspDist=0.036 tilt=0 objY=0.711
+step=71 phase=close/Reach v=kin bottom=0.000 contacts=3 palm=False grip=0.01Nm imp=2.3N idx=-68/-86/-65 thb=31/36 maxV=309 pen=7.1mm graspDist=0.032 tilt=0 objY=0.711
+step=81 phase=close/Reach v=kin bottom=0.000 contacts=3 palm=False grip=0.01Nm imp=2.1N idx=-68/-86/-64 thb=32/36 maxV=297 pen=7.1mm graspDist=0.032 tilt=0 objY=0.711
+step=91 phase=close/Reach v=kin bottom=0.000 contacts=3 palm=False grip=0.01Nm imp=2.1N idx=-68/-86/-64 thb=32/36 maxV=298 pen=7.1mm graspDist=0.032 tilt=0 objY=0.711
+step=101 phase=close/Reach v=kin bottom=0.000 contacts=3 palm=False grip=0.01Nm imp=2.0N idx=-68/-87/-64 thb=32/37 maxV=298 pen=7.1mm graspDist=0.032 tilt=0 objY=0.711
+step=111 phase=close/Reach v=kin bottom=0.000 contacts=3 palm=False grip=0.01Nm imp=2.0N idx=-68/-87/-64 thb=32/37 maxV=294 pen=7.1mm graspDist=0.032 tilt=0 objY=0.711
+step=121 phase=close/Reach v=kin bottom=0.000 contacts=3 palm=False grip=0.01Nm imp=1.9N idx=-68/-87/-64 thb=32/37 maxV=293 pen=7.1mm graspDist=0.032 tilt=0 objY=0.711
+step=131 phase=close/Reach v=kin bottom=0.000 contacts=3 palm=False grip=0.01Nm imp=1.9N idx=-68/-87/-64 thb=32/37 maxV=293 pen=7.1mm graspDist=0.032 tilt=0 objY=0.711
+step=141 phase=close/Reach v=kin bottom=0.000 contacts=3 palm=False grip=0.01Nm imp=1.8N idx=-68/-87/-64 thb=32/37 maxV=292 pen=7.1mm graspDist=0.033 tilt=0 objY=0.711
+step=151 phase=close/Reach v=kin bottom=0.000 contacts=3 palm=False grip=0.01Nm imp=1.8N idx=-69/-87/-64 thb=32/37 maxV=291 pen=7.1mm graspDist=0.033 tilt=0 objY=0.711
+[Gates] transition forced at step 151 contacts=3 grip=0.01Nm liftSign=1
+SLIP at step 151 (phase lift/Lift) objV=(-0.01, -0.03, 0.01) objInPalm=(0.063, 0.057, 0.056)
+  indexBase: angle=-68.4 target=-75.0 vel=-3.6 drive=-0.199Nm touch=0
+  indexMiddle: angle=-86.4 target=-85.0 vel=105.1 drive=0.013Nm touch=0
+  indexEnd: angle=-61.3 target=-60.0 vel=273.4 drive=0.005Nm touch=1
+  middleBase: angle=-69.1 target=-75.0 vel=-235.5 drive=-0.061Nm touch=0
+  middleMiddle: angle=-77.4 target=-85.0 vel=190.2 drive=-0.146Nm touch=0
+  middleEnd: angle=-61.1 target=-60.0 vel=306.5 drive=0.003Nm touch=1
+  ringBase: angle=-74.8 target=-75.0 vel=-88.0 drive=-0.016Nm touch=0
+  ringMiddle: angle=-88.1 target=-85.0 vel=192.1 drive=0.030Nm touch=0
+  ringEnd: angle=-60.8 target=-60.0 vel=22.8 drive=0.005Nm touch=1
+  pinkyBase: angle=-75.1 target=-75.0 vel=5.4 drive=-0.001Nm touch=0
+  pinkyMiddle: angle=-84.8 target=-85.0 vel=-18.1 drive=0.000Nm touch=0
+  pinkyEnd: angle=-60.0 target=-60.0 vel=9.7 drive=0.000Nm touch=0
+  thumbBase: angle=31.9 target=45.0 vel=308.3 drive=0.341Nm touch=0
+  thumbEnd: angle=36.7 target=60.0 vel=-76.2 drive=0.406Nm touch=0
+  object=(-0.222, 0.711, 5.470) kin=False contacts=3 palm=False selfPenetration=11.78mm(L_indexBase/L_thumbBase;overlappingPairs=7/91;over2mm: indexBase/thumbBase:11.8 indexMiddle/thumbBase:8.8 middleBa
+SLIP: objInPalm=(0.063, 0.057, 0.056) n=10 middleMiddle p=(0.087, 0.038, 0.014) n=(-0.68, 0.73, 0.01) sep=6.5mm imp=0.000 indexMiddle p=(0.088, 0.040, 0.045) n=(-0.88, 0.48, 0.00) sep=6.0mm imp=0.000 indexEnd p=(0.088, 0.046, 0.047) n=(-0.68, 0.73, 0.01) sep=3.2mm imp=0.003 indexEnd p=(0.083, 0.041, 0.049) n=(-0.68, 0.73, 0.01) sep=0.6mm imp=0.003 middleEnd p=(0.087, 0.044, 0.014) n=(-0.53, 0.85, 0.02) sep=3.4mm imp=0.001 middleEnd p=(0.072, 0.035, 0.016) n=(-0.53, 0.85, 0.02) sep=0.7mm imp=0.001 ringEnd p=(0.080, 0.041, -0.005) n=(-0.68, 0.73, 0.01) sep=0.1mm imp=0.008 ringEnd p=(0.075, 0.035, -0.004) n=(-0.68, 0.73, 0.01) sep=2.0mm imp=0.008 pinkyEnd p=(0.095, 0.051, -0.030) n=(-0.88, 0.48, 0.00) sep=7.1mm imp=0.000 pinkyEnd p=(0.087, 0.045, -0.029) n=(-0.88, 0.48, 0.00) sep=2.7mm imp=0.000
+step=161 phase=lift/Lift v=(-0.03, 0.01, 0.07) bottom=0.000 contacts=3 palm=False grip=0.00Nm imp=0.8N idx=-69/-85/-60 thb=32/38 maxV=275 pen=7.1mm graspDist=0.031 tilt=2 objY=0.712
+step=171 phase=lift/Lift v=(-0.03, 0.01, 0.09) bottom=0.000 contacts=2 palm=False grip=0.00Nm imp=0.1N idx=-68/-84/-60 thb=33/38 maxV=277 pen=7.1mm graspDist=0.023 tilt=6 objY=0.713
+step=181 phase=lift/Lift v=(-0.02, 0.00, 0.05) bottom=0.000 contacts=0 palm=False grip=0.00Nm imp=0.0N idx=-68/-84/-60 thb=33/38 maxV=275 pen=7.1mm graspDist=0.026 tilt=8 objY=0.713
+step=191 phase=lift/Lift v=(-0.02, 0.00, 0.04) bottom=0.000 contacts=0 palm=False grip=0.00Nm imp=0.0N idx=-68/-84/-60 thb=33/38 maxV=276 pen=7.1mm graspDist=0.039 tilt=10 objY=0.713
+step=201 phase=lift/Lift v=(-0.04, 0.00, 0.04) bottom=0.000 contacts=0 palm=False grip=0.00Nm imp=0.0N idx=-68/-84/-60 thb=33/38 maxV=277 pen=7.1mm graspDist=0.057 tilt=12 objY=0.713
+step=211 phase=lift/Lift v=(-0.07, -0.01, 0.07) bottom=0.000 contacts=0 palm=False grip=0.00Nm imp=0.0N idx=-68/-84/-60 thb=33/38 maxV=277 pen=7.1mm graspDist=0.077 tilt=15 objY=0.712
+step=221 phase=lift/Lift v=(-0.11, -0.04, 0.16) bottom=0.000 contacts=0 palm=False grip=0.00Nm imp=0.0N idx=-68/-84/-60 thb=33/38 maxV=277 pen=7.1mm graspDist=0.100 tilt=21 objY=0.710
+[Gates] trial 1/1 lift grip=envelope m=0.6 scale=0 -> drop hold=0 pulses=0 maxF=0.0N contacts=0 palm=False maxPen=7.1mm maxV=3706

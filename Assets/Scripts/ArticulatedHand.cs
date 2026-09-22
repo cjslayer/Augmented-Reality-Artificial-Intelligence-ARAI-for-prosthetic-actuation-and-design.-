@@ -61,7 +61,11 @@ public class ArticulatedHand : MonoBehaviour
     [Tooltip("Flexion-plane tilt (deg) of each finger from the palm's long axis, + = the flexed finger drifts toward the thumb (radial) side: Lister's cascade toward the scaphoid tubercle (Ashraf 2009 scatter; geometric derivation index ~5, middle ~4, ring ~15, little ~25; here half of that, 11 deg total fan, inside the 5-15 deg 'slight convergence' band).")]
     public float[] convergenceDeg = { 2f, 3f, 8f, 13f };
     [Tooltip("Thumb opposition target in the palm frame (along, out, across; mm): the index / middle pad region the thumb pad sweeps toward. Both thumb joints flex in the plane through the thumb's rest direction and this point.")]
-    public Vector3 oppositionTargetPalmMm = new Vector3(138f, 46f, 28f);
+    public Vector3 oppositionTargetPalmMm = new Vector3(138f, 90f, 28f);   // out raised 46 -> 90 mm (spike 4): the thumb must pass over a 5 cm object resting on the proximal phalanges (top at ~76 mm) and land on its outer side
+    [Tooltip("Thumb rest direction (spike 4): abduction from the finger direction toward the radial side, in the palm plane (deg). The armature has no CMC joint and its thumb rests 31 mm in front of the palm over the object region; an abducted rest pose keeps the thumb at the radial edge until the opposition sweep brings it in. 0 = keep the imported thumb frames.")]
+    public float thumbRestAbductionDeg = 100f;   // 100: the whole thumb stays proximal of the finger bases (along < 85 mm) so a tall object can rest on the proximal phalanges; beyond human radial abduction (~55-70), a consequence of the missing CMC joint (spike 4, see MLAGENTS_UPGRADE.md)
+    [Tooltip("Thumb rest tilt toward the palm side (deg, + = palmar). 0 = in the palm plane.")]
+    public float thumbRestPalmarDeg = 0f;
     /// <summary>Opposition angle (deg) between the thumb flexion axis and the middle finger's flexion axis, after the build (report only).</summary>
     public float OppositionAngleDeg { get; private set; }
     [Tooltip("Ignore every collision pair within the hand and arm (spike-1 workaround; off since spike 2: only parent-child, palm-base and forearm-palm pairs are ignored, finger-finger, thumb-finger and fingertip-palm contacts are real).")]
@@ -220,6 +224,13 @@ public class ArticulatedHand : MonoBehaviour
             {   // straight chain along the finger's rest direction (base pivot = the knuckle as imported), one frame per finger
                 if (p >= 0) pivotW = parentLink.position + fingerDir[fi] * offsetW.magnitude;
                 rotW = fingerRot[fi];
+            }
+            else if (anatomicalAxes && thumbRestAbductionDeg != 0f)
+            {   // thumb: straight chain from the imported base pivot along an abducted rest direction (radial, in the palm plane unless tilted palmar)
+                Vector3 radial = Vector3.Dot(Quaternion.AngleAxis(1f, pOut) * pAlong, pAcross) >= 0f ? Quaternion.AngleAxis(thumbRestAbductionDeg, pOut) * pAlong : Quaternion.AngleAxis(-thumbRestAbductionDeg, pOut) * pAlong;
+                Vector3 dir = (radial * Mathf.Cos(thumbRestPalmarDeg * Mathf.Deg2Rad) + pOut * Mathf.Sin(thumbRestPalmarDeg * Mathf.Deg2Rad)).normalized;
+                if (p >= 0) pivotW = parentLink.position + dir * offsetW.magnitude;
+                rotW = Quaternion.LookRotation(Vector3.Cross(pOut, dir).normalized, dir);   // X = palm normal (pad side), Y = thumb
             }
             var link = MakeLink("L_" + GroupTags[g], parentLink, pivotW, rotW, bi.bone);
             link.jointType = ArticulationJointType.RevoluteJoint; link.anchorPosition = Vector3.zero; link.matchAnchors = true;

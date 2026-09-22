@@ -274,6 +274,7 @@ public class ArmGraspAgent : Agent
         if (cylObj != null)
         {
             cylinderTransform = cylObj.transform; cylinderCollider = cylObj.GetComponent<Collider>(); m_CylRb = cylObj.GetComponent<Rigidbody>();
+            if (cylinderCollider != null && m_Hand != null) cylinderCollider.contactOffset = m_Hand.contactOffset;
             if (m_CylRb != null) { m_CylConstraints0 = m_CylRb.constraints; m_CylInterp0 = m_CylRb.interpolation; m_CylRb.sleepThreshold = 0f; }
             if (cylinderCollider != null) m_CylHalfHeight = cylinderTransform.position.y - cylinderCollider.bounds.min.y;
             if (cylinderCollider != null && objectFriction > 0f)
@@ -484,7 +485,7 @@ public class ArmGraspAgent : Agent
         m_Token[3] = segCode;
         m_Token[4] = lim.x / 90f;
         m_Token[5] = lim.y / 90f;
-        m_Token[6] = Mathf.Log10(Mathf.Max(k, 1e-6f)) / 3f;
+        m_Token[6] = Mathf.Log10(Mathf.Max(k, 1e-6f)) / 3f;   // physical k 0.1..15 N m/rad -> -0.33..0.39
         m_Token[7] = (Mathf.Log10(Mathf.Max(I, 1e-10f)) + 6f) / 2f;   // human-scale subtree inertia 1e-7..1e-4 kg m^2 -> [-0.5, 1]
         m_Token[8] = Mathf.Sin(rad);
         m_Token[9] = Mathf.Cos(rad);
@@ -802,7 +803,8 @@ public class ArmGraspAgent : Agent
             float lenMean = 0f; for (int f = 0; f < MorphologyManager.FingerCount; f++) lenMean += m_Morph.lengthScale[f] / MorphologyManager.FingerCount;
             float wMean = 0f; for (int g = 0; g < GroupCount; g++) wMean += m_Morph.NaturalFrequency(g) / GroupCount;
             rec.Add("Morph/LengthScaleMean", lenMean);
-            rec.Add("Morph/OmegaMean", wMean);
+            rec.Add("Morph/OmegaMean", wMean);   // derived omega = sqrt(k / I), logged only
+            rec.Add("Morph/StiffnessMean", m_Morph.MeanStiffness(0, GroupCount));
             rec.Add("Morph/ActiveGroups", m_Morph.ActiveCount);
             rec.Add("Morph/HandSpanRatio", m_HandSpanRatio);
             rec.Add("Morph/FingerLengthRatio", m_FingerLengthRatio);

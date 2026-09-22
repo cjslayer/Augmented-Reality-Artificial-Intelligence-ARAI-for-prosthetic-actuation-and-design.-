@@ -7,12 +7,15 @@ using Unity.MLAgents;
 /// Morphology vector theta for the prosthetic hand: per-finger link-length scales, per-joint-group impedance
 /// (stiffness k, damping b, inertia I) for the 14 finger groups and the 2 wrist axes, and a 14-bit finger actuation mask.
 /// Values are sampled per episode (when morph/randomize is 1) or read from Academy environment parameters
-/// (keys listed below). ArmGraspAgent integrates each spring-damper with the exact one-step transition matrix of the
-/// linear system (see ArmGraspAgent.TransitionMatrix), which is unconditionally stable for k >= 0, b >= 0, I > 0, so no
-/// stability projection is needed. Externally supplied (k, b, I) are only checked against plausibility bounds
-/// (omega in [1, maxPlausibleOmega] rad/s, zeta in [0, maxPlausibleZeta]); out-of-range requests are logged and counted
-/// (OutOfRangeEvents) but applied as requested. Non-physical values (I <= 0, k < 0, b < 0) are sanitized because the
-/// transition matrix is undefined for them. Sampling is done in (omega, zeta, I-scale) inside the same bounds.
+/// (keys listed below). On the articulated hand (branch articulated-hand) the (k, b) pairs are PhysX force-mode drives.
+///
+/// Stiffness is sampled in PHYSICAL units (spike 2, 2026-09-22): k in N m/rad per joint class, log-uniform inside the
+/// human active-stiffness ranges of results/011_artic2/stiffness_survey.md (MCP 0.5-6, PIP 0.3-3, DIP 0.1-1; thumb and
+/// wrist ranges are unverified extrapolations), zeta uniform in [0.3, 1.0], b = 2 zeta sqrt(k I) with I the geometric
+/// subtree inertia x the sampled inertia scale (which acts on the link masses). The natural frequency omega = sqrt(k / I)
+/// is DERIVED (hundreds of rad/s at human-scale inertia) and only logged. Externally supplied (k, b, I) are checked against
+/// plausibility bounds (k in plausibleStiffness, zeta <= maxPlausibleZeta); out-of-range requests are logged and counted
+/// (OutOfRangeEvents) but applied as requested; non-physical values (I <= 0, k < 0, b < 0) are sanitized.
 ///
 /// Environment-parameter keys (all optional; absent keys keep the sampled / serialized value):
 ///   morph/randomize (1 = sample per episode, 0 = use serialized values + overrides)
@@ -36,14 +39,26 @@ public class MorphologyManager : MonoBehaviour
     public bool randomizeByDefault = true;
     [Tooltip("Per-finger link-length scale range (applied to every segment of the finger).")]
     public Vector2 lengthScaleRange = new Vector2(0.8f, 1.2f);
-    [Tooltip("Finger natural frequency omega (rad/s) range; k = I omega^2.")]
-    public Vector2 fingerOmegaRange = new Vector2(12f, 40f);
-    [Tooltip("Finger damping ratio zeta range; b = 2 zeta I omega.")]
-    public Vector2 fingerZetaRange = new Vector2(0.4f, 0.9f);
-    [Tooltip("Wrist natural frequency omega (rad/s) range (heavier body, slower).")]
-    public Vector2 wristOmegaRange = new Vector2(8f, 25f);
+    [Tooltip("Stiffness k (N m/rad) range of the finger base joints (MCP): human active / co-contraction range, Hajian & Howe 1997, Milner & Franklin 1998, Jindrich 2004.")]
+    public Vector2 stiffnessRangeBase = new Vector2(0.5f, 6f);
+    [Tooltip("Stiffness range of the finger middle joints (PIP): Milner & Franklin 1998 upper bound, Jindrich 2004.")]
+    public Vector2 stiffnessRangeMiddle = new Vector2(0.3f, 3f);
+    [Tooltip("Stiffness range of the fingertip joints (DIP): scaled from PIP (no direct data, unverified).")]
+    public Vector2 stiffnessRangeEnd = new Vector2(0.1f, 1f);
+    [Tooltip("Stiffness range of the thumb base (CMC/MCP): 2-3x the finger MCP range (unverified).")]
+    public Vector2 stiffnessRangeThumbBase = new Vector2(1f, 15f);
+    [Tooltip("Stiffness range of the thumb end (IP): taken equal to PIP (unverified).")]
+    public Vector2 stiffnessRangeThumbEnd = new Vector2(0.3f, 3f);
+    [Tooltip("Stiffness range of the two wrist axes (no survey data; unverified).")]
+    public Vector2 wristStiffnessRange = new Vector2(1f, 10f);
+    [Tooltip("Stiffness is sampled log-uniformly inside its range (the ranges span more than a decade).")]
+    public bool logUniformStiffness = true;
+    [Tooltip("Finger damping ratio zeta range; b = 2 zeta sqrt(k I).")]
+    public Vector2 fingerZetaRange = new Vector2(0.3f, 1.0f);
     [Tooltip("Wrist damping ratio range.")]
-    public Vector2 wristZetaRange = new Vector2(0.5f, 0.9f);
+    public Vector2 wristZetaRange = new Vector2(0.3f, 1.0f);
+    [Tooltip("Reference damping ratio (non-randomized episodes).")]
+    public float referenceZeta = 0.7f;
     [Tooltip("Inertia scale range, multiplying the geometric nominal inertia of each group.")]
     public Vector2 inertiaScaleRange = new Vector2(0.5f, 2.0f);
     [Tooltip("Probability that each finger group is actuated when drawing a mask.")]
@@ -53,11 +68,11 @@ public class MorphologyManager : MonoBehaviour
     [Tooltip("Mask draws must keep at least one thumb group active (gate needs the thumb).")]
     public bool requireThumbActive = true;
 
-    [Header("Plausibility bounds (the exact discrete update is unconditionally stable; out-of-range springs are logged, not rejected)")]
-    [Tooltip("Upper plausibility bound on omega (rad/s) for an externally supplied spring; exceeding it logs a warning.")]
-    [FormerlySerializedAs("maxStableOmega")] public float maxPlausibleOmega = 40f;
+    [Header("Plausibility bounds (out-of-range springs are logged, not rejected)")]
+    [Tooltip("Plausibility bounds on k (N m/rad) for an externally supplied spring; outside them logs a warning.")]
+    public Vector2 plausibleStiffness = new Vector2(0.01f, 30f);
     [Tooltip("Upper plausibility bound on zeta for an externally supplied spring; exceeding it logs a warning.")]
-    [FormerlySerializedAs("maxStableZeta")] public float maxPlausibleZeta = 0.9f;
+    [FormerlySerializedAs("maxStableZeta")] public float maxPlausibleZeta = 1.2f;
     [Tooltip("Material density (kg/m^3) used for the geometric nominal inertia of segments and palm.")]
     public float density = 1000f;
 
@@ -125,9 +140,8 @@ public class MorphologyManager : MonoBehaviour
         if (stiffness == null || stiffness.Length != GroupCount) stiffness = new float[GroupCount];
         if (damping == null || damping.Length != GroupCount) damping = new float[GroupCount];
         if (inertia == null || inertia.Length != GroupCount) inertia = new float[GroupCount];
-        for (int g = 0; g < GroupCount; g++)
-            if (inertia[g] <= 0f || stiffness[g] <= 0f)   // serialized defaults absent: reference spring omega = 25, zeta = 0.7
-            { inertia[g] = NominalInertia[g]; float w = g < FingerGroupCount ? 25f : 15f; stiffness[g] = inertia[g] * w * w; damping[g] = 2f * 0.7f * inertia[g] * w; }
+        for (int g = 0; g < GroupCount; g++)   // reference hand: geometric mean of each class range, zeta = referenceZeta
+        { inertia[g] = NominalInertia[g]; stiffness[g] = ReferenceStiffness(g); damping[g] = 2f * referenceZeta * Mathf.Sqrt(stiffness[g] * inertia[g]); }
         m_Initialized = true;
     }
 
@@ -138,10 +152,10 @@ public class MorphologyManager : MonoBehaviour
         var ep = Academy.Instance.EnvironmentParameters;
         Randomizing = ep.GetWithDefault("morph/randomize", randomizeByDefault ? 1f : 0f) > 0.5f;
         OutOfRangeEvents = 0;
-        // (omega, zeta) of this episode: sampled, or the reference values implied by the current (k, b, I) arrays
-        float[] omega = new float[GroupCount], zeta = new float[GroupCount];
-        for (int g = 0; g < GroupCount; g++) { omega[g] = NaturalFrequency(g); zeta[g] = DampingRatio(g); if (omega[g] <= 0f) { omega[g] = g < FingerGroupCount ? 25f : 15f; zeta[g] = 0.7f; } }
-        if (Randomizing) Sample(omega, zeta);
+        // (k, zeta) of this episode: sampled, or the values carried by the current (k, b, I) arrays (reference hand at Initialize)
+        float[] k = new float[GroupCount], zeta = new float[GroupCount];
+        for (int g = 0; g < GroupCount; g++) { k[g] = stiffness[g] > 0f ? stiffness[g] : ReferenceStiffness(g); zeta[g] = DampingRatio(g); if (zeta[g] <= 0f) zeta[g] = referenceZeta; }
+        if (Randomizing) Sample(k, zeta);
         else for (int g = 0; g < GroupCount; g++) inertiaScale[g] = 1f;
         // env-param overrides (present keys win)
         for (int f = 0; f < FingerCount; f++) lengthScale[f] = ep.GetWithDefault("morph/len_" + FingerNames[f], lengthScale[f]);
@@ -150,25 +164,41 @@ public class MorphologyManager : MonoBehaviour
         for (int g = 0; g < GroupCount; g++)
         {
             float I0 = NominalInertia[g] * inertiaScale[g];
-            float k = ep.GetWithDefault("morph/k_" + GroupNames[g], I0 * omega[g] * omega[g]);
-            float b = ep.GetWithDefault("morph/b_" + GroupNames[g], 2f * zeta[g] * I0 * omega[g]);
+            float kg = ep.GetWithDefault("morph/k_" + GroupNames[g], k[g]);
+            float bg = ep.GetWithDefault("morph/b_" + GroupNames[g], 2f * zeta[g] * Mathf.Sqrt(kg * I0));
             float I = ep.GetWithDefault("morph/I_" + GroupNames[g], I0);
-            CheckPlausibility(GroupNames[g], ref k, ref b, ref I);
-            stiffness[g] = k; damping[g] = b; inertia[g] = I;
+            CheckPlausibility(GroupNames[g], ref kg, ref bg, ref I);
+            stiffness[g] = kg; damping[g] = bg; inertia[g] = I;
             if (NominalInertia[g] > 1e-9f) inertiaScale[g] = I / NominalInertia[g];
         }
         for (int g = 0; g < FingerGroupCount; g++) mask[g] = ep.GetWithDefault("morph/mask_" + GroupNames[g], mask[g] ? 1f : 0f) > 0.5f;
         HandSpan = ComputeHandSpan();
     }
 
-    /// <summary>Draw this episode's theta: link scales, inertia scales, (omega, zeta) per group, actuation mask. Applied by ApplyForEpisode.</summary>
-    void Sample(float[] omega, float[] zeta)
+    /// <summary>Stiffness range (N m/rad) of a group's joint class.</summary>
+    public Vector2 StiffnessRange(int g)
+    {
+        if (g >= FingerGroupCount) return wristStiffnessRange;
+        if (g == 12) return stiffnessRangeThumbBase; if (g == 13) return stiffnessRangeThumbEnd;
+        switch (g % 3) { case 0: return stiffnessRangeBase; case 1: return stiffnessRangeMiddle; default: return stiffnessRangeEnd; }
+    }
+    /// <summary>Reference-hand stiffness (N m/rad): geometric mean of the class range.</summary>
+    public float ReferenceStiffness(int g) { var r = StiffnessRange(g); return Mathf.Sqrt(Mathf.Max(r.x, 1e-6f) * Mathf.Max(r.y, 1e-6f)); }
+    float SampleStiffness(int g)
+    {
+        var r = StiffnessRange(g);
+        if (!logUniformStiffness || r.x <= 0f) return Random.Range(r.x, r.y);
+        return Mathf.Exp(Random.Range(Mathf.Log(r.x), Mathf.Log(r.y)));
+    }
+
+    /// <summary>Draw this episode's theta: link scales, inertia scales, (k, zeta) per group, actuation mask. Applied by ApplyForEpisode.</summary>
+    void Sample(float[] k, float[] zeta)
     {
         for (int f = 0; f < FingerCount; f++) lengthScale[f] = Random.Range(lengthScaleRange.x, lengthScaleRange.y);
         for (int g = 0; g < GroupCount; g++)
         {
             bool wrist = g >= FingerGroupCount;
-            omega[g] = wrist ? Random.Range(wristOmegaRange.x, wristOmegaRange.y) : Random.Range(fingerOmegaRange.x, fingerOmegaRange.y);
+            k[g] = SampleStiffness(g);
             zeta[g] = wrist ? Random.Range(wristZetaRange.x, wristZetaRange.y) : Random.Range(fingerZetaRange.x, fingerZetaRange.y);
             inertiaScale[g] = Random.Range(inertiaScaleRange.x, inertiaScaleRange.y);
         }
@@ -182,9 +212,8 @@ public class MorphologyManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Plausibility check of an externally supplied (k, b, I). The exact discrete update is stable for any k >= 0, b >= 0,
-    /// I > 0, so nothing is rejected: out-of-range omega/zeta are logged and counted but applied as requested. Only
-    /// non-physical values (I <= 0, k < 0, b < 0), for which the transition matrix is undefined, are sanitized.
+    /// Plausibility check of an externally supplied (k, b, I): nothing is rejected, out-of-range k / zeta are logged and
+    /// counted but applied as requested; non-physical values (I <= 0, k < 0, b < 0) are sanitized. The derived omega is logged.
     /// </summary>
     public void CheckPlausibility(string group, ref float k, ref float b, ref float I)
     {
@@ -192,7 +221,7 @@ public class MorphologyManager : MonoBehaviour
         if (I <= 1e-10f) { I = 1e-8f; sanitized = true; }
         if (k < 0f) { k = 0f; sanitized = true; }
         if (b < 0f) { b = 0f; sanitized = true; }
-        if (sanitized || !IsPlausible(k, b, I, maxPlausibleOmega, maxPlausibleZeta))
+        if (sanitized || !IsPlausible(k, b, I, plausibleStiffness, maxPlausibleZeta))
         {
             OutOfRangeEvents++;
             if (s_LoggedOutOfRange < k_MaxLoggedOutOfRange)
@@ -200,19 +229,19 @@ public class MorphologyManager : MonoBehaviour
                 s_LoggedOutOfRange++;
                 float w = Mathf.Sqrt(k / I), z = w > 1e-6f ? b / (2f * I * w) : 0f;
                 Debug.LogWarning("[MorphologyManager] " + (sanitized ? "non-physical spring sanitized" : "spring outside plausibility bounds") +
-                    " for " + group + ": omega=" + w.ToString("F1") + " rad/s (bounds 1.." + maxPlausibleOmega + "), zeta=" + z.ToString("F2") +
-                    " (bounds 0.." + maxPlausibleZeta + "), I=" + I.ToString("G4") + (sanitized ? "" : " - applied as requested") +
+                    " for " + group + ": k=" + k.ToString("G4") + " N m/rad (bounds " + plausibleStiffness.x + ".." + plausibleStiffness.y + "), zeta=" + z.ToString("F2") +
+                    " (bounds 0.." + maxPlausibleZeta + "), I=" + I.ToString("G4") + ", derived omega=" + w.ToString("F0") + " rad/s" + (sanitized ? "" : " - applied as requested") +
                     (s_LoggedOutOfRange == k_MaxLoggedOutOfRange ? " (further warnings suppressed; see OutOfRangeEvents)" : ""));
             }
         }
     }
 
-    /// <summary>True when omega = sqrt(k / I) is within [1, maxOmega] rad/s and zeta = b / (2 I omega) within [0, maxZeta].</summary>
-    public static bool IsPlausible(float k, float b, float I, float maxOmega, float maxZeta)
+    /// <summary>True when k is within kBounds (N m/rad) and zeta = b / (2 sqrt(k I)) within [0, maxZeta].</summary>
+    public static bool IsPlausible(float k, float b, float I, Vector2 kBounds, float maxZeta)
     {
         if (I <= 0f || k < 0f || b < 0f) return false;
-        float w = Mathf.Sqrt(k / I), z = w > 1e-6f ? b / (2f * I * w) : 0f;
-        return w >= 1f && w <= maxOmega && z >= 0f && z <= maxZeta;
+        float z = k > 1e-9f ? b / (2f * Mathf.Sqrt(k * I)) : 0f;
+        return k >= kBounds.x && k <= kBounds.y && z >= 0f && z <= maxZeta;
     }
 
     void ApplyLengthScales(float[] s)
@@ -301,6 +330,8 @@ public class MorphologyManager : MonoBehaviour
 
     public int FingerOfGroup(int g) => g < FingerGroupCount ? k_GroupFinger[g] : 5;
     public float LengthScaleOfGroup(int g) => g < FingerGroupCount ? lengthScale[k_GroupFinger[g]] : 1f;
+    /// <summary>Derived natural frequency omega = sqrt(k / I) (rad/s); logged only, not a sampled quantity.</summary>
     public float NaturalFrequency(int g) => inertia[g] > 0f ? Mathf.Sqrt(stiffness[g] / inertia[g]) : 0f;
+    public float MeanStiffness(int from, int to) { float s = 0f; int n = 0; for (int g = from; g < to; g++) { s += stiffness[g]; n++; } return n > 0 ? s / n : 0f; }
     public float DampingRatio(int g) { float w = NaturalFrequency(g); return w > 1e-6f ? damping[g] / (2f * inertia[g] * w) : 0f; }
 }

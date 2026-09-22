@@ -624,3 +624,49 @@ in the bulk and in confirmation rather than in best-so-far. The BO winners form 
 index and thumb scales 0.80-0.87, other fingers 1.05-1.20, omega 27-30 rad/s); palm contact stays at zero everywhere. The
 report, `candidates.csv`, `best_so_far.csv/.svg`, `build_hash.json`, `summary.json` and `records.jsonl` are force-added
 under `results/bo_optim/` (the `results/` tree is otherwise ignored); per-candidate CSVs stay local.
+
+## Articulated hand, spike 2 (2026-09-22, branch `articulated-hand`): human-scale rescale and physical-units stiffness
+
+**Rescale (commit 44f118d).** The imported armature is about 2.5x human size (open hand 524 mm wrist to middle
+fingertip, palm 232 mm across the base pivots, forearm 818 mm). `ArticulatedHand.modelScale` (0.36) is the ONE scale
+constant: `CaptureBones` sets the armature transform to `armatureBaseScale x modelScale` before the bones are captured, so
+link lengths, anchor offsets, capsule radii / lengths and capsule-volume masses (density 1000 kg/m^3) all follow it; the
+palm link mass is set directly (0.33 kg). Result: hand 187.5 mm, palm 82.3 mm, forearm 294 mm, hand mass 0.420 kg
+(`results/011_artic2/s1_anthropometrics.txt`). Every metric constant in the scene, agent and gate harness was walked to
+human scale (see the commit message for the table); object 5.0 cm diameter x 28 cm, mass range 0.2-1.5 kg unchanged.
+
+**Theta stiffness in physical units.** `MorphologyManager` no longer samples a natural frequency. Each impedance group
+samples k (N m/rad) log-uniformly inside its joint-class range, anchored on `results/011_artic2/stiffness_survey.md`:
+MCP (base) 0.5-6, PIP (middle) 0.3-3, DIP (end) 0.1-1, thumb base 1-15 (2-3x MCP, unverified), thumb end 0.3-3 (= PIP,
+unverified), wrist 1-10 (unverified). zeta is uniform in [0.3, 1.0]; b = 2 zeta sqrt(k I) with I the geometric subtree
+inertia x the sampled inertia scale (which still acts on the link masses); omega = sqrt(k / I) is DERIVED and only
+logged (`Morph/OmegaMean`, `Morph/StiffnessMean`; hundreds of rad/s at human-scale inertia). The reference hand uses the
+geometric mean of each range (base 1.73, middle 0.95, end 0.32, thumb 3.87 / 0.95, wrist 3.16) with zeta 0.7. The
+environment-parameter keys `morph/k_*`, `morph/b_*`, `morph/I_*` are unchanged (they were already physical); the
+plausibility check is now on k (`plausibleStiffness` 0.01-30 N m/rad) and zeta (<= 1.2), logging the derived omega. The
+JointTokens k feature (log10 k / 3) is unchanged and spans -0.33..0.39 over the new range; the inertia feature was
+recentred for 1e-7..1e-4 kg m^2. `tools/bo_eval` and `tools/bo_optim` still describe theta in (omega, zeta) and are
+protected: they refer to the run-010 hand and need their own update before any BO on this branch.
+
+**Force limits (N m).** Fingers from the survey maxima: MCP 2.5, PIP 1.5, DIP 0.7; thumb base 4, thumb end 1.5, wrist 6
+(spike-2 tuning values, flagged as future theta candidates); shoulder / elbow 100 / 60 (human maxima, velocity drives).
+
+**Self-collision.** `ignoreAllSelfCollision` is off: only parent-child, palm-finger-base and forearm-palm pairs are
+ignored; finger-finger, thumb-finger and fingertip-palm contacts are real (the harness counts link-link collision
+callbacks). Contact offset 3.6 mm (0.01 m project default x modelScale) on every link and on the object.
+
+**Calibration at the reference k** (index base step to -30 deg, `results/011_artic2/s2_calibrate.csv`): k 1.732 N m/rad,
+I 3.24e-5 kg m^2, derived omega 231 rad/s, rise 10-90 % 20 ms (theory 9 ms, i.e. two 10 ms steps), overshoot 2.1 %,
+steady -30.2 deg, flexion toward the palm normal.
+
+**Result of the gates: STOPPED at G1.** With the survey stiffness and limits the human-scale hand does not hold any mass
+(0.2 / 0.6 / 1.5 kg 0/3 each; also 0/2 at 20, 50 and 100 g). Mechanism from the contact traces: the scripted envelope
+closes the thumb and the fingertips onto the cylinder's distal side first, their contact normals point along the palm
+toward the wrist, the palm surface never touches the object (2-7 mm gap), and the object slides out past the heel of the
+hand and tips over. The same failure survives self-collision off, 5 ms steps, 32 / 16 solver iterations, contact offset
+3.6 mm, three softer target sets, three placements (72 / 85 / 100 / 115 mm from the palm pivot), stiffness x 3.46 (top of
+the survey range), targets at the joint limits, and closing on a dynamic object from the first step. The closed fist
+also shows the middle finger blocked at -60 deg by the converging index and ring fingers (16 of 91 non-ignored pairs
+overlapping, worst 7.8 mm); no pair overlaps at the open pose. Decision needed on the grasp geometry (finger flexion
+planes fan by up to 48 deg across the hand; thumb sweeps along the palm rather than across it) before G1-G6 can mean
+anything. The obsolete kinematic `LiftHarness` was deleted.

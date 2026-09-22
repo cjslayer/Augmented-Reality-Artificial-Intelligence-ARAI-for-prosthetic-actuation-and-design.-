@@ -1788,16 +1788,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MorphologyManager
   randomizeByDefault: 1
   lengthScaleRange: {x: 0.8, y: 1.2}
-  fingerOmegaRange: {x: 12, y: 40}
-  fingerZetaRange: {x: 0.4, y: 0.9}
-  wristOmegaRange: {x: 8, y: 25}
-  wristZetaRange: {x: 0.5, y: 0.9}
+  stiffnessRangeBase: {x: 0.5, y: 6}
+  stiffnessRangeMiddle: {x: 0.3, y: 3}
+  stiffnessRangeEnd: {x: 0.1, y: 1}
+  stiffnessRangeThumbBase: {x: 1, y: 15}
+  stiffnessRangeThumbEnd: {x: 0.3, y: 3}
+  wristStiffnessRange: {x: 1, y: 10}
+  logUniformStiffness: 1
+  fingerZetaRange: {x: 0.3, y: 1}
+  wristZetaRange: {x: 0.3, y: 1}
+  referenceZeta: 0.7
   inertiaScaleRange: {x: 0.5, y: 2}
   maskActiveProbability: 0.8
   minActiveGroups: 6
   requireThumbActive: 1
-  maxPlausibleOmega: 40
-  maxPlausibleZeta: 0.9
+  plausibleStiffness: {x: 0.01, y: 30}
+  maxPlausibleZeta: 1.2
   density: 1000
   lengthScale:
   - 1
@@ -3041,16 +3047,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MorphologyManager
   randomizeByDefault: 1
   lengthScaleRange: {x: 0.8, y: 1.2}
-  fingerOmegaRange: {x: 12, y: 40}
-  fingerZetaRange: {x: 0.4, y: 0.9}
-  wristOmegaRange: {x: 8, y: 25}
-  wristZetaRange: {x: 0.5, y: 0.9}
+  stiffnessRangeBase: {x: 0.5, y: 6}
+  stiffnessRangeMiddle: {x: 0.3, y: 3}
+  stiffnessRangeEnd: {x: 0.1, y: 1}
+  stiffnessRangeThumbBase: {x: 1, y: 15}
+  stiffnessRangeThumbEnd: {x: 0.3, y: 3}
+  wristStiffnessRange: {x: 1, y: 10}
+  logUniformStiffness: 1
+  fingerZetaRange: {x: 0.3, y: 1}
+  wristZetaRange: {x: 0.3, y: 1}
+  referenceZeta: 0.7
   inertiaScaleRange: {x: 0.5, y: 2}
   maskActiveProbability: 0.8
   minActiveGroups: 6
   requireThumbActive: 1
-  maxPlausibleOmega: 40
-  maxPlausibleZeta: 0.9
+  plausibleStiffness: {x: 0.01, y: 30}
+  maxPlausibleZeta: 1.2
   density: 1000
   lengthScale:
   - 1

@@ -11,8 +11,8 @@ using UnityEngine;
 /// from the bones to the links so tag-based lookups keep working; the bones follow the links every LateUpdate for the
 /// skinned mesh. The skeleton is rebuilt at each episode with the morphology's link-length scales (anchor offsets and
 /// capsule lengths), masses from capsule volume x density x inertia scale, and drive gains from (omega, zeta).
-/// Shoulder / elbow are Velocity drives (the biological arm); wrist and fingers are Acceleration drives (stiffness =
-/// omega^2, damping = 2 zeta omega, mass-independent), masked groups Target drives at the neutral pose.
+/// Shoulder / elbow are Velocity drives (the biological arm); wrist and fingers are Force drives with the morphology's
+/// physical (k, b) in N m/rad and N m s/rad, masked groups Acceleration drives holding the neutral pose.
 /// </summary>
 public class ArticulatedHand : MonoBehaviour
 {
@@ -39,19 +39,21 @@ public class ArticulatedHand : MonoBehaviour
     [Tooltip("Fixed timestep (s) set at runtime by this rig; the project setting is left alone. DecisionRequester.DecisionPeriod must be 0.1 s / this.")]
     public float fixedTimestep = 0.01f;
     public int solverIterations = 16, solverVelocityIterations = 4;
+    [Tooltip("Contact offset (m) of every link collider and of the object: the project default 0.01 m was set for the 2.5x hand; 0.0036 = 0.01 x modelScale.")]
+    public float contactOffset = 0.0036f;
     public float density = 1000f;
     [Tooltip("Bicep link: no bone collider exists; a capsule of this radius (m, human scale) and mass (kg, human upper arm) gives it inertia.")]
     public float bicepRadius = 0.016f, bicepMass = 2f;
     [Tooltip("Palm link mass (kg): human metacarpus + soft tissue (de Leva hand segment ~0.45 kg minus the fingers). The thin palm box under-represents the palm volume, so this is set directly rather than from density.")]
     public float palmMass = 0.33f;
     public float fingerMaxAngularVelocity = 50f, armMaxAngularVelocity = 20f;
-    [Tooltip("Force limits (N m): base, middle, end, thumb base, thumb end, wrist, shoulder, elbow. Shoulder / elbow are human maxima (velocity drives).")]
-    public float[] forceLimits = { 4f, 2.5f, 1.2f, 6f, 3f, 10f, 100f, 60f };
+    [Tooltip("Force limits (N m): base, middle, end, thumb base, thumb end, wrist, shoulder, elbow. Fingers = survey maxima (MCP 2.5, PIP 1.5, DIP 0.7); thumb and wrist are spike-2 tuning values (future theta candidates); shoulder / elbow human maxima (velocity drives).")]
+    public float[] forceLimits = { 2.5f, 1.5f, 0.7f, 4f, 1.5f, 6f, 100f, 60f };
     [Tooltip("Stiffness of the Target drive holding masked groups at the neutral pose (acceleration units, 1/s^2).")]
     public float maskedHoldStiffness = 4000f, maskedHoldDamping = 200f;
     public bool ignoreParentChildCollision = true, ignorePalmBaseCollision = true, ignoreForearmPalmCollision = true;
-    [Tooltip("Ignore every collision pair within the hand and arm (the imported capsules are 21-35 mm in radius at 5-7 cm knuckle spacing, so neighbouring fingers overlap by construction and jam).")]
-    public bool ignoreAllSelfCollision = true;
+    [Tooltip("Ignore every collision pair within the hand and arm (spike-1 workaround; off since spike 2: only parent-child, palm-base and forearm-palm pairs are ignored, finger-finger, thumb-finger and fingertip-palm contacts are real).")]
+    public bool ignoreAllSelfCollision = false;
 
     // ---- built skeleton ----
     public ArticulationBody Root { get; private set; }
@@ -79,6 +81,8 @@ public class ArticulatedHand : MonoBehaviour
     public struct Contact { public int group; public bool isPalm, isForearm; public Vector3 point, normal; public float separation, impulse; }
     public readonly List<Contact> Contacts = new List<Contact>();
     public void ClearContacts() => Contacts.Clear();
+    /// <summary>Diagnostics: collision callbacks between two links of this hand since the last reset (self-collision is real when this counts).</summary>
+    public int SelfContactEvents { get; set; }
 
     void Awake()
     {
@@ -205,7 +209,7 @@ public class ArticulatedHand : MonoBehaviour
             if (ignoreAllSelfCollision) ignore = true;
             if (ignore) { var ca = a.GetComponent<Collider>(); var cb = b.GetComponent<Collider>(); if (ca != null && cb != null) Physics.IgnoreCollision(ca, cb, true); }
         }
-        foreach (var a in all) { if (a == null) continue; a.solverIterations = solverIterations; a.solverVelocityIterations = solverVelocityIterations; a.useGravity = true; a.jointFriction = 0f; a.linearDamping = 0f; a.angularDamping = 0.05f; a.sleepThreshold = 0f; a.ResetInertiaTensor(); a.ResetCenterOfMass(); }
+        foreach (var a in all) { if (a == null) continue; var col = a.GetComponent<Collider>(); if (col != null) col.contactOffset = contactOffset; a.solverIterations = solverIterations; a.solverVelocityIterations = solverVelocityIterations; a.useGravity = true; a.jointFriction = 0f; a.linearDamping = 0f; a.angularDamping = 0.05f; a.sleepThreshold = 0f; a.ResetInertiaTensor(); a.ResetCenterOfMass(); }
         Physics.SyncTransforms();
         RebuildCount++;
         if (RebuildCount == 1) Debug.Log("[ArticulatedHand] " + Anthropometrics());
@@ -366,7 +370,9 @@ public class LinkContact : MonoBehaviour
     void OnCollisionEnter(Collision c) { Report(c); }
     void Report(Collision c)
     {
-        if (hand == null || !c.gameObject.CompareTag("Cylinder")) return;
+        if (hand == null) return;
+        if (c.articulationBody != null && c.articulationBody.transform.IsChildOf(hand.Root.transform)) { hand.SelfContactEvents++; return; }
+        if (!c.gameObject.CompareTag("Cylinder")) return;
         int g = hand.GroupOf(m_Body); bool palm = m_Body == hand.Palm, fore = m_Body == hand.Forearm;
         if (g < 0 && !palm && !fore) return;
         float imp = c.impulse.magnitude; int n = c.contactCount;

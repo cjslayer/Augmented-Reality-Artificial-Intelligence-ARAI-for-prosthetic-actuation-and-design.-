@@ -93,15 +93,15 @@ public class MorphologyWatchOverlay : MonoBehaviour
                 m_Sb.Append("len  idx ").Append(m.lengthScale[0].ToString("F2")).Append("  mid ").Append(m.lengthScale[1].ToString("F2"))
                     .Append("  ring ").Append(m.lengthScale[2].ToString("F2")).Append("  pnk ").Append(m.lengthScale[3].ToString("F2"))
                     .Append("  thb ").Append(m.lengthScale[4].ToString("F2")).Append('\n');
-                int active = 0; float wSum = 0f;
-                for (int g = 0; g < MorphologyManager.FingerGroupCount; g++) { if (m.mask[g]) active++; wSum += m.NaturalFrequency(g); }
+                int active = 0; float wSum = 0f, kSum = 0f;
+                for (int g = 0; g < MorphologyManager.FingerGroupCount; g++) { if (m.mask[g]) active++; wSum += m.NaturalFrequency(g); kSum += m.stiffness[g]; }
                 m_Sb.Append("active groups ").Append(active).Append("/14   masked: ");
                 bool any = false;
                 for (int g = 0; g < MorphologyManager.FingerGroupCount; g++)
                     if (!m.mask[g]) { if (any) m_Sb.Append(", "); m_Sb.Append(MorphologyManager.GroupNames[g]); any = true; }
                 if (!any) m_Sb.Append("none");
                 m_Sb.Append('\n');
-                m_Sb.Append("mean finger omega ").Append((wSum / MorphologyManager.FingerGroupCount).ToString("F1")).Append(" rad/s")
+                m_Sb.Append("mean finger k ").Append((kSum / MorphologyManager.FingerGroupCount).ToString("F2")).Append(" Nm/rad (derived omega ").Append((wSum / MorphologyManager.FingerGroupCount).ToString("F0")).Append(" rad/s)")
                     .Append("   wrist omega ").Append(m.NaturalFrequency(MorphologyManager.FingerGroupCount).ToString("F1"))
                     .Append(" / ").Append(m.NaturalFrequency(MorphologyManager.FingerGroupCount + 1).ToString("F1")).Append('\n');
             }

@@ -705,3 +705,31 @@ on the index base (12 mm overlap) instead of reaching the object. The object dri
 Per the task rule no target iteration was done. Harness bug fixed on the way: an inserted diagnostic line had split an
 if / else so runs without `stiffnessScale` re-enabled morphology randomization (affected only the 20-100 g and
 dynamic-object diagnostics of spike 2, which are therefore void).
+
+## Articulated hand, spike 4 (2026-09-22, branch `articulated-hand`): close-until-contact + preload test driver, STOPPED at the sanity gate / G1
+
+**Controller (harness only, `ArticulatedGates` config `contactController`).** Each joint group flexes its drive target
+at `closeRateDegPerSec` (90) until its own link reports contact with the object (`ArmGraspAgent.IsGroupTouching`, the
+existing read-only flag), then holds `preloadDeg` (12) beyond the contact angle; groups that never touch stop at the
+power-grasp caps (MCP 60, PIP 70, DIP 30, thumb 45 / 45). Pinch = index + thumb, other fingers held open. The agent's
+own contact gate is blocked during the scripted close by raising its public `requiredContactSegments` (restored at the
+release), because it fired 35 steps into the close and released the object before the preload was in. Placement ignores
+the thumb links (they lie in front of the palm at rest) and puts the object 115 mm from the palm pivot, under the
+proximal phalanges. No training-side file changed except the rig parameters below; the agent's action path, reward,
+observations and MorphologyManager are untouched.
+
+**Rig parameters touched (ArticulatedHand).** `oppositionTargetPalmMm` out 46 -> 90 mm; new `thumbRestAbductionDeg`
+(100) and `thumbRestPalmarDeg` (0): the thumb chain is rebuilt from its imported base pivot along an abducted rest
+direction so it stays proximal of the object.
+
+**Result: the sanity gate fails and G1 is 0/9 with and without the thumb** (`results/011_artic2/s4_sanity_*`,
+`g1_s4_nothumb.csv`, slip dump `g1_s4_slip_dump.txt`, renders `g1_s4_slip_*.png`). The controller does form a wrap:
+6-8 contacts, all four fingers on the cylinder, 0.3-0.5 N m grip, no self-overlap. But every contact normal points along
+the palm toward the wrist or away from the palm: the object rests ON the proximal phalanges (centre 49 mm in front of
+the knuckle axis, because the finger capsules' palmar flesh offset is 18 mm and the palm face 22 mm from the bone axes)
+and the 73-91 mm fingers reach only to 60 mm out, below the object's top (76 mm), so the middle and tip segments meet its
+distal side instead of wrapping over it; the palm never touches. The thumb, whose pivot is the MCP-level bone 31 mm in
+front of the palm with no CMC joint, cannot pass over the object in any fixed plane: it is blocked at 13-21 deg during
+the close and shoves the object distally at release (thumb contact normals (1.0, 0.07, 0)). Both are collider /
+armature geometry defects (palmar flesh offsets, palm thickness, missing CMC), outside anchor-frame fixes; no preload /
+cap tuning was done.

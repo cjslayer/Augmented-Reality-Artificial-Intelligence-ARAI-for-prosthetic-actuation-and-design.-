@@ -1,0 +1,34 @@
+CTRL indexBase stop=-0.4 preload->-12.4 angle=-10.5 touch=0
+    indexMiddle stop=-38.7 preload->-50.7 angle=-45.3 touch=0
+    indexEnd stop=-29.7 preload->-41.7 angle=-33.1 touch=1
+    middleBase nocontact cap->-60.0 angle=-33.5 touch=0
+    middleMiddle stop=-25.5 preload->-37.5 angle=-15.3 touch=0
+    middleEnd stop=-25.3 preload->-37.3 angle=-26.0 touch=1
+    ringBase nocontact cap->-60.0 angle=-28.7 touch=0
+    ringMiddle stop=-25.6 preload->-37.6 angle=-28.5 touch=1
+    ringEnd stop=-30.0 preload->-42.0 angle=-36.1 touch=1
+    pinkyBase stop=-22.1 preload->-34.1 angle=-26.9 touch=0
+    pinkyMiddle stop=-37.0 preload->-49.0 angle=-39.8 touch=0
+    pinkyEnd stop=-29.1 preload->-41.1 angle=-16.4 touch=1
+    thumbBase nocontact cap->45.0 angle=18.2 touch=0
+    thumbEnd stop=12.3 preload->24.3 angle=8.0 touch=1
+    palm=no contacts=6 | objInPalm(mm)=(115, 54, 49) r=25
+    indexBase=(137, 11, 38) indexMiddle=(153, 34, 43) indexEnd=(147, 52, 48) middleBase=(126, 11, 9) middleMiddle=(149, 37, 10) middleEnd=(150, 59, 12) ringBase=(133, 15, -12) ringMiddle=(149, 39, -13) ringEnd=(146, 57, -13) pinkyBase=(138, 25, -37) pinkyMiddle=(149, 50, -40) pinkyEnd=(147, 63, -41) thumbBase=(77, 40, 78) thumbEnd=(81, 56, 123) palmFace(out mm)=22
+[Gates] SLIP at step 90 (phase lift/Lift) objV=(0.11, -0.02, 0.06) objInPalm=(0.115, 0.055, 0.049)
+  indexBase: angle=-12.2 target=-12.4 vel=-144.4 drive=-0.021Nm touch=0
+  indexMiddle: angle=-43.5 target=-50.7 vel=165.1 drive=-0.024Nm touch=0
+  indexEnd: angle=-39.2 target=-41.7 vel=-560.1 drive=-0.011Nm touch=1
+  middleBase: angle=-35.3 target=-60.0 vel=-232.0 drive=-0.266Nm touch=0
+  middleMiddle: angle=-19.2 target=-37.5 vel=-296.0 drive=-0.179Nm touch=0
+  middleEnd: angle=-29.1 target=-37.3 vel=-204.6 drive=-0.047Nm touch=1
+  ringBase: angle=-33.8 target=-60.0 vel=-537.2 drive=-0.279Nm touch=0
+  ringMiddle: angle=-25.1 target=-37.6 vel=432.1 drive=-0.128Nm touch=1
+  ringEnd: angle=-39.5 target=-42.0 vel=-290.6 drive=-0.015Nm touch=1
+  pinkyBase: angle=-26.6 target=-34.1 vel=-28.7 drive=-0.036Nm touch=0
+  pinkyMiddle: angle=-41.5 target=-49.0 vel=-139.7 drive=-0.032Nm touch=0
+  pinkyEnd: angle=-37.8 target=-41.1 vel=-2096.5 drive=-0.009Nm touch=1
+  thumbBase: angle=21.3 target=45.0 vel=423.5 drive=0.705Nm touch=0
+  thumbEnd: angle=6.9 target=24.3 vel=-272.3 drive=0.341Nm touch=1
+  object=(-0.178, 0.711, 5.474) kin=False contacts=6 palm=False selfPenetration=0.00mm(none;overlappingPairs=0/91;over2mm: none) selfContactEvents=506
+SLIP: objInPalm=(0.115, 0.055, 0.049) n=25 pinkyEnd n=(-0.99, 0.10, 0.01) sep=2.3mm imp=0.004 pinkyEnd n=(-0.99, 0.10, 0.01) sep=0.8mm imp=0.004 ringEnd n=(-0.97, 0.25, 0.01) sep=3.3mm imp=0.006 ringEnd n=(-0.97, 0.25, 0.01) sep=0.4mm imp=0.006 middleEnd n=(-0.97, 0.25, 0.01) sep=4.1mm imp=0.019 middleEnd n=(-0.97, 0.25, 0.01) sep=0.2mm imp=0.019 thumbBase n=(1.00, 0.07, 0.00) sep=6.6mm imp=0.000 thumbEnd n=(1.00, 0.06, 0.00) sep=2.7mm imp=0.058 thumbEnd n=(1.00, 0.06, 0.00) sep=-1.1mm imp=0.058 middleMiddle n=(-0.64, 0.77, 0.04) sep=7.0mm imp=0.000 middleMiddle n=(-0.64, 0.77, 0.04) sep=1.0mm imp=0.000 ringMiddle n=(-0.69, 0.72, 0.04) sep=5.7mm imp=0.020 ringMiddle n=(-0.69, 0.72, 0.04) sep
+[Gates] trial 1/1 lift grip=envelope m=0.6 scale=0 -> drop hold=0 pulses=0 maxF=0.0N contacts=0 palm=False maxPen=6.8mm maxV=2096

@@ -787,3 +787,42 @@ presses into it 6-8 mm under 0.27 N m (contact under load, not a crossing).
 **Separation.** ArmGraspAgent.cs zero diff. MorphologyManager.cs: only the extra-link mass in the subtree inertia.
 Harness: trace-to-file logging, arm drive state in the trace, `agent.MaxStep` raised to 20000 for scripted holds,
 placement 80 mm.
+
+## Articulated hand, spike 6 (2026-09-22, branch `articulated-hand`): contact penetration tuning — TGS adopted
+
+**Measurement.** The harness samples the deepest hand-link / object overlap (Physics.ComputePenetration over the 14
+groups, the thumb proximal phalanx and the palm) every step of a window: the 500-step hold in the G1 0.6 kg preload trial
+(reference hand, close-until-contact controller, preload 12 deg) and the squeeze + push phases of the G6 trial (every
+drive at its force limit, 10 N push). Rows are single trials unless noted; PGS trial-to-trial noise is about +-2 mm
+(3 seeds: 8.7 / 9.0 / 7.0 mm max), so the single-lever rows for object iterations, contact offset and depenetration
+velocity are within noise of the baseline. Steps/s = physics steps per wall second in the Editor at timeScale 20.
+
+| setting (one lever at a time) | preload max / p95 (mm) | limits max / p95 (mm) | contacts | grip N m | steps/s |
+|---|---|---|---|---|---|
+| baseline PGS, hand 16/4, object 6/1, offset 3.6 mm, depen 10 | 8.7 / 8.3 | 18.8 / 17.1 | 9 / 7 | 0.90 / 4.58 | 1336 / 1270 |
+| object solver iterations 16/4 | 14.6 / 14.1 | 18.8 / 17.1 | 10 / 7 | 1.04 / 4.58 | 1334 / 1225 |
+| object solver iterations 32/8 | 10.3 / 10.3 | 8.8 / 8.2 | 8 / 8 | 1.29 / 2.44 | 1210 / 1105 |
+| contact offset 2 mm | 8.7 / 8.1 | 18.7 / 17.0 | 10 / 8 | 1.05 / 4.03 | 1430 / 1352 |
+| contact offset 5 mm | 9.8 / 7.9 | 17.5 / 16.0 | 9 / 10 | 0.88 / 4.60 | 1179 / 1144 |
+| max depenetration velocity 20 | 14.6 / 14.1 | 18.8 / 17.1 | 10 / 7 | 1.04 / 4.58 | 1364 / 1281 |
+| max depenetration velocity 50 | 14.6 / 14.1 | 18.8 / 17.1 | 10 / 7 | 1.04 / 4.58 | 1354 / 1268 |
+| **Temporal Gauss-Seidel solver (project setting), everything else baseline** | **2.1 / 2.1** (3 seeds 1.8 / 1.8 / 1.6) | **3.3 / 3.3** | 5 / 7 | 1.07 / 4.48 | 1462 / 1386 |
+
+The PhysX guide explains the result: TGS "minimizes energy introduced when correcting penetrations" and, with N
+position iterations, runs N solver substeps, so the stiff finger drives no longer reach their targets inside a single
+contact solve (results/011_artic2/contact_solver_survey.md). Object-side iterations do nothing on their own because the
+island already runs the articulation's 16 / 4 (PhysX uses the highest count in the island); depenetration velocity
+never binds (the forum report that it cannot be raised above 10 after init is consistent with the identical rows).
+Lever 5 (finger drive damping) was not needed.
+
+**Adopted:** `ProjectSettings/DynamicsManager.asset` m_SolverType 1 (TGS). It is the only lever that reaches the gate
+(<= 5 mm preload, <= 8 mm at the limits) and it is a single project setting; no runtime API exists for it. Everything
+else stays at the spike-5 values (hand 16 / 4, contact offset 3.6 mm, depenetration 10 m/s, 10 ms).
+
+**Post-adoption gates (TGS).** G4 20/20 finite (max joint speed 5.7-36.6 kdeg/s, episode max penetration <= 16.7 mm in
+the random-target sweep against the kinematic object). G5 8-env headless: 20k decisions in 41.6 s, 544 decisions/s
+steady state, ratio 1.13 vs 481 (TGS is not slower here). G1 9/9 at 0.2 / 0.6 / 1.5 kg with 500-step holds, hold-window
+penetration <= 1.9 mm; 3/3 at 2.0 and 2.5 kg as well (PGS: 0/3). G2 at 0.6 kg 3/3 at every scale 0.25-4.0, window
+penetration <= 3.1 mm: the max survived perturbation scale is still >= 4.0 (5.8 mg), so the earlier strength number was
+not a penetration artefact. G6: penetration at the force limits 3.5-5.5 mm (window; 11 mm episode max during the close),
+held 10, 20 and 40 N toward and away from the palm, pushed out at 80 N (PGS: out at 40 N).

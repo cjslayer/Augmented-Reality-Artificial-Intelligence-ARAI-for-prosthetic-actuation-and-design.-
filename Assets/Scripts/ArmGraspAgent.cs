@@ -213,6 +213,16 @@ public class ArmGraspAgent : Agent
     public bool LastThumbTouching { get; private set; }
     public bool LastHoldCriterionMet { get; private set; }
     public float ShapingReturn => m_ShapingReturn;
+    /// <summary>Diagnostics (read-only): the analytic telescoped value of the potential-based shaping from the episode start to now, i.e. what ShapingReturn must equal for a non-teleporting path.</summary>
+    public float TelescopedShaping()
+    {
+        float sum = 0f;
+        foreach (var col in segmentColliders) if (initialDistances.TryGetValue(col, out float d0) && d0 > 0f) sum += distanceRewardScale * (d0 - SegmentDistance(col)) / d0;
+        if (initialGraspPointDistance > 0f) sum += palmDistanceRewardScale * (initialGraspPointDistance - GraspPointDistance) / initialGraspPointDistance;
+        return sum * shapingScale;
+    }
+    /// <summary>Diagnostics (read-only): consecutive lifted steps counted toward the hold requirement so far this episode.</summary>
+    public int HoldStepsNow => m_HoldSteps;
     public float PenaltyReturn => m_PenaltyReturn;
     public float BonusReturn => m_BonusReturn;
     public float PhaseReturn => m_PhaseReturn;

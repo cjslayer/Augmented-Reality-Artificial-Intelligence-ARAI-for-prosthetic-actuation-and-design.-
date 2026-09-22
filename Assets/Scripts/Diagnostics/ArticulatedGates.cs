@@ -54,6 +54,15 @@ public class ArticulatedGates : MonoBehaviour
         // contact-penetration tuning levers (spike 6): 0 = keep the current value
         public int objectSolverIterations = 0, objectSolverVelocityIterations = 0;   // the object's Rigidbody (project default 6 / 1)
         public float maxDepenetrationVelocity = 0f;   // m/s, applied to the object Rigidbody, every hand link and Physics.defaultMaxDepenetrationVelocity
+        // exploit suite (run 011, step 1)
+        public int cycleHoldSteps = 0;      // > 0: after this many harness hold steps open every group (regrasp-cycling attempt: the drop rule must end the episode)
+        public float edgeBottom = 0f;       // > 0: lift only until the object bottom is this high (m) above the pedestal, hold the window there, then continue to the normal height
+        public bool blockAgentGate = true;  // false: let the agent's own contact gate release the object during the scripted close (gate-timing check)
+        public bool noLift = false;         // true: the arm never lifts (the trial ends by the agent's budget / drop rules)
+        public bool noClose = false;        // true: fingers stay open (balance / clamp checks)
+        public string placement = "palm";   // palm | forearm (object on the forearm's palmar side next to the wrist) | palmUp (object standing on the pronated palm)
+        public float wristFlexDeg = 0f, wristPronDeg = 0f;   // wrist setpoints applied before placement
+        public int preposeSteps = 0;        // steps to let the wrist reach its setpoints before the object is placed
         public float[] envelopeTargets = null;   // 14 closing targets (deg) for the envelope grip; null = k_Envelope
         public float[] pinchTargets = null;      // 14 closing targets (deg) for the pinch grip; null = k_Pinch
         public float stiffnessScale = 0f;   // > 0: diagnostic, multiply the reference k of every group for this run (non-randomized modes)
@@ -77,6 +86,7 @@ public class ArticulatedGates : MonoBehaviour
     readonly StringBuilder sb = new StringBuilder();
     float restY, objRadius = 0.025f, liftSign = 1f, maxPen, maxSpeed, maxAbsAngle; bool nanSeen; int liftStartStep = -1, holdStart = -1, gateStep = -1, transitionStep = -1;
     readonly List<float> penSamples = new List<float>(); float trialWallStart;
+    int edgeHoldMax = -1; bool edgeDone; float shapingAgentAtT = float.NaN, shapingTelescopedAtT = float.NaN; bool cycled; int cycleAtStep = -1;
     float CurrentPenetration()
     {   // deepest overlap (m) between any hand link (groups, extra links, palm) and the object this step
         float worst = 0f;
@@ -196,20 +206,41 @@ public class ArticulatedGates : MonoBehaviour
         for (int g = 0; g < peakTorque.Length; g++) peakTorque[g] = 0f;
         if (cfg.mode == "stability") { phase = "walk"; for (int g = 0; g < ArmGraspAgent.GroupCount; g++) walkTarget[g] = 0f; return; }
         if (cfg.mode == "audit") { phase = "audit"; cyl.SetPositionAndRotation(cyl.position + Vector3.up * 2f, Quaternion.identity); Physics.SyncTransforms(); return; }   // object out of the way
-        // object on the palm surface over the palm centre, at rest height on the pedestal; the hand is at its rest pose
-        var pb = palm.GetComponent<BoxCollider>(); Vector3 pcen = palm.TransformPoint(pb.center); float half = 0.5f * pb.size.x; float r = objRadius;   // not the AABB: a tumbled object's AABB is its tilted extent
-        Vector3 n = palm.right; Vector3 pos = pcen + n * (half + r + cfg.palmGap);
-        if (cfg.placeUp > 0f) { Vector3 alongFingers = palm.up; alongFingers.y = 0f; alongFingers.Normalize(); pos += alongFingers * (cfg.placeUp - Vector3.Dot(pcen - palm.position, palm.up)); }
-        pos.y = restY;
-        float pushed = 0f; while (OverlapsHand(pos, Quaternion.identity) && pushed < 0.06f) { pos += n * 0.0005f; pushed += 0.0005f; }
-        cyl.SetPositionAndRotation(pos, Quaternion.identity); Physics.SyncTransforms();
-        Debug.Log("[Gates] trial " + (trial + 1) + "/" + trials.Count + " " + cfg.mode + " grip=" + t.grip + " m=" + t.mass + " scale=" + t.scale + ": object at " + pos.ToString("F3") + " (pushed out " + (pushed * 1000f).ToString("F0") + " mm), palm normal " + n.ToString("F2") + " palmPos=" + palm.position.ToString("F3") + " pcen=" + pcen.ToString("F3") + " rebuilds=" + hand.RebuildCount + " arm=" + agent.GetArmAngle(0).ToString("F1") + "/" + agent.GetArmAngle(2).ToString("F1") + "/" + agent.GetArmAngle(3).ToString("F1") + "/" + agent.GetArmAngle(4).ToString("F1") + " step=" + agent.StepCount);
+        edgeHoldMax = -1; edgeDone = false; shapingAgentAtT = shapingTelescopedAtT = float.NaN; cycled = false; cycleAtStep = -1;
+        if (cfg.preposeSteps > 0 && (cfg.wristFlexDeg != 0f || cfg.wristPronDeg != 0f))
+        {   // wrist first, object later (placed by PlaceObject at the end of the prepose window)
+            agent.SetArmSetpoint(3, cfg.wristFlexDeg); agent.SetArmSetpoint(4, cfg.wristPronDeg);
+            cyl.SetPositionAndRotation(cyl.position + Vector3.up * 2f, Quaternion.identity); Physics.SyncTransforms();
+            phase = "prepose"; return;
+        }
+        PlaceObject(t);
         phase = cfg.mode == "calibrate" ? "step" : "close";
         if (cfg.mode == "calibrate")
         {
             var tip = hand.Groups[2].transform; tipRel0 = tip.position - palm.position; tipDot0 = Vector3.Dot(tipRel0, palm.right);
             agent.SetGroupSetpoint(0, -30f);
         }
+    }
+
+    void PlaceObject(Trial t)
+    {
+        var pb = palm.GetComponent<BoxCollider>(); Vector3 pcen = palm.TransformPoint(pb.center); float half = 0.5f * pb.size.x; float r = objRadius;   // not the AABB: a tumbled object's AABB is its tilted extent
+        Vector3 n = palm.right; Vector3 pos = pcen + n * (half + r + cfg.palmGap);
+        if (cfg.placeUp > 0f) { Vector3 alongFingers = palm.up; alongFingers.y = 0f; alongFingers.Normalize(); pos += alongFingers * (cfg.placeUp - Vector3.Dot(pcen - palm.position, palm.up)); }
+        pos.y = restY;
+        float halfH = cyl.position.y - cylCol.bounds.min.y;   // upright half height (object is upright when placed)
+        if (cfg.placement == "forearm")
+        {   // on the forearm's palmar side, 4 cm proximal of the wrist pivot, resting on the pedestal
+            var fc = hand.Forearm.GetComponent<CapsuleCollider>(); float fr = fc != null ? fc.radius : 0.016f;
+            pos = palm.position - palm.up * 0.04f + n * (fr + r + cfg.palmGap); pos.y = restY;
+        }
+        else if (cfg.placement == "palmUp")
+        {   // standing on the palm face (the wrist has been pronated so the palm normal points up); the object is NOT on the pedestal
+            Vector3 face = pcen + n * half; pos = face + Vector3.up * (halfH + cfg.palmGap); pos.x = face.x; pos.z = face.z;
+        }
+        float pushed = 0f; while (OverlapsHand(pos, Quaternion.identity) && pushed < 0.06f) { pos += n * 0.0005f; pushed += 0.0005f; }
+        cyl.SetPositionAndRotation(pos, Quaternion.identity); Physics.SyncTransforms();
+        Debug.Log("[Gates] trial " + (trial + 1) + "/" + trials.Count + " " + cfg.mode + " grip=" + t.grip + " m=" + t.mass + " scale=" + t.scale + ": object at " + pos.ToString("F3") + " (pushed out " + (pushed * 1000f).ToString("F0") + " mm), palm normal " + n.ToString("F2") + " palmPos=" + palm.position.ToString("F3") + " pcen=" + pcen.ToString("F3") + " rebuilds=" + hand.RebuildCount + " arm=" + agent.GetArmAngle(0).ToString("F1") + "/" + agent.GetArmAngle(2).ToString("F1") + "/" + agent.GetArmAngle(3).ToString("F1") + "/" + agent.GetArmAngle(4).ToString("F1") + " step=" + agent.StepCount);
     }
 
     bool OverlapsHand(Vector3 pos, Quaternion rot)
@@ -356,7 +387,16 @@ public class ArticulatedGates : MonoBehaviour
     void Lift(Trial t)
     {
         var acts = agent.heuristicActions;
-        if (cfg.contactController) ControllerStep(t.grip == "pinch");
+        if (phase == "prepose")
+        {
+            agent.SetArmSetpoint(3, cfg.wristFlexDeg); agent.SetArmSetpoint(4, cfg.wristPronDeg);
+            if (phaseStep >= cfg.preposeSteps) { Debug.Log("[Gates] prepose done: wrist " + agent.GetArmAngle(3).ToString("F1") + "/" + agent.GetArmAngle(4).ToString("F1") + " palmNormal.y=" + palm.right.y.ToString("F2")); PlaceObject(t); phaseStep = 0; phase = "close"; }
+            return;
+        }
+        if (cfg.wristFlexDeg != 0f || cfg.wristPronDeg != 0f) { agent.SetArmSetpoint(3, cfg.wristFlexDeg); agent.SetArmSetpoint(4, cfg.wristPronDeg); }
+        if (cfg.noClose) { for (int g = 0; g < ArmGraspAgent.GroupCount; g++) agent.SetGroupSetpoint(g, 0f); }
+        else if (cycled) { for (int g = 0; g < ArmGraspAgent.GroupCount; g++) agent.SetGroupSetpoint(g, 0f); }
+        else if (cfg.contactController) ControllerStep(t.grip == "pinch");
         else
         {
             float[] targets = t.grip == "pinch" ? (cfg.pinchTargets != null && cfg.pinchTargets.Length == ArmGraspAgent.GroupCount ? cfg.pinchTargets : k_Pinch)
@@ -368,25 +408,39 @@ public class ArticulatedGates : MonoBehaviour
                 agent.SetGroupSetpoint(g, Mathf.MoveTowards(cur, targets[g], step));
             }
         }
-        if (cfg.contactController && phase == "close" && requiredSegments0 < 0) { requiredSegments0 = agent.requiredContactSegments; agent.requiredContactSegments = 99; }   // the agent's own gate must not release the object before the preload is in
-        if (cfg.contactController && phase == "close" && !ctrlReported && (ControllerDone() || phaseStep >= cfg.settleSteps - 1)) { ctrlReported = true; ctrlSummaryAtClose = ControllerSummary(); Debug.Log("[Gates] " + ctrlSummaryAtClose); if (cfg.dumpAt < 0) { DumpJoints(); RenderCloseups(); } agent.requiredContactSegments = requiredSegments0; }
+        if (cfg.contactController && cfg.blockAgentGate && phase == "close" && requiredSegments0 < 0) { requiredSegments0 = agent.requiredContactSegments; agent.requiredContactSegments = 99; }   // the agent's own gate must not release the object before the preload is in
+        if (cfg.contactController && phase == "close" && !ctrlReported && (ControllerDone() || phaseStep >= cfg.settleSteps - 1)) { ctrlReported = true; ctrlSummaryAtClose = ControllerSummary(); Debug.Log("[Gates] " + ctrlSummaryAtClose); if (cfg.dumpAt < 0) { DumpJoints(); RenderCloseups(); } if (requiredSegments0 >= 0) agent.requiredContactSegments = requiredSegments0; }
+        if (phase == "close" && agent.Phase != ArmGraspAgent.TaskPhase.Reach && float.IsNaN(shapingAgentAtT)) { shapingAgentAtT = agent.ShapingReturn; shapingTelescopedAtT = agent.TelescopedShaping(); }
         switch (phase)
         {
             case "close":
                 if (cfg.dynamicFromStep > 0 && phaseStep == cfg.dynamicFromStep && agent.Phase == ArmGraspAgent.TaskPhase.Reach) { agent.DiagnosticForceTransition(); Debug.Log("[Gates] diagnostic: object dynamic from step " + phaseStep + " (closing continues to settleSteps)"); break; }
                 if (cfg.dynamicFromStep > 0 && phaseStep < cfg.settleSteps) break;   // keep closing on the dynamic object until settleSteps
                 if (agent.Phase != ArmGraspAgent.TaskPhase.Reach) { phase = "lift"; phaseStep = 0; liftStartStep = agent.StepCount; liftSign = LiftSign(); Debug.Log("[Gates] released by gate at step " + agent.StepCount + " contacts=" + agent.CurrentContacts + " grip=" + agent.GripForce.ToString("F2") + "Nm liftSign=" + liftSign); }
-                else if (phaseStep >= cfg.settleSteps || (cfg.contactController && ctrlReported)) { agent.DiagnosticForceTransition(); phase = "lift"; phaseStep = 0; liftStartStep = agent.StepCount; liftSign = LiftSign(); Debug.Log("[Gates] transition forced at step " + agent.StepCount + " contacts=" + agent.CurrentContacts + " grip=" + agent.GripForce.ToString("F2") + "Nm liftSign=" + liftSign); }
+                else if (phaseStep >= cfg.settleSteps || (cfg.contactController && ctrlReported) || (cfg.noClose && phaseStep >= cfg.settleSteps)) { shapingAgentAtT = agent.ShapingReturn; shapingTelescopedAtT = agent.TelescopedShaping(); agent.DiagnosticForceTransition(); phase = "lift"; phaseStep = 0; liftStartStep = agent.StepCount; liftSign = LiftSign(); Debug.Log("[Gates] transition forced at step " + agent.StepCount + " contacts=" + agent.CurrentContacts + " grip=" + agent.GripForce.ToString("F2") + "Nm liftSign=" + liftSign); }
                 break;
             case "lift":
                 {
                     float bottom = cylCol.bounds.min.y - agent.PlatformTop;
+                    if (cfg.noLift) { acts[ArmGraspAgent.GroupCount] = 0f; if (phaseStep > cfg.holdSteps + 20) { Debug.Log("[Gates] noLift window elapsed; ending"); agent.EndEpisode(); } break; }
+                    if (cfg.edgeBottom > 0f && !edgeDone)
+                    {   // partial lift: stop at edgeBottom and watch the agent's hold counter over the window
+                        if (bottom >= cfg.edgeBottom) { acts[ArmGraspAgent.GroupCount] = 0f; phase = "edgehold"; phaseStep = 0; Debug.Log("[Gates] edge: bottom=" + bottom.ToString("F3") + " (clearance " + agent.liftClearance + ")"); }
+                        else if (phaseStep > cfg.liftBudget) { Debug.Log("[Gates] lift budget exhausted: bottom=" + bottom.ToString("F3")); agent.EndEpisode(); }
+                        else acts[ArmGraspAgent.GroupCount] = liftSign * cfg.liftSpeedDeg / agent.armRotationSpeed;
+                        break;
+                    }
                     if (bottom >= agent.liftClearance + cfg.liftExtra) { acts[ArmGraspAgent.GroupCount] = 0f; phase = "hold"; phaseStep = 0; holdStart = agent.StepCount; Debug.Log("[Gates] lifted: bottom=" + bottom.ToString("F3") + " at step " + agent.StepCount + " contacts=" + agent.CurrentContacts + " palm=" + agent.LastPalmTouching); if (cfg.freezeAtHold) { Time.timeScale = 0f; phase = "frozen"; } }
                     else if (phaseStep > cfg.liftBudget) { Debug.Log("[Gates] lift budget exhausted: bottom=" + bottom.ToString("F3")); agent.EndEpisode(); }
                     else acts[ArmGraspAgent.GroupCount] = liftSign * cfg.liftSpeedDeg / agent.armRotationSpeed;
                     break;
                 }
+            case "edgehold":
+                edgeHoldMax = Mathf.Max(edgeHoldMax, agent.HoldStepsNow);
+                if (phaseStep >= cfg.holdSteps) { edgeDone = true; phase = "lift"; phaseStep = 0; Debug.Log("[Gates] edge window done: agent hold steps max=" + edgeHoldMax + " phase=" + agent.Phase + "; continuing the lift"); }
+                break;
             case "hold":
+                if (cfg.cycleHoldSteps > 0 && !cycled && phaseStep >= cfg.cycleHoldSteps) { cycled = true; cycleAtStep = agent.StepCount; Debug.Log("[Gates] cycle: opening the hand after " + phaseStep + " hold steps (agent hold=" + agent.HoldStepsNow + ")"); }
                 if (phaseStep >= cfg.holdSteps + 20) { Debug.Log("[Gates] hold window elapsed without the agent ending the episode; ending"); agent.EndEpisode(); }
                 break;
         }
@@ -455,7 +509,8 @@ public class ArticulatedGates : MonoBehaviour
         if (cfg.mode == "calibrate" || cfg.mode == "stability" || cfg.mode == "audit") { phase = "idle"; return; }
         float weight = t.mass * Physics.gravity.magnitude;
         float wall = Time.realtimeSinceStartup - trialWallStart;
-        if (string.IsNullOrEmpty(note)) note = PenStats() + " wall=" + wall.ToString("F1") + "s stepsPerSec=" + (wall > 0f ? (stepsInTrial / wall).ToString("F0") : "-") + " " + TorqueTable() + " " + ctrlSummaryAtClose;
+        string exploit = " shapingAgent=" + shapingAgentAtT.ToString("F4") + " telescoped=" + shapingTelescopedAtT.ToString("F4") + (cfg.edgeBottom > 0f ? " edgeHoldMax=" + edgeHoldMax : "") + (cfg.cycleHoldSteps > 0 ? " cycleAt=" + cycleAtStep : "") + " forearmEnd=" + (r.forearm ? 1 : 0) + " gateStep=" + gateStep;
+        if (string.IsNullOrEmpty(note)) note = exploit + " " + PenStats() + " wall=" + wall.ToString("F1") + "s stepsPerSec=" + (wall > 0f ? (stepsInTrial / wall).ToString("F0") : "-") + " " + TorqueTable() + " " + ctrlSummaryAtClose;
         sb.AppendLine(string.Join(",", new string[] { (trial + 1).ToString(), cfg.mode, t.grip, t.mass.ToString("F3"), t.scale.ToString("F2"), t.seed.ToString(), success ? "1" : "0", r.endReason, r.steps.ToString(), gateStep.ToString(), r.transitionStep.ToString(), liftStartStep.ToString(), r.stepsToLift.ToString(), r.holdSteps.ToString(), r.pulsesApplied.ToString(), r.maxPulseForce.ToString("F2"), weight.ToString("F2"), r.contacts.ToString(), r.palm ? "1" : "0", r.forearm ? "1" : "0", r.bottomAboveTop.ToString("F4"), (r.maxPenetration * 1000f).ToString("F2"), r.maxJointSpeed.ToString("F0"), nanSeen ? "1" : "0", r.gripForceMean.ToString("F3"), r.retPhase.ToString("F2"), r.retHold.ToString("F3"), r.retBonus.ToString("F2"), r.retDrop.ToString("F2"), note }));
         Flush();
         Debug.Log("[Gates] trial " + (trial + 1) + "/" + trials.Count + " " + cfg.mode + " grip=" + t.grip + " m=" + t.mass + " scale=" + t.scale + " -> " + r.endReason + " hold=" + r.holdSteps + " pulses=" + r.pulsesApplied + " maxF=" + r.maxPulseForce.ToString("F1") + "N contacts=" + r.contacts + " palm=" + r.palm + " maxPen=" + (r.maxPenetration * 1000f).ToString("F1") + "mm maxV=" + r.maxJointSpeed.ToString("F0"));

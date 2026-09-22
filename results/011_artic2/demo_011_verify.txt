@@ -1,0 +1,4 @@
+[INFO] Connected to Unity environment with package version 4.1.0 and communication version 1.5.0
+[INFO] Connected new brain: Prosthetic?team=0
+[INFO] Prosthetic. Step: 10000. Time Elapsed: 120.327 s. Mean Reward: -2.601. Std of Reward: 1.947. Training.
+[INFO] Prosthetic. Step: 20000. Time Elapsed: 197.793 s. Mean Reward: -2.212. Std of Reward: 1.269. Training.

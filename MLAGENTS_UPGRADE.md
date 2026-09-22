@@ -826,3 +826,46 @@ penetration <= 1.9 mm; 3/3 at 2.0 and 2.5 kg as well (PGS: 0/3). G2 at 0.6 kg 3/
 penetration <= 3.1 mm: the max survived perturbation scale is still >= 4.0 (5.8 mg), so the earlier strength number was
 not a penetration artefact. G6: penetration at the force limits 3.5-5.5 mm (window; 11 mm episode max during the close),
 held 10, 20 and 40 N toward and away from the palm, pushed out at 80 N (PGS: out at 40 N).
+
+## Run 011 preparation (2026-09-22, branch `articulated-hand`): exploit suite, 150k smoke = NO-GO, watch modes
+
+**Exploit suite (harness, scripted, TGS hand, results/011_artic2/x_*.csv).** (a) Regrasp cycling: after 300 hold
+steps the hand opens; the object lands on the pedestal under the hand, the drop rule does not fire (it is 8 cm from the
+grasp point, < 11 cm) and the episode continues with the hold counter reset; the attempt returns 0.2 (hold budget)
+against 1.2 for a clean success (0.2 + 1.0; the +0.1 gate reward is only paid by the agent's own gate, not by the
+harness's forced release) - one +1 per episode, hold reward capped by the paying-step budget, no cycling gain. (b)
+Forearm clamp: with the object on the forearm's palmar side next to the wrist and the wrist folded to +70 or -70 deg, no
+clamp formed (0 contacts, the object is left behind and drops); forearm contacts are excluded from the gate by code
+(only finger groups are counted; palm and forearm are flags). (c) Balance without closure: pronated 80 deg (palm up),
+object standing on the open palm, released and lifted: dropped after 24 lifted steps before any pulse, 2/2. (d)
+Pedestal edge: lifting to 2.0 cm the agent's hold counter never exceeds 6 steps over a 300-step window (lifted requires
+3 cm); at 3.5 cm it counts (303). (e) Penetration glue: at every drive's force limit the hold-window penetration is
+3.5-5.5 mm (TGS, gate 8 mm); an 80 N outward push ends the episode with "drop". (f) Gate timing: the +0.1 is paid once
+by construction (Reach -> Lift only, Hold regresses to Lift, never to Reach); with the gate unblocked and no lift the
+object is released on the pedestal and the episode ends with a lift-budget failure (-0.2) and zero hold reward; the
+spec hand's contact count during a scripted close stays at 5 (< 6), so the early-gate case of spike 5 does not recur.
+(g) Telescoping: the agent's shaping return equals the analytic telescoped sum to 4 decimals in every trial
+(e.g. 0.8807 / 0.8807, 0.9175 / 0.9175).
+
+**Config.** `Config/run_011.yaml`: run_010 PPO hyperparameters, max_steps 6M, keep 5 checkpoints every 250k, no
+init_path, morph/randomize 1, curriculum on perturb/scale 0 -> 0.25 -> 0.5 -> 0.75 -> 1.0 with completion on smoothed
+mean reward. Player `Builds/Run011/Prosthetic.exe` built from Dynamic_Scene_Train with DynamicsManager m_SolverType 1
+(TGS) at build time; the player log has no solver line, the equivalent check is the smoke's Grasp/MaxPenetration
+(6 mm mean episode max under random-policy contacts, PGS gave 10-23 mm in the harness).
+
+**150k smoke (`results/011_smoke`, 8 envs, 369 s = 406 aggregate steps/s; 424 over the first 100k before the demo
+verification shared the CPU).** No NaN in any of 55 stats. Return/Shaping -2.29 -> +0.45 (rising). Lift entry
+(Task/Lifted) 0 -> 0.41 of episodes, Task/Transitioned 0.05 -> 0.56, Task/HoldEntries 0.33, both rising over the last
+50k. Cumulative reward -3.73 -> -0.81. Grasp/Success 0 in every summary period, Return/Bonus 0: **no +1 survival in
+150k** (holds are entered but last 0.7-3.8 paid steps on average; the 50-decision hold is 500 steps). Episode length
+480 -> 336 (drops end episodes earlier: Task/EndDrop 0.05 -> 0.52). Policy entropy 1.418 flat (expected this early).
+Verdict against the numeric go/no-go: four of five criteria pass, the "at least one +1 survival" criterion fails ->
+**NO-GO, the 6M run was not launched.** Curriculum threshold that would have been set: 0.9 (a completing episode
+returns about 0.9 shaping + 0.1 + 0.2 + 1.0 - 1.0 existential - 0.5 safety/effort ~ +0.7 to +1.5; a non-completing one
+-0.5 to -1.0; 70 % success -> mean about 0.9).
+
+**Watch modes (WATCH.md).** A: `CheckpointTheater` (Editor only, Temp/theater.json) imports the newest
+results/<run>/Prosthetic-<steps>.onnx through the Editor ONNX importer and hot-swaps it with `Agent.SetModel` without
+leaving Play mode; refuses models whose input shapes differ from the scene's 24-vector / 16x13 buffer. B: live demo =
+`mlagents-learn Config/run_011.yaml --run-id 011_demo` with the Editor as the only environment (port 5004). C:
+`PhysicsViewOverlay` (F2) draws the real colliders; verified render results/011_artic2/watch_physview_top.png.

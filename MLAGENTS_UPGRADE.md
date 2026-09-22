@@ -869,3 +869,32 @@ results/<run>/Prosthetic-<steps>.onnx through the Editor ONNX importer and hot-s
 leaving Play mode; refuses models whose input shapes differ from the scene's 24-vector / 16x13 buffer. B: live demo =
 `mlagents-learn Config/run_011.yaml --run-id 011_demo` with the Editor as the only environment (port 5004). C:
 `PhysicsViewOverlay` (F2) draws the real colliders; verified render results/011_artic2/watch_physview_top.png.
+
+## Run 011 relaunch (2026-09-22): hold-length curriculum, re-smoke GO, 6M launched
+
+**Why the first smoke had zero successes.** The 011 scene asked for 50 hold decisions (5 s, 500 physics steps) from
+the first episode. The original 011 spec was K = 10, and run 006 needed a 2 -> 10 ramp even on the kinematic hand; run
+010 shipped a hold_decisions curriculum 2 -> 10. The drift to K = 50 came in with the lift-and-perturb task rewrite
+(requiredHoldDecisions was raised for the gates and the scene kept it). The fix is a curriculum, not a reward change:
+`hold/decisions` is an environment parameter (the agent already read `hold_decisions`; the new key is read first, the
+old one still works - a one-line change) with lessons 5 -> 10 -> 20 -> 50, thresholds 1.0 / 1.0 / 0.95 on the smoothed
+mean episode reward (min_lesson_length 100), i.e. ~70 % success at each K (a completing episode returns ~1.8 at K = 5
+down to ~1.5 at K = 50, a failing one -0.5 to -1.0). The +1 bonus pays at the current lesson's K, once per episode; the
+hold budget is 50 paying steps (0.2) at every K, so short holds cannot over-pay. ML-Agents advances each parameter's
+lessons independently, so perturb/scale cannot be conditioned on hold/decisions inside one yaml: run 011 is phase A
+(`Config/run_011.yaml`, hold ladder, perturb 0) and, once hold reaches lesson 3 (K = 50), a `--resume` of the same run
+id with `Config/run_011_phaseB.yaml` (hold fixed 50, perturb 0 -> 0.25 -> 0.5 -> 0.75 -> 1.0 at threshold 0.9).
+
+**Re-smoke (`results/011_smoke2`, 150k at K = 5).** No NaN; aggregate 399 steps/s with Editor eval-mode tests sharing
+the CPU (425 over the first 30k, 544 in the clean probe); Return/Shaping -1.10 -> +0.45; Task/Lifted 0.10 -> 0.50-0.74;
+mean hold length (Task/HoldSteps) 3.0 -> 7.5 steps over the last 50k (still noisy: 4.9 at the last point); Grasp/Success
+2.6-10.7 % per summary period (first +1s at 10k, then rising). All six revised criteria met -> GO. Run 011 launched at
+17:44 with 8 headless envs of `Builds/Run011/Prosthetic.exe` (TGS); the checkpoint theater runs in the Editor alongside
+(demo mode off).
+
+**Evaluation tooling.** Harness mode `eval` (Editor): imports a checkpoint, sets InferenceOnly, seeds every episode
+through the agent's new `BeforeEpisodeBegin` diagnostic hook (installed at the harness's warm-up reset), runs the
+training episode limits (MaxStep 5000, budgets 350 / 200) with theta randomization on and writes one row per episode
+with the theta descriptors (length scales, k, zeta, inertia scale, mask, active groups) for the theta-binned screening.
+Verified on throwaway seeds 4990-4994; the final evaluation uses seeds 5001-5100 at K = 50 and perturb 1.0 for
+mu = 0.6 / 1.0 / 1.5.

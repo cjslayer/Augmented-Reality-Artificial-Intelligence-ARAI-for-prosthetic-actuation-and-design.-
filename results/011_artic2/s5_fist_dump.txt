@@ -1,0 +1,15 @@
+indexBase: angle=-85.2 target=-90.0 drive=-0.122Nm touch=0
+indexMiddle: angle=-100.1 target=-100.0 drive=-0.013Nm touch=0
+indexEnd: angle=-79.4 target=-80.0 drive=0.002Nm touch=0
+middleBase: angle=-69.9 target=-90.0 drive=-0.533Nm touch=0
+middleMiddle: angle=-86.8 target=-100.0 drive=-0.225Nm touch=0
+middleEnd: angle=-76.0 target=-80.0 drive=-0.021Nm touch=0
+ringBase: angle=-89.9 target=-90.0 drive=-0.001Nm touch=0
+ringMiddle: angle=-100.2 target=-100.0 drive=0.000Nm touch=0
+ringEnd: angle=-79.8 target=-80.0 drive=0.000Nm touch=0
+pinkyBase: angle=-90.1 target=-90.0 drive=-0.001Nm touch=0
+pinkyMiddle: angle=-98.4 target=-100.0 drive=-0.012Nm touch=0
+pinkyEnd: angle=-78.7 target=-80.0 drive=-0.007Nm touch=0
+thumbBase: angle=36.8 target=40.0 drive=0.268Nm touch=0
+thumbEnd: angle=28.0 target=25.0 drive=-0.052Nm touch=0
+object=(0.006, 0.711, 5.485) kin=True contacts=0 palm=False selfPenetration=8.39mm(L_middleEnd/L_thumbEnd;overlappingPairs=4/92;over2mm: middleBase/thumbEnd:7.8 middleMiddle/thumbEnd:6.4 middleEnd/thumbEnd:8.4 pinkyBase/pinkyEnd:2.8) selfContactEvents=3994

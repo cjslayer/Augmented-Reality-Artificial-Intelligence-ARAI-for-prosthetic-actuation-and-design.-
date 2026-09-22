@@ -1,0 +1,9 @@
+HandSpec (m, deg; palm frame along/out/across from the wrist pivot)
+index: phalanges 39.2/21.3/15.3 mm, MCP (99.0, 0.0, 31.5) mm, rest abduction 8, flexion-plane tilt 2, limits MCP (-90.00, 10.00) PIP (-100.00, 5.00) DIP (-80.00, 5.00), radii 9/8/7.5 mm
+middle: phalanges 43.6/25.8/16.2 mm, MCP (104.0, 0.0, 10.5) mm, rest abduction 0, flexion-plane tilt 3, limits MCP (-90.00, 10.00) PIP (-100.00, 5.00) DIP (-80.00, 5.00), radii 9.5/8.5/7.5 mm
+ring: phalanges 41/24.5/16.6 mm, MCP (100.0, 0.0, -10.5) mm, rest abduction -6, flexion-plane tilt 8, limits MCP (-90.00, 10.00) PIP (-100.00, 5.00) DIP (-80.00, 5.00), radii 9/8/7.5 mm
+pinky: phalanges 31.9/17.1/14.9 mm, MCP (91.0, 0.0, -31.5) mm, rest abduction -14, flexion-plane tilt 13, limits MCP (-90.00, 10.00) PIP (-100.00, 5.00) DIP (-80.00, 5.00), radii 8/7/6.5 mm
+thumb: CMC (25.0, 5.0, 32.0) mm, MC1/PP/DP 46/30/21 mm, rest palmar/radial abduction 60/35, MCP fixed 20, opposition target (80.0, 62.0, 40.0) mm, limits CMC (-15.00, 60.00) IP (-10.00, 80.00), radii 11/9.5/8.5 mm
+palm: width 85 length 104 thickness 28 faceOffset 10 mm, mass 0.3 kg
+palmarFleshOffset 10 mm, tipPad 4 mm, density 1000
+anthropometrics: modelScale(armature)=0.36 specPalmWidth=85mm thumbCMCaxis(palm)=(0.33, -0.43, 0.84) oppositionAngle=31.1 meshFollowDev(mm idx/mid/ring/pnk/thb)=19/18/6/42/54 handLength=194.1mm (palm->middleBase 104.5) palmWidth=80.5mm forearm=294.4mm handMass=0.411kg (palm 0.300) forearmMass=0.234 bicepMass=2.00 links(mm,r mm,g): indexBase=39.2/9.0/10.7 indexMiddle=21.3/8.0/4.8 indexEnd=19.3/7.5/3.9 middleBase=43.6/9.5/13.3 middleMiddle=25.8/8.5/6.5 middleEnd=20.2/7.5/4.0 ringBase=41.0/9.0/11.2 ringMiddle=24.5/8.0/5.5 ringEnd=20.6/7.5/4.1 pinkyBase=31.9/8.0/7.0 pinkyMiddle=17.1/7.0/3.0 pinkyEnd=18.9/6.5/2.8 thumbBase=46.0/11.0/18.9 thumbEnd=25.0/8.5/6.3

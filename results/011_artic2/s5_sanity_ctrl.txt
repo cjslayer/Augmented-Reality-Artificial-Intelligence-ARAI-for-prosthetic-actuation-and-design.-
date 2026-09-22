@@ -1,0 +1,21 @@
+[Gates] trial 1/1 lift grip=envelope m=0.6 scale=0: object at (-0.212, 0.711, 5.456) (pushed out 1 mm), palm n
+CTRL indexBase stop=-54.5 preload->-66.5 angle=-54.9 touch=1
+    indexMiddle nocontact cap->-70.0 angle=-56.2 touch=0
+    indexEnd stop=-31.0 preload->-43.0 angle=-31.0 touch=1
+    middleBase nocontact cap->-60.0 angle=-58.9 touch=0
+    middleMiddle nocontact cap->-70.0 angle=-65.5 touch=0
+    middleEnd stop=-29.1 preload->-41.1 angle=-30.0 touch=1
+    ringBase nocontact cap->-60.0 angle=-57.0 touch=0
+    ringMiddle nocontact cap->-70.0 angle=-58.5 touch=0
+    ringEnd stop=-30.6 preload->-42.6 angle=-28.5 touch=1
+    pinkyBase stop=-40.1 preload->-52.1 angle=-36.8 touch=0
+    pinkyMiddle nocontact cap->-70.0 angle=-47.6 touch=0
+    pinkyEnd stop=-29.3 preload->-41.3 angle=-24.5 touch=1
+    thumbBase stop=-1.0 preload->11.0 angle=-1.1 touch=1
+    thumbEnd stop=0.8 preload->12.8 angle=12.8 touch=0
+    palm=yes contacts=6 | objInPalm(mm)=(80, 34, 49) r=25
+    indexBase=(121, 32, 38) indexMiddle=(114, 51, 41) indexEnd=(98, 61, 45) middleBase=(127, 37, 12) middleMiddle=(112, 59, 14) middleEnd=(93, 65, 16) ringBase=(122, 34, -12) ringMiddle=(112, 56, -10) ringEnd=(94, 67, -7) pinkyBase=(116, 19, -38) pinkyMiddle=(117, 36, -38) pinkyEnd=(108, 53, -37) thumbBase=(43, 45, 46) thumbEnd=(84, 81, 48) palmFace(out mm)=10
+  selfPenetration=0.00mm(none;overlappingPairs=0/92;over2mm: none) selfContactEvents=980
+[Gates] transition forced at step 99 contacts=6 grip=0.96Nm liftSign=1
+[Gates] lifted: bottom=0.046 at step 171 contacts=9 palm=True
+[Gates] trial 1/1 lift grip=envelope m=0.6 scale=0 -> maxStep hold=0 pulses=0 maxF=0.0N contacts=9 palm=True maxPen=12.7mm maxV=1145

@@ -51,6 +51,9 @@ public class ArticulatedGates : MonoBehaviour
         public float fixedTimestep = 0f;    // > 0: physics timestep for this run (DecisionPeriod = 0.1 s / dt); step-count fields above are in physics steps
         public int solverIterations = 0, solverVelocityIterations = 0;   // > 0: override the rig's solver iterations for this run
         public float contactOffset = 0f;    // > 0: override the rig's contact offset (m) for this run
+        // contact-penetration tuning levers (spike 6): 0 = keep the current value
+        public int objectSolverIterations = 0, objectSolverVelocityIterations = 0;   // the object's Rigidbody (project default 6 / 1)
+        public float maxDepenetrationVelocity = 0f;   // m/s, applied to the object Rigidbody, every hand link and Physics.defaultMaxDepenetrationVelocity
         public float[] envelopeTargets = null;   // 14 closing targets (deg) for the envelope grip; null = k_Envelope
         public float[] pinchTargets = null;      // 14 closing targets (deg) for the pinch grip; null = k_Pinch
         public float stiffnessScale = 0f;   // > 0: diagnostic, multiply the reference k of every group for this run (non-randomized modes)
@@ -73,6 +76,20 @@ public class ArticulatedGates : MonoBehaviour
     int trial = -1, lastCompleted, lastSuccess, stepsInTrial, phaseStep, warmup = 2; string phase = "idle";
     readonly StringBuilder sb = new StringBuilder();
     float restY, objRadius = 0.025f, liftSign = 1f, maxPen, maxSpeed, maxAbsAngle; bool nanSeen; int liftStartStep = -1, holdStart = -1, gateStep = -1, transitionStep = -1;
+    readonly List<float> penSamples = new List<float>(); float trialWallStart;
+    float CurrentPenetration()
+    {   // deepest overlap (m) between any hand link (groups, extra links, palm) and the object this step
+        float worst = 0f;
+        void Test(ArticulationBody b) { if (b == null) return; var c = b.GetComponent<Collider>(); if (c != null && Physics.ComputePenetration(c, c.transform.position, c.transform.rotation, cylCol, cyl.position, cyl.rotation, out _, out float d) && d > worst) worst = d; }
+        foreach (var b in hand.Groups) Test(b); foreach (var (eb, _) in hand.ExtraLinks) Test(eb); Test(hand.Palm);
+        return worst;
+    }
+    string PenStats()
+    {
+        if (penSamples.Count == 0) return "penWindow n=0";
+        var s = new List<float>(penSamples); s.Sort();
+        return "penWindow n=" + s.Count + " max=" + (s[s.Count - 1] * 1000f).ToString("F2") + "mm p95=" + (s[(int)(0.95f * (s.Count - 1))] * 1000f).ToString("F2") + "mm median=" + (s[s.Count / 2] * 1000f).ToString("F2") + "mm";
+    }
     // calibrate
     readonly List<float> resp = new List<float>(); float tipDot0; Vector3 tipRel0;
     float[] walkTarget = new float[ArmGraspAgent.GroupCount]; float[] armAct = new float[3];
@@ -98,6 +115,13 @@ public class ArticulatedGates : MonoBehaviour
         bp.BehaviorType = BehaviorType.HeuristicOnly;
         if (cfg.holdDecisions > 0) agent.requiredHoldDecisions = cfg.holdDecisions;   // gate: 50 decisions of hold (5 s at 0.1 s)
         float stepsPer10ms = 1f;
+        {   // object-side solver settings and depenetration velocity (levers 2 and 4)
+            var cgo = GameObject.FindGameObjectWithTag("Cylinder"); var crb = cgo != null ? cgo.GetComponent<Rigidbody>() : null;
+            if (crb != null && cfg.objectSolverIterations > 0) crb.solverIterations = cfg.objectSolverIterations;
+            if (crb != null && cfg.objectSolverVelocityIterations > 0) crb.solverVelocityIterations = cfg.objectSolverVelocityIterations;
+            if (cfg.maxDepenetrationVelocity > 0f) { Physics.defaultMaxDepenetrationVelocity = cfg.maxDepenetrationVelocity; if (crb != null) crb.maxDepenetrationVelocity = cfg.maxDepenetrationVelocity; if (agent.Hand != null) agent.Hand.maxDepenetrationVelocity = cfg.maxDepenetrationVelocity; }
+            Debug.Log("[Gates] contact settings: object iters=" + (crb != null ? crb.solverIterations + "/" + crb.solverVelocityIterations : "-") + " maxDepen=" + Physics.defaultMaxDepenetrationVelocity + " contactOffset=" + (agent.Hand != null ? agent.Hand.contactOffset : -1f) + " handIters=" + (agent.Hand != null ? agent.Hand.solverIterations + "/" + agent.Hand.solverVelocityIterations : "-"));
+        }
         if (agent.Hand != null) { if (cfg.solverIterations > 0) agent.Hand.solverIterations = cfg.solverIterations; if (cfg.solverVelocityIterations > 0) agent.Hand.solverVelocityIterations = cfg.solverVelocityIterations; if (cfg.contactOffset > 0f) { agent.Hand.contactOffset = cfg.contactOffset; var cc = GameObject.FindGameObjectWithTag("Cylinder").GetComponent<Collider>(); if (cc != null) cc.contactOffset = cfg.contactOffset; } }
         if (cfg.fixedTimestep > 0f && agent.Hand != null)
         {
@@ -136,6 +160,7 @@ public class ArticulatedGates : MonoBehaviour
         if (hand.Palm != null) { var df = hand.Palm.driveForce; for (int i = 0; i < 2 && i < df.dofCount; i++) peakTorque[ArmGraspAgent.GroupCount + i] = Mathf.Max(peakTorque[ArmGraspAgent.GroupCount + i], Mathf.Abs(df[i])); }
         for (int g = 0; g < ArmGraspAgent.GroupCount; g++) maxAbsAngle = Mathf.Max(maxAbsAngle, Mathf.Abs(agent.GetGroupAngle(g)));
         if (agent.MaxPenetration > maxPen) maxPen = agent.MaxPenetration;
+        if ((cfg.mode == "lift" && phase == "hold") || (cfg.mode == "push" && (phase == "squeeze" || phase == "pushIn" || phase == "pushOut"))) penSamples.Add(CurrentPenetration());
         if (agent.LastHoldCriterionMet && gateStep < 0) gateStep = agent.StepCount;
         if (agent.Phase != ArmGraspAgent.TaskPhase.Reach && transitionStep < 0) transitionStep = agent.StepCount;
         if (cfg.debugEvery > 0 && stepsInTrial % cfg.debugEvery == 0)
@@ -167,7 +192,7 @@ public class ArticulatedGates : MonoBehaviour
         hand = agent.Hand; palm = hand.PalmLink;   // the skeleton was rebuilt by OnEpisodeBegin
         Random.InitState(2000 + trial * 7919 + t.seed);
         agent.DiagnosticSetMass(t.mass); agent.DiagnosticSetPerturbScale(t.scale); agent.perturbScaleOverride = t.scale;
-        stepsInTrial = 0; phaseStep = 0; maxPen = 0f; maxSpeed = 0f; maxAbsAngle = 0f; nanSeen = false; liftStartStep = -1; holdStart = -1; gateStep = -1; transitionStep = -1; resp.Clear(); slipDumped = false; ControllerReset(); ctrlSummaryAtClose = ""; if (requiredSegments0 >= 0) { agent.requiredContactSegments = requiredSegments0; requiredSegments0 = -1; }
+        stepsInTrial = 0; phaseStep = 0; maxPen = 0f; maxSpeed = 0f; maxAbsAngle = 0f; nanSeen = false; liftStartStep = -1; holdStart = -1; gateStep = -1; transitionStep = -1; resp.Clear(); slipDumped = false; ControllerReset(); ctrlSummaryAtClose = ""; penSamples.Clear(); trialWallStart = Time.realtimeSinceStartup; if (requiredSegments0 >= 0) { agent.requiredContactSegments = requiredSegments0; requiredSegments0 = -1; }
         for (int g = 0; g < peakTorque.Length; g++) peakTorque[g] = 0f;
         if (cfg.mode == "stability") { phase = "walk"; for (int g = 0; g < ArmGraspAgent.GroupCount; g++) walkTarget[g] = 0f; return; }
         if (cfg.mode == "audit") { phase = "audit"; cyl.SetPositionAndRotation(cyl.position + Vector3.up * 2f, Quaternion.identity); Physics.SyncTransforms(); return; }   // object out of the way
@@ -418,7 +443,7 @@ public class ArticulatedGates : MonoBehaviour
                 break;
             case "pushOut":
                 cylRb.AddForce(palm.right * cfg.pushForce, ForceMode.Force);
-                if (phaseStep == 200) { Debug.Log("[Gates] push: " + cfg.pushForce + " N away from the palm for 2 s: maxPen=" + (maxPen * 1000f).ToString("F2") + " mm contacts=" + agent.CurrentContacts + " objInPalmNormal=" + Vector3.Dot(cyl.position - palm.position, palm.right).ToString("F3")); agent.EndEpisode(); }
+                if (phaseStep == 200) { Debug.Log("[Gates] push: " + cfg.pushForce + " N away from the palm for 2 s: maxPen=" + (maxPen * 1000f).ToString("F2") + " mm contacts=" + agent.CurrentContacts + " objInPalmNormal=" + Vector3.Dot(cyl.position - palm.position, palm.right).ToString("F3") + " " + PenStats()); agent.EndEpisode(); }
                 break;
         }
     }
@@ -429,7 +454,8 @@ public class ArticulatedGates : MonoBehaviour
         var t = trials[trial]; var r = agent.LastEpisode;
         if (cfg.mode == "calibrate" || cfg.mode == "stability" || cfg.mode == "audit") { phase = "idle"; return; }
         float weight = t.mass * Physics.gravity.magnitude;
-        if (string.IsNullOrEmpty(note)) note = TorqueTable() + " " + ctrlSummaryAtClose;
+        float wall = Time.realtimeSinceStartup - trialWallStart;
+        if (string.IsNullOrEmpty(note)) note = PenStats() + " wall=" + wall.ToString("F1") + "s stepsPerSec=" + (wall > 0f ? (stepsInTrial / wall).ToString("F0") : "-") + " " + TorqueTable() + " " + ctrlSummaryAtClose;
         sb.AppendLine(string.Join(",", new string[] { (trial + 1).ToString(), cfg.mode, t.grip, t.mass.ToString("F3"), t.scale.ToString("F2"), t.seed.ToString(), success ? "1" : "0", r.endReason, r.steps.ToString(), gateStep.ToString(), r.transitionStep.ToString(), liftStartStep.ToString(), r.stepsToLift.ToString(), r.holdSteps.ToString(), r.pulsesApplied.ToString(), r.maxPulseForce.ToString("F2"), weight.ToString("F2"), r.contacts.ToString(), r.palm ? "1" : "0", r.forearm ? "1" : "0", r.bottomAboveTop.ToString("F4"), (r.maxPenetration * 1000f).ToString("F2"), r.maxJointSpeed.ToString("F0"), nanSeen ? "1" : "0", r.gripForceMean.ToString("F3"), r.retPhase.ToString("F2"), r.retHold.ToString("F3"), r.retBonus.ToString("F2"), r.retDrop.ToString("F2"), note }));
         Flush();
         Debug.Log("[Gates] trial " + (trial + 1) + "/" + trials.Count + " " + cfg.mode + " grip=" + t.grip + " m=" + t.mass + " scale=" + t.scale + " -> " + r.endReason + " hold=" + r.holdSteps + " pulses=" + r.pulsesApplied + " maxF=" + r.maxPulseForce.ToString("F1") + "N contacts=" + r.contacts + " palm=" + r.palm + " maxPen=" + (r.maxPenetration * 1000f).ToString("F1") + "mm maxV=" + r.maxJointSpeed.ToString("F0"));

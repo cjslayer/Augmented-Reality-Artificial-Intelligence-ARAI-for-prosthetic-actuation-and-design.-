@@ -1,0 +1,27 @@
+[base] log [Gates] contact settings: object iters=6/1 maxDepen=10 contactOffset=0.0036 handIters=16/4
+[base] preload: end=success contacts=9 palm=1 grip=0.896 maxPenEp=9.92 win n=474 max=8.66 p95=8.31 med=8.30 wall=0.5 sps=1336
+[base] limits:  end=maxStep contacts=7 palm=1 grip=4.578 maxPenEp=22.87 win n=600 max=18.84 p95=17.05 med=15.84 wall=0.6 sps=1270
+[objit16_4] log [Gates] contact settings: object iters=16/4 maxDepen=10 contactOffset=0.0036 handIters=16/4
+[objit16_4] preload: end=success contacts=10 palm=1 grip=1.039 maxPenEp=14.64 win n=473 max=14.64 p95=14.11 med=12.76 wall=0.5 sps=1334
+[objit16_4] limits:  end=maxStep contacts=7 palm=1 grip=4.578 maxPenEp=22.87 win n=600 max=18.84 p95=17.05 med=15.84 wall=0.6 sps=1225
+[objit32_8] log [Gates] contact settings: object iters=32/8 maxDepen=10 contactOffset=0.0036 handIters=16/4
+[objit32_8] preload: end=success contacts=8 palm=1 grip=1.290 maxPenEp=10.32 win n=473 max=10.32 p95=10.29 med=10.16 wall=0.5 sps=1210
+[objit32_8] limits:  end=maxStep contacts=8 palm=1 grip=2.444 maxPenEp=20.54 win n=600 max=8.79 p95=8.22 med=7.91 wall=0.7 sps=1105
+[co2] log [Gates] contact settings: object iters=6/1 maxDepen=10 contactOffset=0.0036 handIters=16/4
+[co2] preload: end=success contacts=10 palm=1 grip=1.053 maxPenEp=9.49 win n=473 max=8.71 p95=8.09 med=8.08 wall=0.4 sps=1430
+[co2] limits:  end=maxStep contacts=8 palm=1 grip=4.033 maxPenEp=22.77 win n=600 max=18.70 p95=17.03 med=14.81 wall=0.6 sps=1352
+[co5] log [Gates] contact settings: object iters=6/1 maxDepen=10 contactOffset=0.0036 handIters=16/4
+[co5] preload: end=success contacts=9 palm=1 grip=0.876 maxPenEp=10.16 win n=474 max=9.79 p95=7.85 med=7.83 wall=0.5 sps=1179
+[co5] limits:  end=maxStep contacts=10 palm=1 grip=4.604 maxPenEp=23.55 win n=600 max=17.54 p95=15.99 med=15.18 wall=0.7 sps=1144
+[dep20] log [Gates] contact settings: object iters=6/1 maxDepen=20 contactOffset=0.0036 handIters=16/4
+[dep20] preload: end=success contacts=10 palm=1 grip=1.039 maxPenEp=14.64 win n=473 max=14.64 p95=14.11 med=12.76 wall=0.5 sps=1364
+[dep20] limits:  end=maxStep contacts=7 palm=1 grip=4.578 maxPenEp=22.87 win n=600 max=18.84 p95=17.05 med=15.84 wall=0.6 sps=1281
+[dep50] log [Gates] contact settings: object iters=6/1 maxDepen=50 contactOffset=0.0036 handIters=16/4
+[dep50] preload: end=success contacts=10 palm=1 grip=1.039 maxPenEp=14.64 win n=473 max=14.64 p95=14.11 med=12.76 wall=0.5 sps=1354
+[dep50] limits:  end=maxStep contacts=7 palm=1 grip=4.578 maxPenEp=22.87 win n=600 max=18.84 p95=17.05 med=15.84 wall=0.6 sps=1268
+[solver] m_SolverType 0 -> 1 []
+[tgs] log [Gates] contact settings: object iters=6/1 maxDepen=10 contactOffset=0.0036 handIters=16/4
+[tgs] preload: end=success contacts=5 palm=1 grip=1.073 maxPenEp=1.58 win n=473 max=2.13 p95=2.12 med=2.12 wall=0.4 sps=1462
+[tgs] limits:  end=maxStep contacts=7 palm=1 grip=4.484 maxPenEp=11.03 win n=600 max=3.33 p95=3.31 med=3.28 wall=0.5 sps=1386
+[solver] m_SolverType 1 -> 0 []
+=== TUNE DONE

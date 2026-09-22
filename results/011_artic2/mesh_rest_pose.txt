@@ -1,0 +1,19 @@
+pivots (world, mm):
+indexBase (883, 509, 5447) localEuler=(21, 17, 121)
+indexMiddle (849, 518, 5360) localEuler=(358, 360, 352)
+indexEnd (831, 529, 5284) localEuler=(1, 0, 1)
+middleBase (885, 441, 5420) localEuler=(10, 353, 77)
+middleMiddle (911, 437, 5350) localEuler=(358, 1, 11)
+middleEnd (928, 427, 5255) localEuler=(0, 360, 347)
+ringBase (888, 390, 5430) localEuler=(350, 350, 72)
+ringMiddle (924, 375, 5353) localEuler=(0, 0, 353)
+ringEnd (967, 359, 5286) localEuler=(0, 0, 349)
+pinkyBase (909, 329, 5465) localEuler=(24, 329, 51)
+pinkyMiddle (963, 316, 5414) localEuler=(14, 338, 13)
+pinkyEnd (995, 299, 5346) localEuler=(8, 352, 349)
+thumbBase (792, 526, 5509) localEuler=(338, 210, 248)
+thumbEnd (768, 565, 5415) localEuler=(348, 2, 349)
+palm (597, 417, 5391) up=(0.99, 0.00, 0.13) right=(-0.13, -0.04, 0.99) fwd=(0.00, 1.00, 0.04)
+adjacent spacing (mm): indexBase-middleBase 73; middleBase-ringBase 52; ringBase-pinkyBase 73; pinkyBase-thumbBase 234; indexMiddle-middleMiddle 102; middleMiddle-ringMiddle 64; ringMiddle-pinkyMiddle 93; indexEnd-middleEnd 144; middleEnd-ringEnd 85; ringEnd-pinkyEnd 90; 
+overlaps at rest pose (depth mm, parent-child pairs skipped):
+

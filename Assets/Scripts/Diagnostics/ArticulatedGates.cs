@@ -59,6 +59,7 @@ public class ArticulatedGates : MonoBehaviour
     // calibrate
     readonly List<float> resp = new List<float>(); float tipDot0; Vector3 tipRel0;
     float[] walkTarget = new float[ArmGraspAgent.GroupCount]; float[] armAct = new float[3];
+    readonly float[] peakTorque = new float[ArmGraspAgent.GroupCount + 2];   // |drive torque| peak per finger group (+ wrist flex, pron) over the trial
 
     static readonly float[] k_Envelope = { -75f, -85f, -60f, -75f, -85f, -60f, -75f, -85f, -60f, -75f, -85f, -60f, 45f, 60f };
     static readonly float[] k_Pinch    = { -60f, -80f, -60f, -60f, -80f, -60f, 5f, 0f, 0f, 5f, 0f, 0f, 45f, 60f };   // index + middle + thumb; ring / pinky open
@@ -101,6 +102,8 @@ public class ArticulatedGates : MonoBehaviour
         stepsInTrial++; phaseStep++;
         hand = agent.Hand; palm = hand.PalmLink;
         var h = hand.Health(); if (!h.finite) nanSeen = true; if (h.maxJointSpeedDeg > maxSpeed) maxSpeed = h.maxJointSpeedDeg;
+        for (int g = 0; g < ArmGraspAgent.GroupCount; g++) peakTorque[g] = Mathf.Max(peakTorque[g], Mathf.Abs(hand.GroupDriveForce(g)));
+        if (hand.Palm != null) { var df = hand.Palm.driveForce; for (int i = 0; i < 2 && i < df.dofCount; i++) peakTorque[ArmGraspAgent.GroupCount + i] = Mathf.Max(peakTorque[ArmGraspAgent.GroupCount + i], Mathf.Abs(df[i])); }
         for (int g = 0; g < ArmGraspAgent.GroupCount; g++) maxAbsAngle = Mathf.Max(maxAbsAngle, Mathf.Abs(agent.GetGroupAngle(g)));
         if (agent.MaxPenetration > maxPen) maxPen = agent.MaxPenetration;
         if (agent.LastHoldCriterionMet && gateStep < 0) gateStep = agent.StepCount;
@@ -128,6 +131,7 @@ public class ArticulatedGates : MonoBehaviour
         Random.InitState(2000 + trial * 7919 + t.seed);
         agent.DiagnosticSetMass(t.mass); agent.DiagnosticSetPerturbScale(t.scale); agent.perturbScaleOverride = t.scale;
         stepsInTrial = 0; phaseStep = 0; maxPen = 0f; maxSpeed = 0f; maxAbsAngle = 0f; nanSeen = false; liftStartStep = -1; holdStart = -1; gateStep = -1; transitionStep = -1; resp.Clear();
+        for (int g = 0; g < peakTorque.Length; g++) peakTorque[g] = 0f;
         if (cfg.mode == "stability") { phase = "walk"; for (int g = 0; g < ArmGraspAgent.GroupCount; g++) walkTarget[g] = 0f; return; }
         // object on the palm surface over the palm centre, at rest height on the pedestal; the hand is at its rest pose
         var pb = palm.GetComponent<BoxCollider>(); Vector3 pcen = palm.TransformPoint(pb.center); float half = 0.5f * pb.size.x; float r = objRadius;   // not the AABB: a tumbled object's AABB is its tilted extent
@@ -250,10 +254,24 @@ public class ArticulatedGates : MonoBehaviour
         var t = trials[trial]; var r = agent.LastEpisode;
         if (cfg.mode == "calibrate" || cfg.mode == "stability") { phase = "idle"; return; }
         float weight = t.mass * Physics.gravity.magnitude;
+        if (string.IsNullOrEmpty(note)) note = TorqueTable();
         sb.AppendLine(string.Join(",", new string[] { (trial + 1).ToString(), cfg.mode, t.grip, t.mass.ToString("F3"), t.scale.ToString("F2"), t.seed.ToString(), success ? "1" : "0", r.endReason, r.steps.ToString(), gateStep.ToString(), r.transitionStep.ToString(), liftStartStep.ToString(), r.stepsToLift.ToString(), r.holdSteps.ToString(), r.pulsesApplied.ToString(), r.maxPulseForce.ToString("F2"), weight.ToString("F2"), r.contacts.ToString(), r.palm ? "1" : "0", r.forearm ? "1" : "0", r.bottomAboveTop.ToString("F4"), (r.maxPenetration * 1000f).ToString("F2"), r.maxJointSpeed.ToString("F0"), nanSeen ? "1" : "0", r.gripForceMean.ToString("F3"), r.retPhase.ToString("F2"), r.retHold.ToString("F3"), r.retBonus.ToString("F2"), r.retDrop.ToString("F2"), note }));
         Flush();
         Debug.Log("[Gates] trial " + (trial + 1) + "/" + trials.Count + " " + cfg.mode + " grip=" + t.grip + " m=" + t.mass + " scale=" + t.scale + " -> " + r.endReason + " hold=" + r.holdSteps + " pulses=" + r.pulsesApplied + " maxF=" + r.maxPulseForce.ToString("F1") + "N contacts=" + r.contacts + " palm=" + r.palm + " maxPen=" + (r.maxPenetration * 1000f).ToString("F1") + "mm maxV=" + r.maxJointSpeed.ToString("F0"));
         phase = "idle";
+    }
+
+    /// <summary>Per group: configured k (N m/rad), force limit (N m), peak |drive torque| (N m) this trial; semicolon-separated for the CSV note column.</summary>
+    string TorqueTable()
+    {
+        var s = new StringBuilder("torque:");
+        for (int g = 0; g < ArmGraspAgent.GroupCount; g++)
+        {
+            var b = hand.Groups[g]; if (b == null) continue; var d = b.xDrive;
+            s.Append(' ').Append(ArticulatedHand.GroupTags[g]).Append(" k=").Append(d.stiffness.ToString("F3")).Append(" lim=").Append(d.forceLimit.ToString("F2")).Append(" peak=").Append(peakTorque[g].ToString("F3")).Append(';');
+        }
+        if (hand.Palm != null) { s.Append(" wristFlex k=").Append(hand.Palm.xDrive.stiffness.ToString("F2")).Append(" lim=").Append(hand.Palm.xDrive.forceLimit.ToString("F1")).Append(" peak=").Append(peakTorque[ArmGraspAgent.GroupCount].ToString("F3")).Append("; wristPron k=").Append(hand.Palm.yDrive.stiffness.ToString("F2")).Append(" lim=").Append(hand.Palm.yDrive.forceLimit.ToString("F1")).Append(" peak=").Append(peakTorque[ArmGraspAgent.GroupCount + 1].ToString("F3")).Append(';'); }
+        return s.ToString();
     }
 
     void DumpJoints()

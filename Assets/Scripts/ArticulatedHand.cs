@@ -52,6 +52,18 @@ public class ArticulatedHand : MonoBehaviour
     [Tooltip("Stiffness of the Target drive holding masked groups at the neutral pose (acceleration units, 1/s^2).")]
     public float maskedHoldStiffness = 4000f, maskedHoldDamping = 200f;
     public bool ignoreParentChildCollision = true, ignorePalmBaseCollision = true, ignoreForearmPalmCollision = true;
+
+    [Header("Anatomy (spike 3: anchor frames rebuilt from the palm frame instead of the armature's bone rolls)")]
+    [Tooltip("Rebuild the finger chains straight in the palm plane with an anatomical rest splay, flexion axes perpendicular to each finger with a small radial convergence, the thumb axes set for a fixed opposition, and the wrist twist axis = flexion / extension (across the palm). Off = the armature's bone frames as imported.")]
+    public bool anatomicalAxes = true;
+    [Tooltip("Rest abduction (deg, in the palm plane, + = toward the thumb) of index, middle, ring, pinky in the open hand.")]
+    public float[] restSplayDeg = { 8f, 0f, -6f, -14f };
+    [Tooltip("Flexion-plane tilt (deg) of each finger from the palm's long axis, + = the flexed finger drifts toward the thumb (radial) side: Lister's cascade toward the scaphoid tubercle (Ashraf 2009 scatter; geometric derivation index ~5, middle ~4, ring ~15, little ~25; here half of that, 11 deg total fan, inside the 5-15 deg 'slight convergence' band).")]
+    public float[] convergenceDeg = { 2f, 3f, 8f, 13f };
+    [Tooltip("Thumb opposition target in the palm frame (along, out, across; mm): the index / middle pad region the thumb pad sweeps toward. Both thumb joints flex in the plane through the thumb's rest direction and this point.")]
+    public Vector3 oppositionTargetPalmMm = new Vector3(138f, 46f, 28f);
+    /// <summary>Opposition angle (deg) between the thumb flexion axis and the middle finger's flexion axis, after the build (report only).</summary>
+    public float OppositionAngleDeg { get; private set; }
     [Tooltip("Ignore every collision pair within the hand and arm (spike-1 workaround; off since spike 2: only parent-child, palm-base and forearm-palm pairs are ignored, finger-finger, thumb-finger and fingertip-palm contacts are real).")]
     public bool ignoreAllSelfCollision = false;
 
@@ -171,24 +183,47 @@ public class ArticulatedHand : MonoBehaviour
 
         // palm: spherical (twist X = wrist flexion, swing Y = pronation, swing Z locked)
         Palm = MakeLink("L_Palm", Forearm.transform, m_Palm.worldPos, m_Palm.worldRot, m_Palm.bone);
-        Palm.jointType = ArticulationJointType.SphericalJoint; Palm.anchorPosition = Vector3.zero; Palm.anchorRotation = Quaternion.identity; Palm.matchAnchors = true;
+        Palm.jointType = ArticulationJointType.SphericalJoint; Palm.anchorPosition = Vector3.zero; Palm.anchorRotation = anatomicalAxes ? k_ZAxisAnchor : Quaternion.identity; Palm.matchAnchors = true;
         Palm.twistLock = ArticulationDofLock.LimitedMotion; Palm.swingYLock = ArticulationDofLock.LimitedMotion; Palm.swingZLock = ArticulationDofLock.LockedMotion;
         { var box = Palm.gameObject.AddComponent<BoxCollider>(); box.size = m_Palm.boxSizeW; box.center = m_Palm.boxCenterW; Palm.mass = palmMass; }
         Palm.maxAngularVelocity = armMaxAngularVelocity;
 
-        // fingers: revolute about the bone's local Z (anchor X rotated onto Z); link origin at the (scaled) joint pivot
+        // palm frame for the anatomical build: along = palm.up (toward the fingers), out = palm.right (palm normal, closing side), across = palm.forward (thumb side = +)
+        Vector3 pAlong = Palm.transform.up, pOut = Palm.transform.right, pAcross = Palm.transform.forward;
+        Vector3[] fingerDir = new Vector3[4]; Quaternion[] fingerRot = new Quaternion[4]; float[] convSigned = new float[4];
+        for (int f = 0; f < 4; f++)
+        {
+            float splay = restSplayDeg != null && restSplayDeg.Length > f ? restSplayDeg[f] : 0f;
+            fingerDir[f] = Quaternion.AngleAxis(splay, pOut) * pAlong;                        // rest direction in the palm plane
+            if (Vector3.Dot(Quaternion.AngleAxis(1f, pOut) * pAlong, pAcross) < 0f) fingerDir[f] = Quaternion.AngleAxis(-splay, pOut) * pAlong;   // + splay = toward the thumb side
+            Vector3 z = Vector3.Cross(pOut, fingerDir[f]).normalized;                           // link local Z = nominal flexion axis, local X = out, local Y = finger
+            fingerRot[f] = Quaternion.LookRotation(z, fingerDir[f]);
+            float conv = convergenceDeg != null && convergenceDeg.Length > f ? convergenceDeg[f] : 0f;
+            Vector3 sag = Vector3.Cross(pOut, pAlong).normalized;                                // axis of a flexion plane along the palm's long axis
+            Vector3 axisW = Quaternion.AngleAxis(conv, pOut) * sag; Vector3 flexDir = -Vector3.Cross(axisW, pAlong);   // negative joint angles = flexion
+            if (Vector3.Dot(flexDir, pAcross) * conv < 0f) axisW = Quaternion.AngleAxis(-conv, pOut) * sag;            // + conv = drift toward the thumb side
+            convSigned[f] = Vector3.SignedAngle(z, axisW, pOut);                                 // in-plane angle from the finger's own perpendicular (local Z) to the flexion axis
+        }
+        // fingers: revolute about the link's local Z (anchor X rotated onto Z); link origin at the (scaled) joint pivot
         for (int g = 0; g < GroupCount; g++)
         {
             var bi = m_Group[g]; if (bi == null) continue;
             int p = k_GroupParent[g]; Transform parentLink = p < 0 ? Palm.transform : Groups[p].transform;
             Vector3 parentBoneOrigin = p < 0 ? m_Palm.worldPos : m_Group[p].worldPos; Quaternion parentBoneRot = p < 0 ? m_Palm.worldRot : m_Group[p].worldRot;
-            float sc = m_LengthScale[k_GroupFinger[g]];
+            int fi = k_GroupFinger[g]; float sc = m_LengthScale[fi];
             // the pivot offset from the parent bone is scaled along the finger only for child segments (base pivots stay on the palm)
             Vector3 offsetW = bi.worldPos - parentBoneOrigin; if (p >= 0) offsetW *= sc;
             Vector3 pivotW = parentLink.TransformPoint(Quaternion.Inverse(parentBoneRot) * offsetW);
             Quaternion rotW = parentLink.rotation * (Quaternion.Inverse(parentBoneRot) * bi.worldRot);
+            bool anat = anatomicalAxes && fi < 4;
+            if (anat)
+            {   // straight chain along the finger's rest direction (base pivot = the knuckle as imported), one frame per finger
+                if (p >= 0) pivotW = parentLink.position + fingerDir[fi] * offsetW.magnitude;
+                rotW = fingerRot[fi];
+            }
             var link = MakeLink("L_" + GroupTags[g], parentLink, pivotW, rotW, bi.bone);
-            link.jointType = ArticulationJointType.RevoluteJoint; link.anchorPosition = Vector3.zero; link.anchorRotation = k_ZAxisAnchor; link.matchAnchors = true;
+            link.jointType = ArticulationJointType.RevoluteJoint; link.anchorPosition = Vector3.zero; link.matchAnchors = true;
+            link.anchorRotation = anat ? Quaternion.AngleAxis(Vector3.SignedAngle(Vector3.forward, link.transform.InverseTransformDirection(Quaternion.AngleAxis(convSigned[fi], pOut) * Vector3.Cross(pOut, fingerDir[fi]).normalized), Vector3.right), Vector3.right) * k_ZAxisAnchor : k_ZAxisAnchor;
             link.twistLock = ArticulationDofLock.LimitedMotion;
             AddCapsule(link.gameObject, bi, sc); link.mass = CapsuleMass(bi, sc) * m_InertiaScale[g];
             link.maxAngularVelocity = fingerMaxAngularVelocity;
@@ -196,6 +231,20 @@ public class ArticulatedHand : MonoBehaviour
             Groups[g] = link;
         }
         Forearm.mass *= 1f; Palm.mass *= 1f;
+        if (anatomicalAxes && Groups[12] != null && Groups[13] != null)
+        {   // thumb: both joints flex in the plane through the thumb's rest direction and the opposition target (positive angles = toward the target)
+            Vector3 pt = Groups[12].transform.position;
+            var tipCap = Groups[13].GetComponent<CapsuleCollider>();
+            Vector3 tip = Groups[13].transform.TransformPoint(new Vector3(tipCap.center.x, tipCap.center.y + 0.5f * tipCap.height, tipCap.center.z));
+            Vector3 target = Palm.transform.position + (pAlong * oppositionTargetPalmMm.x + pOut * oppositionTargetPalmMm.y + pAcross * oppositionTargetPalmMm.z) * 0.001f;
+            Vector3 axisW = Vector3.Cross(tip - pt, target - pt).normalized;
+            foreach (var tb in new[] { Groups[12], Groups[13] })
+            {
+                Vector3 axisL = tb.transform.InverseTransformDirection(axisW);
+                tb.anchorRotation = Quaternion.FromToRotation(Vector3.right, axisL);
+            }
+            OppositionAngleDeg = Vector3.Angle(axisW, Groups[3].transform.TransformDirection(Groups[3].anchorRotation * Vector3.right));
+        }
         // self-collision policy
         var all = new List<ArticulationBody> { Bicep, Forearm, Palm }; all.AddRange(Groups);
         foreach (var a in all) foreach (var b in all)

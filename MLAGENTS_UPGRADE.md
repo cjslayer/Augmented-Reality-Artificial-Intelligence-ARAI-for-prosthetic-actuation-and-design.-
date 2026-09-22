@@ -670,3 +670,38 @@ also shows the middle finger blocked at -60 deg by the converging index and ring
 overlapping, worst 7.8 mm); no pair overlaps at the open pose. Decision needed on the grasp geometry (finger flexion
 planes fan by up to 48 deg across the hand; thumb sweeps along the palm rather than across it) before G1-G6 can mean
 anything. The obsolete kinematic `LiftHarness` was deleted.
+
+## Articulated hand, spike 3 (2026-09-22, branch `articulated-hand`): anatomical audit and anchor-frame rebuild
+
+**Audit (harness mode `audit`, `results/011_artic2/rig_audit_before.txt`).** The generated skeleton inherited the
+animation armature's bone frames: finger flexion axes tilted 7-39 deg out of the palm plane (pinky middle / end 39 and
+37 deg) and fanned 32 deg in the plane; the rest pose carried up to 34 deg of curl (pinky dorsal, index tip palmar) and
+the pinky pointed 13.5 deg toward the thumb; the thumb flexed in the finger plane (axis 143 deg from the middle finger
+axis, no opposition), its pad landing 42 mm from the index tip at full flexion; the palm link's twist axis was the palm
+normal, so "wrist flexion" was radial / ulnar deviation. Flexion signs, joint limits, link masses and capsule radii were
+fine. Link proportions (index 30 / 25 / 18 mm vs human 39 / 21 / 15; middle finger's middle phalanx longer than its
+proximal), base-pivot spacing 26 / 19 / 26 mm and the 16 mm palm box are armature artefacts that need re-authoring.
+
+**Rebuild (`ArticulatedHand.anatomicalAxes`, `restSplayDeg`, `convergenceDeg`, `oppositionTargetPalmMm`).** Finger
+chains are rebuilt straight in the palm plane from the imported knuckle pivots with a rest splay of +8 / 0 / -6 / -14
+deg (index..pinky, + = toward the thumb; no measured source, inside the abduction ranges of the survey), one link frame
+per finger (local X = palm normal, Y = finger, Z = nominal flexion axis), flexion planes tilted +2 / +3 / +8 / +13 deg
+from the palm's long axis toward the thumb (half of the derived Lister cascade, `results/011_artic2/hand_axes_survey.md`),
+both thumb joints flexing in the plane through the thumb's rest direction and an opposition target at (138, 46, 28) mm
+(along, out, across) in the palm frame, and the palm anchor rotated so twist = flexion / extension (across the palm),
+swing Y = pronation, swing Z = deviation (locked). Measured after the rebuild (`rig_audit_after.txt`): axis elevation 0
+for all fingers, flexed fingertips drift 2.5 / 3.2 / 9.2 / 12.9 mm toward the thumb, thumb sweeps 104 mm across the
+palm (tip at the ulnar palm at its limits), thumb axis 89 deg from the finger axes (Cheema's 45-60 deg is MC1 pronation,
+a different measure). Closed fist (`s3_fist_dump.txt`): every finger reaches -70 deg or more (before: middle blocked at
+-32 by the thumb / -60 by the neighbours), no finger-finger crossing; remaining overlaps are fingertips pressed into
+the palm box and the thumb resting on the flexed index under drive load (2-8 mm, 4 pairs > 2 mm at 32 / 16 solver
+iterations).
+
+**G1 on the fixed rig: STOPPED, 0/9** (`g1_lift_s3.csv`, slip dump `g1_slip_s3_dump.txt`, renders `g1_slip_s3_*.png`).
+At the forced release the scripted envelope (-75 / -85 / -60) has curled the fingertips under the 5 cm cylinder: the
+only contacts are index / middle / ring tips at (along 0.07-0.09, out 0.04) with normals (-0.7, +0.7, 0), pushing the
+object toward the wrist and away from the palm; the palm never touches; the thumb (32 / 37 deg of 45 / 60) is blocked
+on the index base (12 mm overlap) instead of reaching the object. The object drifts out at 0.05-0.1 m/s and tips.
+Per the task rule no target iteration was done. Harness bug fixed on the way: an inserted diagnostic line had split an
+if / else so runs without `stiffnessScale` re-enabled morphology randomization (affected only the 20-100 g and
+dynamic-object diagnostics of spike 2, which are therefore void).

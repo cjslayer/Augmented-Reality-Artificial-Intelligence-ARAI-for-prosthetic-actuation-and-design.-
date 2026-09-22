@@ -83,3 +83,6 @@ venv/
 .venv/
 __pycache__/
 *.py[cod]
+
+# checkpoint-theater imports (Editor watch mode)
+/Assets/Models/Watch/

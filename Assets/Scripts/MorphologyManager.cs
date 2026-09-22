@@ -313,6 +313,8 @@ public class MorphologyManager : MonoBehaviour
                 float L = m_Segments[j].capsule != null ? m_Segments[j].capsule.height * m_Segments[j].joint.lossyScale.y : 0.02f;
                 I += mass[j] * (d * d + L * L / 12f);
             }
+            if (rig != null) foreach (var (eb, eg) in rig.ExtraLinks)   // links without a group (thumb proximal phalanx, fixed MCP): mass counts toward the groups proximal of it on the same finger
+                if (k_GroupFinger[eg] == f && eg >= g && inertiaScale[eg] > 0f) { var ec = eb.GetComponent<CapsuleCollider>(); Vector3 c = ec != null ? eb.transform.TransformPoint(ec.center) : eb.transform.position; float d = Vector3.Distance(c, seg.joint.position); float L = ec != null ? ec.height : 0.02f; I += eb.mass / inertiaScale[eg] * (d * d + L * L / 12f); }
             NominalInertia[g] = Mathf.Max(I, 1e-8f);
         }
         // wrist: palm box + all fingers about the palm pivot
@@ -323,6 +325,7 @@ public class MorphologyManager : MonoBehaviour
             Vector3 pc = m_PalmBox != null ? m_Palm.TransformPoint(m_PalmBox.center) : m_Palm.position;
             float dp = Vector3.Distance(pc, m_Palm.position); Iw += palmMass * (dp * dp + m_PalmLength * m_PalmLength / 12f);
             for (int g = 0; g < FingerGroupCount; g++) { float d = Vector3.Distance(centre[g], m_Palm.position); Iw += mass[g] * d * d; }
+            if (rig != null) foreach (var (eb, eg) in rig.ExtraLinks) { float d = Vector3.Distance(eb.transform.position, m_Palm.position); Iw += eb.mass / Mathf.Max(inertiaScale[eg], 1e-3f) * d * d; }
         }
         NominalInertia[FingerGroupCount] = Mathf.Max(Iw, 1e-6f);        // wrist flexion
         NominalInertia[FingerGroupCount + 1] = Mathf.Max(Iw * 0.5f, 1e-6f);   // pronation: roughly half (mass closer to the axis)

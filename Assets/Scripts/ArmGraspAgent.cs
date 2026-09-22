@@ -54,27 +54,27 @@ public class ArmGraspAgent : Agent
     public string palmPath = "Armature/Bone/Bicep.r/forearm.r/palm.r";
 
     [Header("Target Spawn (world space)")]
-    public Vector3 spawnCenter = new Vector3(0.48f, 0.488f, 5.57f);
+    public Vector3 spawnCenter = new Vector3(-0.329f, 0.690f, 5.474f);
     [Tooltip("Radius (m) of the horizontal spawn disk. Overridden by the 'spawn_radius' environment parameter when present.")]
-    public float spawnRadius = 0.25f;
+    public float spawnRadius = 0.09f;
     [Tooltip("Cylinder height is raised by a uniform random amount in [0, spawnHeightRange] (m) when not resting on the platform.")]
-    public float spawnHeightRange = 0.10f;
+    public float spawnHeightRange = 0.036f;
     public bool randomizeYaw = true;
     [Tooltip("Accept only spawns whose distance from the shoulder pivot is within [x, y] (m).")]
-    public Vector2 reachRange = new Vector2(1.1f, 1.5f);
+    public Vector2 reachRange = new Vector2(0.40f, 0.54f);
     public int spawnAttempts = 50;
 
     [Header("Contact")]
     [Tooltip("Contact separation (m) at or below which a reported collision counts as touching.")]
-    public float contactDistance = 0.003f;
+    public float contactDistance = 0.001f;
 
     [Header("Reward")]
     public float distanceRewardScale = 1.0f;
     public float palmDistanceRewardScale = 1.0f;
     public float shapingScale = 1f / 15f;
-    public float shapingFloorDistance = 0.05f;
+    public float shapingFloorDistance = 0.018f;
     [Tooltip("Reference-hand offset (m, palm frame: x = palm normal / closing direction, y = along the fingers, z = across the palm) from the palm pivot to the centre of the region the closed fingers enclose.")]
-    public Vector3 graspPointOffset = new Vector3(0.14f, 0.215f, 0.078f);
+    public Vector3 graspPointOffset = new Vector3(0.0504f, 0.0774f, 0.0281f);
     public float successBonus = 1.0f;
     public int requiredContactSegments = 6;
     public int requiredDistinctFingers = 2;
@@ -86,24 +86,24 @@ public class ArmGraspAgent : Agent
     [Header("Lift Task (run 011)")]
     public string platformName = "Platform";
     public bool restOnPlatform = true;
-    public float restClearance = 0.001f;
+    public float restClearance = 0.0005f;
     [Tooltip("Lifted = the object's world AABB bottom is at least this (m) above the platform top.")]
-    public float liftClearance = 0.08f;
+    public float liftClearance = 0.03f;
     public float phaseReward = 0.1f;
     public int liftBudgetSteps = 200;
     public int taskBudgetSteps = 350;
     public float holdRewardPerStep = 0.004f;
     public int holdRewardBudgetSteps = 50;
     public float dropPenalty = 0.2f;
-    public float dropDistance = 0.3f;
-    public float dropBelowPlatform = 0.02f;
+    public float dropDistance = 0.11f;
+    public float dropBelowPlatform = 0.007f;
     [Tooltip("Drop criterion: object axis tilted more than this (deg) from its orientation at the transition; 180 disables.")]
     public float dropTiltDeg = 60f;
     public Vector2 massRange = new Vector2(0.2f, 1.5f);
     public int perturbPulses = 3;
     public int perturbPulseSteps = 5;
     public float perturbPeakWeightRatio = 1.5f;
-    public float perturbTorqueLever = 0.15f;
+    public float perturbTorqueLever = 0.054f;
     public float perturbScale = 1f;
     [Tooltip("Diagnostics only: >= 0 overrides the perturbation scale.")]
     public float perturbScaleOverride = -1f;
@@ -126,8 +126,8 @@ public class ArmGraspAgent : Agent
     public string statsCsvPath = "";
 
     [Header("Observations")]
-    public float workspaceScale = 0.4f;
-    public float targetObsScale = 1.0f;
+    public float workspaceScale = 0.15f;
+    public float targetObsScale = 0.36f;
 
     [Header("Testing")]
     public float[] heuristicActions = new float[ActionCount];
@@ -254,7 +254,7 @@ public class ArmGraspAgent : Agent
     // ---- lift task ----
     public enum TaskPhase { Reach = 0, Lift = 1, Hold = 2 }
     TaskPhase m_Phase;
-    Rigidbody m_CylRb; RigidbodyConstraints m_CylConstraints0; RigidbodyInterpolation m_CylInterp0; float m_CylHalfHeight = 0.388f;
+    Rigidbody m_CylRb; RigidbodyConstraints m_CylConstraints0; RigidbodyInterpolation m_CylInterp0; float m_CylHalfHeight = 0.14f;
     float m_PlatformTop; bool m_ObjectDynamic;
     float m_Mass = 1f, m_MassObs, m_PerturbScale = 1f;
     int m_TransitionStep = -1, m_StepsToLift = -1, m_HoldStepsPaid, m_HoldEntries, m_PulsesApplied;
@@ -461,7 +461,7 @@ public class ArmGraspAgent : Agent
             var lim = GetLimits(g);
             var body = m_Hand.Groups[g];
             float d = body != null && cylinderTransform != null ? Vector3.Distance(body.transform.position, cylinderTransform.position) / scale : 0f;
-            FillToken(k_GroupParent[g] < 0 ? 0f : (k_GroupParent[g] + 1) / (float)MaxTokens, m_Morph != null ? m_Morph.LinkLength[g] : 0.08f,
+            FillToken(k_GroupParent[g] < 0 ? 0f : (k_GroupParent[g] + 1) / (float)MaxTokens, m_Morph != null ? m_Morph.LinkLength[g] : 0.03f,
                       k_GroupFinger[g] / 4f, k_GroupSegment[g] / 2f, lim, g, GetGroupAngle(g), m_Hand.GroupVelocity(g), m_Setpoint[g], Mathf.Clamp(d, 0f, 1.5f));
             m_TokenSensor.AppendObservation(m_Token);
         }
@@ -469,7 +469,7 @@ public class ArmGraspAgent : Agent
         {
             var lim = GetArmLimits(3 + w);
             float d = m_Palm != null && cylinderTransform != null ? Vector3.Distance(m_Palm.position, cylinderTransform.position) / scale : 0f;
-            FillToken(0f, m_Morph != null ? m_Morph.HandSpan : 0.45f, 5f / 4f, w / 2f, lim, GroupCount + w, GetArmAngle(3 + w), m_Hand.ArmVelocity(3 + w), m_WristSetpoint[w], Mathf.Clamp(d, 0f, 1.5f));
+            FillToken(0f, m_Morph != null ? m_Morph.HandSpan : 0.19f, 5f / 4f, w / 2f, lim, GroupCount + w, GetArmAngle(3 + w), m_Hand.ArmVelocity(3 + w), m_WristSetpoint[w], Mathf.Clamp(d, 0f, 1.5f));
             m_TokenSensor.AppendObservation(m_Token);
         }
     }
@@ -479,13 +479,13 @@ public class ArmGraspAgent : Agent
         float rad = angle * Mathf.Deg2Rad;
         float k = m_Morph != null ? m_Morph.stiffness[morphIndex] : 1f, I = m_Morph != null ? m_Morph.inertia[morphIndex] : 1e-3f;
         m_Token[0] = parent;
-        m_Token[1] = length / 0.15f;
+        m_Token[1] = length / 0.06f;
         m_Token[2] = fingerCode;
         m_Token[3] = segCode;
         m_Token[4] = lim.x / 90f;
         m_Token[5] = lim.y / 90f;
         m_Token[6] = Mathf.Log10(Mathf.Max(k, 1e-6f)) / 3f;
-        m_Token[7] = Mathf.Log10(Mathf.Max(I, 1e-9f)) / 3f;
+        m_Token[7] = (Mathf.Log10(Mathf.Max(I, 1e-10f)) + 6f) / 2f;   // human-scale subtree inertia 1e-7..1e-4 kg m^2 -> [-0.5, 1]
         m_Token[8] = Mathf.Sin(rad);
         m_Token[9] = Mathf.Cos(rad);
         m_Token[10] = Mathf.Clamp(vel * Mathf.Deg2Rad / 10f, -2f, 2f);

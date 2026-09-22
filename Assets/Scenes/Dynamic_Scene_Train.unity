@@ -852,15 +852,27 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7697119373671860420, guid: 89fcafe537c345041921dd79448fb634, type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.12944639
+      value: 0.05
+      objectReference: {fileID: 0}
+    - target: {fileID: 7697119373671860420, guid: 89fcafe537c345041921dd79448fb634, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.14
       objectReference: {fileID: 0}
     - target: {fileID: 7697119373671860420, guid: 89fcafe537c345041921dd79448fb634, type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.12944639
+      value: 0.05
+      objectReference: {fileID: 0}
+    - target: {fileID: 7697119373671860420, guid: 89fcafe537c345041921dd79448fb634, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0.08143595
       objectReference: {fileID: 0}
     - target: {fileID: 7697119373671860420, guid: 89fcafe537c345041921dd79448fb634, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.183
+      value: 0.019345641
+      objectReference: {fileID: 0}
+    - target: {fileID: 7697119373671860420, guid: 89fcafe537c345041921dd79448fb634, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -1.7160401
       objectReference: {fileID: 0}
     - target: {fileID: 7697119375148725701, guid: 89fcafe537c345041921dd79448fb634, type: 3}
       propertyPath: m_IsKinematic
@@ -868,19 +880,27 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7697119375148725705, guid: 89fcafe537c345041921dd79448fb634, type: 3}
       propertyPath: m_LocalScale.x
-      value: 1.0711858
+      value: 0.3856269
+      objectReference: {fileID: 0}
+    - target: {fileID: 7697119375148725705, guid: 89fcafe537c345041921dd79448fb634, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.046321206
       objectReference: {fileID: 0}
     - target: {fileID: 7697119375148725705, guid: 89fcafe537c345041921dd79448fb634, type: 3}
       propertyPath: m_LocalScale.z
-      value: 1.0729402
+      value: 0.3862585
       objectReference: {fileID: 0}
     - target: {fileID: 7697119375148725705, guid: 89fcafe537c345041921dd79448fb634, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.984
+      value: -0.057279915
+      objectReference: {fileID: 0}
+    - target: {fileID: 7697119375148725705, guid: 89fcafe537c345041921dd79448fb634, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.14635235
       objectReference: {fileID: 0}
     - target: {fileID: 7697119375148725705, guid: 89fcafe537c345041921dd79448fb634, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -1.576
+      value: -1.7084799
       objectReference: {fileID: 0}
     - target: {fileID: 8993511856120608775, guid: 89fcafe537c345041921dd79448fb634, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1575,18 +1595,18 @@ MonoBehaviour:
   shoulderPath: Armature/Bone/Bicep.r
   forearmPath: Armature/Bone/Bicep.r/forearm.r
   palmPath: Armature/Bone/Bicep.r/forearm.r/palm.r
-  spawnCenter: {x: 0.48, y: 0.488, z: 5.57}
-  spawnRadius: 0.25
-  spawnHeightRange: 0.1
+  spawnCenter: {x: -0.32895997, y: 0.69024, z: 5.474}
+  spawnRadius: 0.09
+  spawnHeightRange: 0.036000002
   randomizeYaw: 1
-  reachRange: {x: 1.1, y: 1.5}
+  reachRange: {x: 0.39600003, y: 0.54}
   spawnAttempts: 50
-  contactDistance: 0.003
+  contactDistance: 0.001
   distanceRewardScale: 1
   palmDistanceRewardScale: 1
   shapingScale: 0.06666667
-  shapingFloorDistance: 0.05
-  graspPointOffset: {x: 0.14, y: 0.215, z: 0.078}
+  shapingFloorDistance: 0.018000001
+  graspPointOffset: {x: 0.050400004, y: 0.07740001, z: 0.028080001}
   successBonus: 1
   requiredContactSegments: 6
   requiredDistinctFingers: 2
@@ -1595,22 +1615,22 @@ MonoBehaviour:
   existentialPenaltyScale: 1
   platformName: Platform
   restOnPlatform: 1
-  restClearance: 0.001
-  liftClearance: 0.08
+  restClearance: 0.0005
+  liftClearance: 0.03
   phaseReward: 0.1
   liftBudgetSteps: 200
   taskBudgetSteps: 350
   holdRewardPerStep: 0.004
   holdRewardBudgetSteps: 50
   dropPenalty: 0.2
-  dropDistance: 0.3
-  dropBelowPlatform: 0.02
+  dropDistance: 0.11
+  dropBelowPlatform: 0.007
   dropTiltDeg: 60
   massRange: {x: 0.2, y: 1.5}
   perturbPulses: 3
   perturbPulseSteps: 5
   perturbPeakWeightRatio: 1.5
-  perturbTorqueLever: 0.15
+  perturbTorqueLever: 0.054
   perturbScale: 1
   perturbScaleOverride: -1
   objectFriction: 1
@@ -1634,8 +1654,8 @@ MonoBehaviour:
   effortWeight: 0.00002
   safetyWeight: 0.0001
   statsCsvPath: 
-  workspaceScale: 0.4
-  targetObsScale: 1
+  workspaceScale: 0.15
+  targetObsScale: 0.36
   heuristicActions:
   - 0
   - 0
@@ -2605,7 +2625,7 @@ Transform:
   m_GameObject: {fileID: 1144708652}
   serializedVersion: 2
   m_LocalRotation: {x: 0.09062847, y: 0.89379627, z: -0.20997298, w: 0.3857799}
-  m_LocalPosition: {x: -7.3588915, y: 4.958309, z: 6.925791}
+  m_LocalPosition: {x: -2.6492012, y: 1.7849914, z: 2.493285}
   m_LocalScale: {x: 100, y: 100.00001, z: 99.99999}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3620,7 +3640,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0.7071069, y: 0, z: -0, w: 0.7071067}
   m_LocalPosition: {x: -0, y: 0, z: 0}
-  m_LocalScale: {x: 100, y: 100, z: 100}
+  m_LocalScale: {x: 36, y: 36, z: 36}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1138563954}

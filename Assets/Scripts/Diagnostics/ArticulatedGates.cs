@@ -35,10 +35,10 @@ public class ArticulatedGates : MonoBehaviour
         public int liftBudget = 400;        // steps allowed for the lift
         public int holdSteps = 500;         // 50 decisions at 10 ms
         public int holdDecisions = 50;      // agent hold requirement (decisions) for the gates
-        public float liftExtra = 0.04f;     // raise until bottom >= liftClearance + this
+        public float liftExtra = 0.015f;    // raise until bottom >= liftClearance + this
         public float liftSpeedDeg = 20f;    // shoulder flexion velocity (deg/s) during the lift
-        public float palmGap = 0.001f;
-        public float placeUp = 0.20f;       // object centre this far from the palm pivot along the finger direction (0 = over the palm box centre)
+        public float palmGap = 0.0005f;
+        public float placeUp = 0.072f;      // object centre this far from the palm pivot along the finger direction (0 = over the palm box centre)
         public float timeScale = 20f;
         public int stepsPerTrial = 2000;    // stability
         public int draws = 20;              // stability
@@ -55,7 +55,7 @@ public class ArticulatedGates : MonoBehaviour
     readonly List<Trial> trials = new List<Trial>();
     int trial = -1, lastCompleted, lastSuccess, stepsInTrial, phaseStep, warmup = 2; string phase = "idle";
     readonly StringBuilder sb = new StringBuilder();
-    float restY, objRadius = 0.0647f, liftSign = 1f, maxPen, maxSpeed, maxAbsAngle; bool nanSeen; int liftStartStep = -1, holdStart = -1, gateStep = -1, transitionStep = -1;
+    float restY, objRadius = 0.025f, liftSign = 1f, maxPen, maxSpeed, maxAbsAngle; bool nanSeen; int liftStartStep = -1, holdStart = -1, gateStep = -1, transitionStep = -1;
     // calibrate
     readonly List<float> resp = new List<float>(); float tipDot0; Vector3 tipRel0;
     float[] walkTarget = new float[ArmGraspAgent.GroupCount]; float[] armAct = new float[3];
@@ -138,7 +138,7 @@ public class ArticulatedGates : MonoBehaviour
         Vector3 n = palm.right; Vector3 pos = pcen + n * (half + r + cfg.palmGap);
         if (cfg.placeUp > 0f) { Vector3 alongFingers = palm.up; alongFingers.y = 0f; alongFingers.Normalize(); pos += alongFingers * (cfg.placeUp - Vector3.Dot(pcen - palm.position, palm.up)); }
         pos.y = restY;
-        float pushed = 0f; while (OverlapsHand(pos, Quaternion.identity) && pushed < 0.15f) { pos += n * 0.001f; pushed += 0.001f; }
+        float pushed = 0f; while (OverlapsHand(pos, Quaternion.identity) && pushed < 0.06f) { pos += n * 0.0005f; pushed += 0.0005f; }
         cyl.SetPositionAndRotation(pos, Quaternion.identity); Physics.SyncTransforms();
         Debug.Log("[Gates] trial " + (trial + 1) + "/" + trials.Count + " " + cfg.mode + " grip=" + t.grip + " m=" + t.mass + " scale=" + t.scale + ": object at " + pos.ToString("F3") + " (pushed out " + (pushed * 1000f).ToString("F0") + " mm), palm normal " + n.ToString("F2") + " palmPos=" + palm.position.ToString("F3") + " pcen=" + pcen.ToString("F3") + " rebuilds=" + hand.RebuildCount + " arm=" + agent.GetArmAngle(0).ToString("F1") + "/" + agent.GetArmAngle(2).ToString("F1") + "/" + agent.GetArmAngle(3).ToString("F1") + "/" + agent.GetArmAngle(4).ToString("F1") + " step=" + agent.StepCount);
         phase = cfg.mode == "calibrate" ? "step" : "close";
@@ -299,7 +299,7 @@ public class ArticulatedGates : MonoBehaviour
     {
         var camGo = new GameObject("CloseupCam"); var cam = camGo.AddComponent<Camera>(); cam.fieldOfView = 40f; cam.nearClipPlane = 0.02f;
         var rt = new RenderTexture(1024, 768, 24); cam.targetTexture = rt;
-        Vector3[] offs = { new Vector3(0.6f, 0.25f, 0f), new Vector3(0f, 0.25f, 0.6f), new Vector3(-0.6f, 0.25f, 0f), new Vector3(0.3f, 0.7f, 0.3f) };
+        Vector3[] offs = { new Vector3(0.22f, 0.09f, 0f), new Vector3(0f, 0.09f, 0.22f), new Vector3(-0.22f, 0.09f, 0f), new Vector3(0.11f, 0.25f, 0.11f) };
         string[] names = { "plusX", "plusZ", "minusX", "top" };
         for (int i = 0; i < offs.Length; i++)
         {

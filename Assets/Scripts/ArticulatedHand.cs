@@ -3,7 +3,8 @@ using UnityEngine;
 
 /// <summary>
 /// PhysX articulation for the arm and hand (run 011, branch articulated-hand). The imported armature (100x scale, a
-/// non-uniform thumb) is unusable as an articulation, so a unit-scale link skeleton is generated from the tagged bones:
+/// non-uniform thumb, about 2.5x human size) is unusable as an articulation, so a unit-scale link skeleton is generated
+/// from the tagged bones after the armature has been scaled to human size by the single constant modelScale:
 /// root (immovable, shoulder pivot) -> bicep (spherical: twist = shoulder flexion about bone X, swing Z = abduction)
 /// -> forearm (revolute X, elbow) -> palm (spherical: twist = wrist flexion, swing Y = pronation) -> 14 finger links
 /// (revolute about the bone's local Z through a rotated anchor). Colliders are copied at world size; the group tags move
@@ -27,16 +28,25 @@ public class ArticulatedHand : MonoBehaviour
     public string forearmPath = "Armature/Bone/Bicep.r/forearm.r";
     public string palmPath = "Armature/Bone/Bicep.r/forearm.r/palm.r";
 
+    [Header("Scale")]
+    [Tooltip("THE model scale. The armature (100x import scale, about 2.5x human) is set to armatureBaseScale x modelScale before the bones are captured, so every link length, anchor offset, collider radius / length and capsule-volume mass follows this one constant. 0.36 = 19 cm open hand (wrist pivot to middle fingertip), 8.4 cm palm, 29 cm forearm.")]
+    public float modelScale = 0.36f;
+    [Tooltip("Import scale of the armature transform (the scene value before modelScale is applied).")]
+    public float armatureBaseScale = 100f;
+    public string armaturePath = "Armature";
+
     [Header("Physics")]
     [Tooltip("Fixed timestep (s) set at runtime by this rig; the project setting is left alone. DecisionRequester.DecisionPeriod must be 0.1 s / this.")]
     public float fixedTimestep = 0.01f;
     public int solverIterations = 16, solverVelocityIterations = 4;
     public float density = 1000f;
-    [Tooltip("Bicep link: no bone collider exists; a capsule of this radius (m) and mass (kg) gives it inertia.")]
-    public float bicepRadius = 0.045f, bicepMass = 2f;
+    [Tooltip("Bicep link: no bone collider exists; a capsule of this radius (m, human scale) and mass (kg, human upper arm) gives it inertia.")]
+    public float bicepRadius = 0.016f, bicepMass = 2f;
+    [Tooltip("Palm link mass (kg): human metacarpus + soft tissue (de Leva hand segment ~0.45 kg minus the fingers). The thin palm box under-represents the palm volume, so this is set directly rather than from density.")]
+    public float palmMass = 0.33f;
     public float fingerMaxAngularVelocity = 50f, armMaxAngularVelocity = 20f;
-    [Tooltip("Force limits (N m): base, middle, end, thumb base, thumb end, wrist, shoulder, elbow.")]
-    public float[] forceLimits = { 4f, 2.5f, 1.2f, 6f, 3f, 10f, 300f, 200f };
+    [Tooltip("Force limits (N m): base, middle, end, thumb base, thumb end, wrist, shoulder, elbow. Shoulder / elbow are human maxima (velocity drives).")]
+    public float[] forceLimits = { 4f, 2.5f, 1.2f, 6f, 3f, 10f, 100f, 60f };
     [Tooltip("Stiffness of the Target drive holding masked groups at the neutral pose (acceleration units, 1/s^2).")]
     public float maskedHoldStiffness = 4000f, maskedHoldDamping = 200f;
     public bool ignoreParentChildCollision = true, ignorePalmBaseCollision = true, ignoreForearmPalmCollision = true;
@@ -81,6 +91,9 @@ public class ArticulatedHand : MonoBehaviour
     public void CaptureBones()
     {
         if (m_Captured) return;
+        // human scale: the whole armature (mesh + bones) is scaled about its root, which sits on the shoulder pivot
+        var armature = transform.Find(armaturePath);
+        if (armature != null) { var want = Vector3.one * (armatureBaseScale * modelScale); if ((armature.localScale - want).sqrMagnitude > 1e-8f) armature.localScale = want; }
         m_Shoulder = Capture(transform.Find(shoulderPath)); m_Forearm = Capture(transform.Find(forearmPath)); m_Palm = Capture(transform.Find(palmPath));
         for (int g = 0; g < GroupCount; g++)
         {
@@ -156,7 +169,7 @@ public class ArticulatedHand : MonoBehaviour
         Palm = MakeLink("L_Palm", Forearm.transform, m_Palm.worldPos, m_Palm.worldRot, m_Palm.bone);
         Palm.jointType = ArticulationJointType.SphericalJoint; Palm.anchorPosition = Vector3.zero; Palm.anchorRotation = Quaternion.identity; Palm.matchAnchors = true;
         Palm.twistLock = ArticulationDofLock.LimitedMotion; Palm.swingYLock = ArticulationDofLock.LimitedMotion; Palm.swingZLock = ArticulationDofLock.LockedMotion;
-        { var box = Palm.gameObject.AddComponent<BoxCollider>(); box.size = m_Palm.boxSizeW; box.center = m_Palm.boxCenterW; Palm.mass = density * m_Palm.boxSizeW.x * m_Palm.boxSizeW.y * m_Palm.boxSizeW.z; }
+        { var box = Palm.gameObject.AddComponent<BoxCollider>(); box.size = m_Palm.boxSizeW; box.center = m_Palm.boxCenterW; Palm.mass = palmMass; }
         Palm.maxAngularVelocity = armMaxAngularVelocity;
 
         // fingers: revolute about the bone's local Z (anchor X rotated onto Z); link origin at the (scaled) joint pivot
@@ -195,6 +208,29 @@ public class ArticulatedHand : MonoBehaviour
         foreach (var a in all) { if (a == null) continue; a.solverIterations = solverIterations; a.solverVelocityIterations = solverVelocityIterations; a.useGravity = true; a.jointFriction = 0f; a.linearDamping = 0f; a.angularDamping = 0.05f; a.sleepThreshold = 0f; a.ResetInertiaTensor(); a.ResetCenterOfMass(); }
         Physics.SyncTransforms();
         RebuildCount++;
+        if (RebuildCount == 1) Debug.Log("[ArticulatedHand] " + Anthropometrics());
+    }
+
+    /// <summary>Open-pose anthropometrics of the built skeleton (m, kg): hand length wrist pivot to middle fingertip, palm width across the index / pinky base capsules, forearm, per-link lengths, masses.</summary>
+    public string Anthropometrics()
+    {
+        if (!Built) return "not built";
+        float LinkLen(int g)
+        {
+            var b = Groups[g]; if (b == null) return 0f;
+            foreach (Transform c in b.transform) if (c.GetComponent<ArticulationBody>() != null) return Vector3.Distance(b.transform.position, c.position);
+            var cap = b.GetComponent<CapsuleCollider>(); return cap != null ? cap.center.y + 0.5f * cap.height : 0f;
+        }
+        float palmToMiddle = Vector3.Distance(Palm.transform.position, Groups[3].transform.position);
+        float handLength = palmToMiddle + LinkLen(3) + LinkLen(4) + LinkLen(5);
+        var ci = Groups[0].GetComponent<CapsuleCollider>(); var cp = Groups[9].GetComponent<CapsuleCollider>();
+        float palmWidth = Vector3.Distance(Groups[0].transform.position, Groups[9].transform.position) + (ci != null ? ci.radius : 0f) + (cp != null ? cp.radius : 0f);
+        float forearm = Vector3.Distance(Forearm.transform.position, Palm.transform.position);
+        float handMass = Palm.mass; for (int g = 0; g < GroupCount; g++) if (Groups[g] != null) handMass += Groups[g].mass;
+        var s = new System.Text.StringBuilder();
+        s.Append("anthropometrics: modelScale=").Append(modelScale).Append(" handLength=").Append((handLength * 1000f).ToString("F1")).Append("mm (palm->middleBase ").Append((palmToMiddle * 1000f).ToString("F1")).Append(") palmWidth=").Append((palmWidth * 1000f).ToString("F1")).Append("mm forearm=").Append((forearm * 1000f).ToString("F1")).Append("mm handMass=").Append(handMass.ToString("F3")).Append("kg (palm ").Append(Palm.mass.ToString("F3")).Append(") forearmMass=").Append(Forearm.mass.ToString("F3")).Append(" bicepMass=").Append(Bicep.mass.ToString("F2")).Append(" links(mm,r mm,g):");
+        for (int g = 0; g < GroupCount; g++) { var cap = Groups[g] != null ? Groups[g].GetComponent<CapsuleCollider>() : null; s.Append(' ').Append(GroupTags[g]).Append('=').Append((LinkLen(g) * 1000f).ToString("F1")).Append('/').Append(cap != null ? (cap.radius * 1000f).ToString("F1") : "-").Append('/').Append(Groups[g] != null ? (Groups[g].mass * 1000f).ToString("F1") : "-"); }
+        return s.ToString();
     }
 
     bool IsBase(ArticulationBody b) { for (int g = 0; g < GroupCount; g++) if (Groups[g] == b && k_GroupParent[g] < 0) return true; return false; }
@@ -212,11 +248,11 @@ public class ArticulatedHand : MonoBehaviour
     {
         var cap = go.AddComponent<CapsuleCollider>();
         if (bi.capsule != null) { cap.radius = bi.capRadiusW; cap.height = bi.capHeightW * lengthScale; var c = bi.capCenterW; c.y *= lengthScale; cap.center = c; cap.direction = bi.capsule.direction; }
-        else { cap.radius = 0.02f; cap.height = 0.06f; cap.center = new Vector3(0f, 0.03f, 0f); cap.direction = 1; }
+        else { cap.radius = 0.008f; cap.height = 0.024f; cap.center = new Vector3(0f, 0.012f, 0f); cap.direction = 1; }
     }
     float CapsuleMass(BoneInfo bi, float lengthScale)
     {
-        float r = bi.capsule != null ? bi.capRadiusW : 0.02f, h = (bi.capsule != null ? bi.capHeightW : 0.06f) * lengthScale;
+        float r = bi.capsule != null ? bi.capRadiusW : 0.008f, h = (bi.capsule != null ? bi.capHeightW : 0.024f) * lengthScale;
         float cyl = Mathf.Max(h - 2f * r, 0f);
         return density * (Mathf.PI * r * r * cyl + 4f / 3f * Mathf.PI * r * r * r);
     }

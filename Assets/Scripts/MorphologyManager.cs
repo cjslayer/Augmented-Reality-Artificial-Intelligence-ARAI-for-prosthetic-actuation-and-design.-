@@ -111,7 +111,7 @@ public class MorphologyManager : MonoBehaviour
             m_Segments[g] = seg;
         }
         // palm length along the finger direction = the largest horizontal box extent (world), measured once
-        m_PalmLength = m_PalmBox != null ? Mathf.Max(m_PalmBox.size.y * palm.lossyScale.y, m_PalmBox.size.z * palm.lossyScale.z) : 0.19f;
+        m_PalmLength = m_PalmBox != null ? Mathf.Max(m_PalmBox.size.y * palm.lossyScale.y, m_PalmBox.size.z * palm.lossyScale.z) : 0.07f;
     }
 
     public void Initialize(Transform[][] groupJoints, Transform palm)
@@ -189,7 +189,7 @@ public class MorphologyManager : MonoBehaviour
     public void CheckPlausibility(string group, ref float k, ref float b, ref float I)
     {
         bool sanitized = false;
-        if (I <= 1e-9f) { I = 1e-6f; sanitized = true; }
+        if (I <= 1e-10f) { I = 1e-8f; sanitized = true; }
         if (k < 0f) { k = 0f; sanitized = true; }
         if (b < 0f) { b = 0f; sanitized = true; }
         if (sanitized || !IsPlausible(k, b, I, maxPlausibleOmega, maxPlausibleZeta))
@@ -228,7 +228,7 @@ public class MorphologyManager : MonoBehaviour
                 var seg = m_Segments[g]; if (seg.joint == null) continue;
                 Transform child = null; foreach (Transform c in seg.joint) if (c.GetComponent<ArticulationBody>() != null) { child = c; break; }
                 LinkLength[g] = child != null ? Vector3.Distance(seg.joint.position, child.position)
-                    : (seg.capsule != null ? seg.capsule.center.y + 0.5f * seg.capsule.height : 0.05f);
+                    : (seg.capsule != null ? seg.capsule.center.y + 0.5f * seg.capsule.height : 0.02f);
             }
             return;
         }
@@ -246,7 +246,7 @@ public class MorphologyManager : MonoBehaviour
             float axisScale = seg.joint.lossyScale.y;
             LinkLength[g] = seg.children.Length > 0 && seg.children[0].localPosition.sqrMagnitude > 1e-12f
                 ? seg.children[0].localPosition.magnitude * axisScale
-                : (seg.capsule != null ? (seg.capsule.center.y + 0.5f * seg.capsule.height) * axisScale : 0.05f);
+                : (seg.capsule != null ? (seg.capsule.center.y + 0.5f * seg.capsule.height) * axisScale : 0.02f);
         }
         Physics.SyncTransforms();
     }
@@ -266,26 +266,28 @@ public class MorphologyManager : MonoBehaviour
         float[] mass = new float[FingerGroupCount]; Vector3[] centre = new Vector3[FingerGroupCount];
         for (int g = 0; g < FingerGroupCount; g++)
         {
-            var seg = m_Segments[g]; if (seg.joint == null || seg.capsule == null) { mass[g] = 0.05f; centre[g] = seg.joint != null ? seg.joint.position : Vector3.zero; continue; }
+            var seg = m_Segments[g]; if (seg.joint == null || seg.capsule == null) { mass[g] = 0.005f; centre[g] = seg.joint != null ? seg.joint.position : Vector3.zero; continue; }
             float r = seg.capRadius, h = seg.capsule.height * seg.joint.lossyScale.y;
-            mass[g] = density * Mathf.PI * r * r * h + density * 4f / 3f * Mathf.PI * r * r * r;
+            // rig: the PhysX link mass (capsule volume x density x inertiaScale) without the inertia scale, so NominalInertia stays geometric
+            mass[g] = rig != null && rig.Groups[g] != null && inertiaScale[g] > 0f ? rig.Groups[g].mass / inertiaScale[g]
+                    : density * Mathf.PI * r * r * h + density * 4f / 3f * Mathf.PI * r * r * r;
             centre[g] = seg.joint.TransformPoint(seg.capsule.center);
         }
         for (int g = 0; g < FingerGroupCount; g++)
         {
-            var seg = m_Segments[g]; if (seg.joint == null) { NominalInertia[g] = 1e-4f; continue; }
+            var seg = m_Segments[g]; if (seg.joint == null) { NominalInertia[g] = 1e-6f; continue; }
             float I = 0f; int f = k_GroupFinger[g];
             for (int j = 0; j < FingerGroupCount; j++)
             {
                 if (k_GroupFinger[j] != f || j < g) continue;   // own segment and distal segments of the same finger
                 float d = Vector3.Distance(centre[j], seg.joint.position);
-                float L = m_Segments[j].capsule != null ? m_Segments[j].capsule.height * m_Segments[j].joint.lossyScale.y : 0.05f;
+                float L = m_Segments[j].capsule != null ? m_Segments[j].capsule.height * m_Segments[j].joint.lossyScale.y : 0.02f;
                 I += mass[j] * (d * d + L * L / 12f);
             }
-            NominalInertia[g] = Mathf.Max(I, 1e-6f);
+            NominalInertia[g] = Mathf.Max(I, 1e-8f);
         }
         // wrist: palm box + all fingers about the palm pivot
-        float palmMass = m_PalmBox != null ? density * m_PalmBox.size.x * m_PalmBox.size.y * m_PalmBox.size.z * m_Palm.lossyScale.x * m_Palm.lossyScale.y * m_Palm.lossyScale.z : 1f;
+        float palmMass = rig != null && rig.Palm != null ? rig.Palm.mass : (m_PalmBox != null ? density * m_PalmBox.size.x * m_PalmBox.size.y * m_PalmBox.size.z * m_Palm.lossyScale.x * m_Palm.lossyScale.y * m_Palm.lossyScale.z : 0.3f);
         float Iw = 0f;
         if (m_Palm != null)
         {
@@ -293,8 +295,8 @@ public class MorphologyManager : MonoBehaviour
             float dp = Vector3.Distance(pc, m_Palm.position); Iw += palmMass * (dp * dp + m_PalmLength * m_PalmLength / 12f);
             for (int g = 0; g < FingerGroupCount; g++) { float d = Vector3.Distance(centre[g], m_Palm.position); Iw += mass[g] * d * d; }
         }
-        NominalInertia[FingerGroupCount] = Mathf.Max(Iw, 1e-4f);        // wrist flexion
-        NominalInertia[FingerGroupCount + 1] = Mathf.Max(Iw * 0.5f, 1e-4f);   // pronation: roughly half (mass closer to the axis)
+        NominalInertia[FingerGroupCount] = Mathf.Max(Iw, 1e-6f);        // wrist flexion
+        NominalInertia[FingerGroupCount + 1] = Mathf.Max(Iw * 0.5f, 1e-6f);   // pronation: roughly half (mass closer to the axis)
     }
 
     public int FingerOfGroup(int g) => g < FingerGroupCount ? k_GroupFinger[g] : 5;

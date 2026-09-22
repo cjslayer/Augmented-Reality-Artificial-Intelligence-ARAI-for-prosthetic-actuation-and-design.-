@@ -1,4 +1,4 @@
-# 150k SMOKE of run 011 phase A (same settings, max_steps 150000): lesson 0 = hold/decisions 5, perturb/scale 0.
+# Run 011 PHASE B (resume of run id 011 after hold/decisions reached 50): hold fixed at 50, perturbation curriculum.
 behaviors:
   Prosthetic:
     trainer_type: ppo
@@ -22,39 +22,47 @@ behaviors:
         strength: 1.0
     keep_checkpoints: 5
     checkpoint_interval: 250000
-    max_steps: 150000
+    max_steps: 6000000
     time_horizon: 128
     summary_freq: 10000
     threaded: true
 
 environment_parameters:
   morph/randomize: 1.0
-  perturb/scale: 0.0
-  hold/decisions:
+  hold/decisions: 50.0
+  perturb/scale:
     curriculum:
-      - name: Hold5
+      - name: Perturb0
         completion_criteria:
           measure: reward
           behavior: Prosthetic
           signal_smoothing: true
           min_lesson_length: 100
-          threshold: 1.0
-        value: 5.0
-      - name: Hold10
+          threshold: 0.9
+        value: 0.0
+      - name: Perturb25
         completion_criteria:
           measure: reward
           behavior: Prosthetic
           signal_smoothing: true
           min_lesson_length: 100
-          threshold: 1.0
-        value: 10.0
-      - name: Hold20
+          threshold: 0.9
+        value: 0.25
+      - name: Perturb50
         completion_criteria:
           measure: reward
           behavior: Prosthetic
           signal_smoothing: true
           min_lesson_length: 100
-          threshold: 0.95
-        value: 20.0
-      - name: Hold50
-        value: 50.0
+          threshold: 0.9
+        value: 0.5
+      - name: Perturb75
+        completion_criteria:
+          measure: reward
+          behavior: Prosthetic
+          signal_smoothing: true
+          min_lesson_length: 100
+          threshold: 0.9
+        value: 0.75
+      - name: Perturb100
+        value: 1.0

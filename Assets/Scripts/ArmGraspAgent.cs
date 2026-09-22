@@ -402,7 +402,7 @@ public class ArmGraspAgent : Agent
         m_HoldWindowCount = 0; m_HoldWindowSum = m_HoldWindowSumSq = 0;
         LastCoverageGapDeg = 360f; LastAntipodality = 0f; LastVerticalSpread = 0f; LastPalmTouching = false; LastDistinctFingers = 0; LastThumbTouching = false; LastHoldCriterionMet = false;
         m_EpisodeActive = true;
-        HoldDecisions = Mathf.Max(1, Mathf.RoundToInt(Academy.Instance.EnvironmentParameters.GetWithDefault("hold_decisions", requiredHoldDecisions)));
+        HoldDecisions = Mathf.Max(1, Mathf.RoundToInt(Academy.Instance.EnvironmentParameters.GetWithDefault("hold/decisions", Academy.Instance.EnvironmentParameters.GetWithDefault("hold_decisions", requiredHoldDecisions))));   // run 011 curriculum key hold/decisions (run-010 key hold_decisions kept)
     }
 
     private void SpawnCylinder()

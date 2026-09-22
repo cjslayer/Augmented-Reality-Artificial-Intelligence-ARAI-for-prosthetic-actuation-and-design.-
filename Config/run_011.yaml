@@ -1,9 +1,14 @@
 # Run 011: first articulated lineage (branch articulated-hand). Fresh (no init_path), 6M steps, 8 headless envs of the
 # Dynamic_Scene_Train player (spec-built human-scale PhysX hand, TGS solver, dt 10 ms, DecisionPeriod 10). Same PPO
-# hyperparameters as run_010. Per-episode theta randomization (morph/randomize = 1). Perturbation curriculum on
-# perturb/scale (0 -> 0.25 -> 0.5 -> 0.75 -> 1.0 of the 1.5 mg peak): a lesson advances at a smoothed mean episode reward
-# of THRESHOLD_SET_AFTER_SMOKE (see the 150k smoke section in MLAGENTS_UPGRADE.md for the derivation). Seeds 5001-5100
-# are reserved for evaluation and are never used here.
+# hyperparameters as run_010. Per-episode theta randomization (morph/randomize = 1). Seeds 5001-5100 are reserved for
+# evaluation and are never used here.
+# Curricula (ML-Agents advances each parameter's lessons independently on the smoothed mean episode reward, so the two
+# ladders are run in two phases of the same run id): PHASE A (this file) = hold/decisions 5 -> 10 -> 20 -> 50 with
+# perturb/scale fixed at 0. When hold/decisions reaches lesson 3 (K = 50) the run is stopped and resumed with
+# run_011_phaseB.yaml (hold/decisions fixed 50, perturb/scale 0 -> 0.25 -> 0.5 -> 0.75 -> 1.0). Thresholds = the mean
+# reward at ~70 % success for that lesson: a completing episode returns ~0.9 shaping + 0.1 gate + 0.2 hold + 1.0 bonus
+# - existential (1.0 per 5000 steps) - ~0.3 safety / effort, i.e. ~1.8 at K = 5 (short episodes) down to ~1.5 at K = 50;
+# a failing one -0.5 to -1.0. 70 % success: 1.0 (K 5), 1.0 (K 10), 0.95 (K 20), 0.9 (K 50 and every perturbation lesson).
 behaviors:
   Prosthetic:
     trainer_type: ppo
@@ -34,39 +39,32 @@ behaviors:
 
 environment_parameters:
   morph/randomize: 1.0
-  perturb/scale:
+  perturb/scale: 0.0
+  hold/decisions:
     curriculum:
-      - name: Perturb0
+      - name: Hold5
         completion_criteria:
           measure: reward
           behavior: Prosthetic
           signal_smoothing: true
-          min_lesson_length: 150
-          threshold: 0.7
-        value: 0.0
-      - name: Perturb25
+          min_lesson_length: 100
+          threshold: 1.0
+        value: 5.0
+      - name: Hold10
         completion_criteria:
           measure: reward
           behavior: Prosthetic
           signal_smoothing: true
-          min_lesson_length: 150
-          threshold: 0.7
-        value: 0.25
-      - name: Perturb50
+          min_lesson_length: 100
+          threshold: 1.0
+        value: 10.0
+      - name: Hold20
         completion_criteria:
           measure: reward
           behavior: Prosthetic
           signal_smoothing: true
-          min_lesson_length: 150
-          threshold: 0.7
-        value: 0.5
-      - name: Perturb75
-        completion_criteria:
-          measure: reward
-          behavior: Prosthetic
-          signal_smoothing: true
-          min_lesson_length: 150
-          threshold: 0.7
-        value: 0.75
-      - name: Perturb100
-        value: 1.0
+          min_lesson_length: 100
+          threshold: 0.95
+        value: 20.0
+      - name: Hold50
+        value: 50.0

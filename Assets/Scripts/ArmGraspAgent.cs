@@ -353,9 +353,12 @@ public class ArmGraspAgent : Agent
         for (int a = 0; a < 3; a++) m_Hand.ConfigureArm(a, GetArmLimits(a));
     }
 
+    /// <summary>Diagnostics hook (Editor harnesses): invoked at the top of every OnEpisodeBegin, before the episode's random draws, so an evaluation can seed each episode. No effect when nothing is subscribed.</summary>
+    public static System.Action BeforeEpisodeBegin;
     public override void OnEpisodeBegin()
     {
         if (m_EpisodeActive) { if (string.IsNullOrEmpty(m_EndReason)) m_EndReason = "maxStep"; LogEpisode(false); }
+        BeforeEpisodeBegin?.Invoke();
 
         // object back to its supported (kinematic) state; mass and perturbation scale for this episode
         var epp = Academy.Instance.EnvironmentParameters;

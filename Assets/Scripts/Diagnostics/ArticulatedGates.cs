@@ -63,6 +63,12 @@ public class ArticulatedGates : MonoBehaviour
         public string placement = "palm";   // palm | forearm (object on the forearm's palmar side next to the wrist) | palmUp (object standing on the pronated palm)
         public float wristFlexDeg = 0f, wristPronDeg = 0f;   // wrist setpoints applied before placement
         public int preposeSteps = 0;        // steps to let the wrist reach its setpoints before the object is placed
+        // held-out evaluation of a trained policy (mode "eval"): the agent runs its own episodes (InferenceOnly), each seeded with Random.InitState
+        public string modelPath = "";       // .onnx under results/ (imported through the Editor importer into Assets/Models/Watch)
+        public int seedFrom = 5001, seedTo = 5100;
+        public float objectFriction = -1f;  // >= 0: override the agent's object friction for this run (pass-vs-mu)
+        public float evalPerturbScale = 1f; // perturbation scale applied through perturbScaleOverride
+        public int evalHoldDecisions = 50;
         public float[] envelopeTargets = null;   // 14 closing targets (deg) for the envelope grip; null = k_Envelope
         public float[] pinchTargets = null;      // 14 closing targets (deg) for the pinch grip; null = k_Pinch
         public float stiffnessScale = 0f;   // > 0: diagnostic, multiply the reference k of every group for this run (non-randomized modes)
@@ -150,14 +156,56 @@ public class ArticulatedGates : MonoBehaviour
         foreach (var grip in cfg.grips) foreach (var m in cfg.masses) foreach (var sc in cfg.scales) for (int sd = 0; sd < Mathf.Max(1, cfg.seeds); sd++) trials.Add(new Trial { mass = m, scale = sc, grip = grip, seed = sd });
         if (cfg.mode == "stability") { trials.Clear(); for (int i = 0; i < cfg.draws; i++) trials.Add(new Trial { mass = 0.6f, scale = 0f, grip = "walk", seed = i }); }
         if (cfg.mode == "audit") { trials.Clear(); trials.Add(new Trial { mass = 0.6f, scale = 0f, grip = "audit", seed = 0 }); }
+        if (cfg.mode == "eval") { trials.Clear(); for (int sd = cfg.seedFrom; sd <= cfg.seedTo; sd++) trials.Add(new Trial { mass = 0f, scale = cfg.evalPerturbScale, grip = "policy", seed = sd }); EvalSetup(); }
         Time.timeScale = cfg.timeScale;
-        sb.AppendLine("trial,mode,grip,mass,scale,seed,success,endReason,steps,gateStep,transitionStep,liftStart,stepsToLift,holdSteps,pulses,maxPulseN,weightN,contactsEnd,palm,forearm,bottomAboveTop,maxPenMm,maxJointSpeedDeg,nan,gripTorqueMean,retPhase,retHold,retBonus,retDrop,note");
+        if (cfg.mode != "eval") sb.AppendLine("trial,mode,grip,mass,scale,seed,success,endReason,steps,gateStep,transitionStep,liftStart,stepsToLift,holdSteps,pulses,maxPulseN,weightN,contactsEnd,palm,forearm,bottomAboveTop,maxPenMm,maxJointSpeedDeg,nan,gripTorqueMean,retPhase,retHold,retBonus,retDrop,note");
         Flush();
         Debug.Log("[Gates] mode=" + cfg.mode + " trials=" + trials.Count + " dt=" + Time.fixedDeltaTime);
     }
 
+    // ---- eval mode: policy runs its own episodes; the harness only seeds them (BeforeEpisodeBegin hook) and records one row per episode ----
+    int evalIndex = -1; bool evalReady;
+    void EvalSetup()
+    {
+        mm.randomizeByDefault = true;
+        agent.MaxStep = 5000; agent.taskBudgetSteps = 350; agent.liftBudgetSteps = 200;   // evaluation runs the training episode limits, not the scripted-hold ones set above
+        agent.requiredHoldDecisions = cfg.evalHoldDecisions; agent.perturbScaleOverride = cfg.evalPerturbScale;
+        if (cfg.objectFriction >= 0f) agent.objectFriction = cfg.objectFriction;
+        try
+        {
+            string assetDir = "Assets/Models/Watch"; Directory.CreateDirectory(assetDir);
+            string assetPath = assetDir + "/eval_" + Path.GetFileNameWithoutExtension(cfg.modelPath) + ".onnx";
+            File.Copy(cfg.modelPath, assetPath, true);
+            UnityEditor.AssetDatabase.ImportAsset(assetPath, UnityEditor.ImportAssetOptions.ForceSynchronousImport);
+            var asset = UnityEditor.AssetDatabase.LoadAssetAtPath<Unity.InferenceEngine.ModelAsset>(assetPath);
+            if (asset == null) { Debug.LogError("[Gates] eval: model import failed " + assetPath); return; }
+            agent.SetModel(bp.BehaviorName, asset, Unity.MLAgents.Policies.InferenceDevice.Default); bp.BehaviorType = BehaviorType.InferenceOnly;
+            evalReady = true; Debug.Log("[Gates] eval: model " + cfg.modelPath + " seeds " + cfg.seedFrom + "-" + cfg.seedTo + " mu=" + agent.objectFriction + " perturb=" + cfg.evalPerturbScale + " K=" + cfg.evalHoldDecisions);
+        }
+        catch (System.Exception e) { Debug.LogError("[Gates] eval: " + e.Message); }
+        sb.Length = 0; sb.AppendLine("episode,seed,success,endReason,steps,transitionStep,stepsToLift,holdSteps,holdNeeded,pulses,maxPulseN,contacts,distinctFingers,thumb,palm,forearm,mass,perturbScale,mu,maxPenMm,gripTorqueMean,retShaping,retPhase,retHold,retBonus,retDrop,lenMean,lenIndex,lenMiddle,lenRing,lenPinky,lenThumb,kFingerMean,zetaMean,inertiaScaleMean,activeGroups,mask,handSpanRatio"); Flush();
+    }
+    void OnDestroy2() { }
+    void EvalRow()
+    {
+        var r = agent.LastEpisode; int idx = evalIndex - 1; if (idx < 0 || idx >= trials.Count) return;   // the hook has already advanced to the next episode's seed
+        string mask = ""; for (int g = 0; g < MorphologyManager.FingerGroupCount; g++) mask += mm.mask[g] ? "1" : "0";
+        float lenMean = 0f; for (int f = 0; f < 5; f++) lenMean += mm.lengthScale[f] / 5f;
+        float zMean = 0f, iMean = 0f; for (int g = 0; g < MorphologyManager.FingerGroupCount; g++) { zMean += mm.DampingRatio(g) / MorphologyManager.FingerGroupCount; iMean += mm.inertiaScale[g] / MorphologyManager.FingerGroupCount; }
+        sb.AppendLine(string.Join(",", new string[] { (idx + 1).ToString(), trials[idx].seed.ToString(), r.success ? "1" : "0", r.endReason, r.steps.ToString(), r.transitionStep.ToString(), r.stepsToLift.ToString(), r.holdSteps.ToString(), (cfg.evalHoldDecisions * 10).ToString(), r.pulsesApplied.ToString(), r.maxPulseForce.ToString("F2"), r.contacts.ToString(), r.distinctFingers.ToString(), r.thumb ? "1" : "0", r.palm ? "1" : "0", r.forearm ? "1" : "0", r.mass.ToString("F3"), r.perturbScale.ToString("F2"), agent.objectFriction.ToString("F2"), (r.maxPenetration * 1000f).ToString("F2"), r.gripForceMean.ToString("F3"), r.retShaping.ToString("F4"), r.retPhase.ToString("F2"), r.retHold.ToString("F3"), r.retBonus.ToString("F2"), r.retDrop.ToString("F2"), lenMean.ToString("F3"), mm.lengthScale[0].ToString("F3"), mm.lengthScale[1].ToString("F3"), mm.lengthScale[2].ToString("F3"), mm.lengthScale[3].ToString("F3"), mm.lengthScale[4].ToString("F3"), mm.MeanStiffness(0, MorphologyManager.FingerGroupCount).ToString("F3"), zMean.ToString("F3"), iMean.ToString("F3"), mm.ActiveCount.ToString(), mask, agent.HandSpanRatio.ToString("F3") }));
+        Flush();
+    }
+
     void FixedUpdate()
     {
+        if (cfg.mode == "eval")
+        {
+            if (!evalReady) return;
+            if (warmup > 0) { warmup--; if (warmup == 0) { lastCompleted = agent.CompletedEpisodes; ArmGraspAgent.BeforeEpisodeBegin = () => { evalIndex++; if (evalIndex >= 0 && evalIndex < trials.Count) Random.InitState(trials[evalIndex].seed); }; agent.EndEpisode(); } return; }   // the initial (unseeded) episode is discarded; the hook, installed just before the reset, seeds every following one
+            int done = agent.CompletedEpisodes;
+            if (done != lastCompleted) { lastCompleted = done; EvalRow(); if (evalIndex >= trials.Count) { ArmGraspAgent.BeforeEpisodeBegin = null; Finish(); } }
+            return;
+        }
         if (warmup > 0) { warmup--; if (warmup == 0) { hand = agent.Hand; palm = hand.PalmLink; float halfH = cyl.position.y - cylCol.bounds.min.y; restY = agent.PlatformTop + halfH + agent.restClearance; objRadius = 0.5f * cylCol.bounds.size.x; /* upright object at warmup */ lastCompleted = agent.CompletedEpisodes; lastSuccess = agent.SuccessCount; agent.EndEpisode(); } return; }
         int completed = agent.CompletedEpisodes;
         if (completed != lastCompleted) { bool success = agent.SuccessCount != lastSuccess; lastSuccess = agent.SuccessCount; lastCompleted = completed; EndTrial(success, ""); BeginTrial(); return; }

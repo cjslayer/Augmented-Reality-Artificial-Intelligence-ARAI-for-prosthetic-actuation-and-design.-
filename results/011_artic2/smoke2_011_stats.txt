@@ -1,0 +1,69 @@
+tag                                                  step    n     first      last     meanK    trendK nan frozen
+Environment/Cumulative Reward                      150000   15   -2.6065   -0.5615   -0.6406    0.4136   0 
+Environment/Episode Length                         150000   15  462.0000  276.2895  296.2132  -88.8134   0 
+Environment/Lesson Number/hold/decisions           150000   15    0.0000    0.0000    0.0000    0.0000   0 FROZEN
+Environment/Lesson Number/morph/randomize          150000   15    0.0000    0.0000    0.0000    0.0000   0 FROZEN
+Environment/Lesson Number/perturb/scale            150000   15    0.0000    0.0000    0.0000    0.0000   0 FROZEN
+Grasp/Antipodality                                 150000   15    0.0444    0.1168    0.1049    0.0295   0 
+Grasp/ContactsAtEnd                                150000   15    0.4500    1.6842    1.4519    0.2416   0 
+Grasp/CoverageGapDeg                               150000   15  342.5436  317.0095  322.0771   -6.8862   0 
+Grasp/CylinderYaw                                  150000   15  163.0074  194.0417  187.1073    0.1333   0 
+Grasp/DistinctFingersAtEnd                         150000   15    0.2500    0.9211    0.8326    0.1419   0 
+Grasp/DriveSaturationEvents                        150000   15   18.3000   40.6316  126.5247   43.4477   0 
+Grasp/FinalGraspPointDistance                      150000   15    0.3467    0.1113    0.1151   -0.0135   0 
+Grasp/ForearmAtEnd                                 150000   15    0.0000    0.0000    0.0138    0.0138   0 
+Grasp/HoldContactStd                               150000   15    0.0000    0.0132    0.0148    0.0103   0 
+Grasp/LimitEvents                                  150000   15 4436.8501 3360.3157 3618.1914 -1219.6054   0 
+Grasp/MaxPenetration                               150000   15    0.0021    0.0055    0.0061   -0.0002   0 
+Grasp/MinGraspPointDistance                        150000   15    0.0631    0.0318    0.0323   -0.0096   0 
+Grasp/PalmAtEnd                                    150000   15    0.0500    0.0789    0.0895   -0.0689   0 
+Grasp/ResidualSegmentDistance                      150000   15    3.7120    0.7379    0.8409   -0.0618   0 
+Grasp/SpawnDistance                                150000   15    0.4624    0.4693    0.4588    0.0031   0 
+Grasp/StepsToFirstSixContacts                      150000   15  785.9000  993.1579 1228.6651   -1.6409   0 
+Grasp/StepsToSuccess                               150000   15  153.6000   19.7632   94.6474   14.0832   0 
+Grasp/Success                                      150000   15    0.0500    0.0263    0.0658    0.0279   0 
+Grasp/ThumbAtEnd                                   150000   15    0.0500    0.2632    0.2421    0.0627   0 
+Grasp/VerticalSpread                               150000   15    0.0049    0.0235    0.0196    0.0037   0 
+Losses/Policy Loss                                 150000    7    0.0192    0.0156    0.0142       nan   0 
+Losses/Value Loss                                  150000    7    0.1525    0.0254    0.0341       nan   0 
+Morph/ActiveGroups                                 150000   15   11.5000   11.1053   11.3339    0.1118   0 
+Morph/FingerLengthRatio                            150000   15    0.9986    1.0015    1.0005   -0.0073   0 
+Morph/HandSpanRatio                                150000   15    0.9933    0.9984    1.0015    0.0003   0 
+Morph/LengthScaleMean                              150000   15    1.0057    1.0000    1.0001   -0.0062   0 
+Morph/OmegaMean                                    150000   15  559.7543  570.6904  564.5252    8.9640   0 
+Morph/OutOfRangeEvents                             150000   15    0.0000    0.0000    0.0000    0.0000   0 FROZEN
+Morph/StiffnessMean                                150000   15    1.5966    1.5122    1.5414    0.0196   0 
+Policy/Beta                                        150000    7    0.0043    0.0002    0.0016       nan   0 
+Policy/Entropy                                     150000   15    1.4189    1.4179    1.4180   -0.0002   0 
+Policy/Epsilon                                     150000    7    0.1863    0.1041    0.1315       nan   0 
+Policy/Extrinsic Reward                            150000   15   -2.6065   -0.5615   -0.6406    0.4136   0 
+Policy/Extrinsic Value Estimate                    150000   15    0.1251   -0.2558   -0.2494   -0.0752   0 
+Policy/Learning Rate                               150000    7    0.0003    0.0000    0.0001       nan   0 
+Return/Bonus                                       150000   15    0.0500    0.0263    0.0658    0.0279   0 
+Return/Drop                                        150000   15   -0.0200   -0.1316   -0.1157   -0.0319   0 
+Return/Effort                                      150000   15   -0.1946   -0.1174   -0.1261    0.0374   0 
+Return/Hold                                        150000   15    0.0100    0.0216    0.0354    0.0135   0 
+Return/HoldStepsPaid                               150000   15    2.5000    5.3947    8.8455    3.3731   0 
+Return/Penalty                                     150000   15   -0.9258   -0.5545   -0.5944    0.1776   0 
+Return/Phase                                       150000   15    0.0150    0.0684    0.0649    0.0192   0 
+Return/Safety                                      150000   15   -0.4437   -0.3360   -0.3618    0.1220   0 
+Return/Shaping                                     150000   15   -1.0977    0.4482    0.3923    0.0530   0 
+Task/EndDrop                                       150000   15    0.1000    0.6579    0.5787    0.1688   0 
+Task/EndLiftBudget                                 150000   15    0.0000    0.0000    0.0000    0.0000   0 FROZEN
+Task/EndMaxStep                                    150000   15    0.8500    0.3158    0.3556   -0.1876   0 
+Task/EndTaskBudget                                 150000   15    0.0000    0.0000    0.0000   -0.0091   0 
+Task/GripTorqueAtEnd                               150000   15    0.0627    0.2798    0.2858    0.0799   0 
+Task/GripTorqueMean                                150000   15    0.0295    0.3174    0.3095    0.1212   0 
+Task/HoldEntries                                   150000   15    0.0500    0.4474    0.5169    0.1621   0 
+Task/HoldSteps                                     150000   15    2.5000    4.8947    7.4961    3.4141   0 
+Task/Lifted                                        150000   15    0.1000    0.5000    0.5628    0.1151   0 
+Task/MaxJointSpeedDeg                              150000   15 26345.1367 56885.2266 55687.8812 1562.7031   0 
+Task/MaxPulseForce                                 150000   15    0.0000    0.0000    0.0000    0.0000   0 FROZEN
+Task/ObjectBottomAboveTop                          150000   15    0.0176    0.0568    0.0730   -0.0082   0 
+Task/ObjectMass                                    150000   15    0.6691    0.6154    0.6091   -0.0371   0 
+Task/PerturbScale                                  150000   15    0.0000    0.0000    0.0000    0.0000   0 FROZEN
+Task/PhaseReached                                  150000   15    0.2000    1.1053    1.0714    0.3700   0 
+Task/PulsesApplied                                 150000   15    0.1500    0.3421    0.5907    0.2121   0 
+Task/StepsToLift                                   150000   15  296.5000  838.6053 1023.6312  -66.9868   0 
+Task/StepsToTransition                             150000   15  371.2000 1180.6842 1201.1951   67.6205   0 
+Task/Transitioned                                  150000   15    0.1500    0.6842    0.6488    0.1920   0 

@@ -1,0 +1,40 @@
+REST POSE (palm frame: along = palm.up toward the fingers, out = palm.right = palm normal / closing side, across = palm.forward)
+wrist pivot (palm link) to forearm link: 294.4 mm; palm->middleBase 104.4 mm
+palm box size(local) (15.8, 69.7, 74.6) mm, centre(palm frame) (57.6, 14.1, 1.1) mm; thickness along out = 15.8 mm
+group,pivot(palm frame mm),axis(palm frame),axisElevationFromPalmPlaneDeg,axisInPlaneAngleFromAcrossDeg,linkDirSplayDeg,linkDirCurlDeg,predictedFlexionDotOut,lowerLimit,upperLimit,linkLen mm,capsuleR mm,capsuleH mm,mass g
+indexBase,(104.4, 4.9, 33.7),(-0.37, 0.27, 0.89),15.7,-22.3,20.4,6.6,0.96,-90,10,29.9,9.1,30.8,10.1
+indexMiddle,(132.2, 8.3, 44.0),(-0.34, 0.27, 0.90),15.5,-20.3,18.7,5.9,0.96,-100,5,24.8,8.0,23.5,4.7
+indexEnd,(155.5, 10.8, 51.9),(-0.34, 0.27, 0.90),15.6,-20.9,17.9,28.7,0.85,-80,5,17.7,8.0,20.4,5.3
+middleBase,(103.9, -4.0, 9.0),(-0.17, -0.12, 0.98),-7.1,-10.1,10.0,-0.6,0.99,-90,10,29.3,9.9,38.3,18.3
+middleMiddle,(132.8, -4.3, 14.1),(-0.15, -0.11, 0.98),-6.6,-8.4,8.3,-0.8,0.99,-100,5,38.0,9.9,38.3,18.2
+middleEnd,(170.4, -4.8, 19.6),(-0.15, -0.11, 0.98),-6.6,-8.5,13.2,12.0,0.97,-80,5,24.0,8.1,37.1,8.8
+ringBase,(105.7, 0.0, -9.3),(0.17, -0.17, 0.97),-9.5,10.0,-11.1,-6.5,0.98,-90,10,33.0,7.6,30.7,9.2
+ringMiddle,(137.8, -3.7, -15.6),(0.17, -0.17, 0.97),-9.5,10.0,-12.1,-12.6,0.96,-100,5,31.1,8.0,30.3,5.5
+ringEnd,(167.5, -10.5, -22.0),(0.17, -0.17, 0.97),-9.5,9.9,-15.0,-8.4,0.97,-80,5,19.2,7.9,24.4,4.8
+pinkyBase,(114.7, 12.3, -30.9),(-0.40, -0.47, 0.79),-27.9,-26.8,13.5,-18.5,0.82,-90,10,31.3,7.4,28.8,3.5
+pinkyMiddle,(143.6, 2.4, -24.0),(-0.64, -0.63, 0.45),-38.8,-55.0,20.6,-33.6,0.54,-100,5,31.6,6.4,26.4,5.0
+pinkyEnd,(168.2, -15.1, -14.7),(-0.75, -0.61, 0.28),-37.2,-69.4,30.0,-31.3,0.53,-80,5,15.2,6.3,26.5,5.1
+thumbBase,(74.9, 31.3, 40.7),(0.37, -0.46, -0.80),-27.5,155.2,17.6,13.5,0.86,-15,60,43.2,10.1,45.8,19.0
+thumbEnd,(114.9, 41.4, 53.4),(0.55, -0.44, -0.71),-25.8,142.1,25.9,15.8,0.85,-10,80,55.5,12.7,54.5,23.2
+base pivot spacing mm: indexBase-middleBase 26.3 middleBase-ringBase 18.8 ringBase-pinkyBase 26.4 pinkyBase-thumbBase 84.1
+fan (in-plane axis angle relative to middleBase): index 12.2 ring -20.1 pinky 16.8 thumbBase -165.3; thumb base axis vs finger flexion plane normal (middleBase axis): 142.6 deg
+arm limits: shoulderFlex (-40.00, 100.00) abduction (-60.00, 60.00) elbow (-47.00, 98.00) wristFlex (-70.00, 80.00) wristPron (-80.00, 80.00)
+wrist axes (palm frame): twist (0.00, 1.00, 0.00) swingY (1.00, 0.00, 0.00); forearm elbow axis (0.09, 1.00, -0.01)
+FLEXED (fingers -45/-45/-30, thumb at its upper limits): link-end displacement dot out (should be > 0 for flexion toward the palm)
+  indexBase angle=-29.1 dispDotOut=0.23 end(palm frame mm)=(128.7, 21.5, 38.6)
+  indexMiddle angle=-33.1 dispDotOut=0.42 end(palm frame mm)=(139.7, 43.6, 35.8)
+  indexEnd angle=-25.1 dispDotOut=0.43 end(palm frame mm)=(133.7, 59.3, 30.4)
+  middleBase angle=-34.7 dispDotOut=0.32 end(palm frame mm)=(127.7, 12.0, 15.2)
+  middleMiddle angle=-42.8 dispDotOut=0.65 end(palm frame mm)=(136.0, 48.8, 20.2)
+  middleEnd angle=-29.1 dispDotOut=0.62 end(palm frame mm)=(124.0, 69.6, 21.9)
+  ringBase angle=-44.9 dispDotOut=0.51 end(palm frame mm)=(128.7, 23.6, -9.3)
+  ringMiddle angle=-44.7 dispDotOut=0.75 end(palm frame mm)=(128.9, 54.3, -4.1)
+  ringEnd angle=-30.0 dispDotOut=0.73 end(palm frame mm)=(118.4, 70.0, -0.8)
+  pinkyBase angle=-26.9 dispDotOut=0.36 end(palm frame mm)=(140.2, 20.6, -14.8)
+  pinkyMiddle angle=-38.8 dispDotOut=0.80 end(palm frame mm)=(148.3, 33.9, 12.6)
+  pinkyEnd angle=-27.8 dispDotOut=0.83 end(palm frame mm)=(142.3, 42.2, 23.8)
+  thumbBase angle=13.8 dispDotOut=0.13 end(palm frame mm)=(113.8, 48.0, 49.1)
+  thumbEnd angle=80.0 dispDotOut=0.31 end(palm frame mm)=(113.1, 94.2, 18.4)
+thumb tip to index PIP-end 59.8 mm, to index tip 42.3 mm, to middle PIP-end 50.9 mm; thumb tip (palm frame mm) (113.1, 94.2, 18.4) index tip (133.7, 59.3, 30.4)
+selfPenetration at this pose: 3.69mm(L_indexEnd/L_middleEnd;overlappingPairs=9/91)
+DONE

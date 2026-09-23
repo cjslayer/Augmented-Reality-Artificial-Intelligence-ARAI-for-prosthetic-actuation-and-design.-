@@ -1,0 +1,18 @@
+=== 012 fresh repeat mu 10 15:10:04
+log [Gates] eval: object material mu=1 combine=Maximum
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6001-6100 mu=1 perturb=1 K=50
+log [Gates] done: results/012/checks/eval012_fresh_repeat_mu10.csv
+== csv rows: 102 rc=0 ==
+rows: 100
+=== 012 fresh repeat mu 06 15:11:04
+log [Gates] eval: object material mu=0.6 combine=Maximum
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6001-6100 mu=0.6 perturb=1 K=50
+log [Gates] done: results/012/checks/eval012_fresh_repeat_mu06.csv
+== csv rows: 102 rc=0 ==
+rows: 100
+=== 012 fresh repeat mu 15 15:12:04
+log [Gates] eval: object material mu=1.5 combine=Maximum
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6001-6100 mu=1.5 perturb=1 K=50
+log [Gates] done: results/012/checks/eval012_fresh_repeat_mu15.csv
+== csv rows: 102 rc=0 ==
+rows: 100

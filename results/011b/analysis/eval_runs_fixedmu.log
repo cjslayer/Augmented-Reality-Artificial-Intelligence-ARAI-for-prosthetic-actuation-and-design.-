@@ -1,0 +1,12 @@
+=== rerun 10 ms mu 06 with the friction override applied to the material 23:25:31
+log [Gates] eval: object material mu=0.6 combine=Maximum
+log [Gates] eval: model results/011b/Prosthetic.onnx seeds 5001-5100 mu=0.6 perturb=1 K=50
+log [Gates] done: results/011b/analysis/eval011b_rerun_mu06_fixedmu.csv
+== csv rows: 102 rc=0 ==
+rows: 100
+=== rerun 10 ms mu 15 with the friction override applied to the material 23:26:38
+log [Gates] eval: object material mu=1.5 combine=Maximum
+log [Gates] eval: model results/011b/Prosthetic.onnx seeds 5001-5100 mu=1.5 perturb=1 K=50
+log [Gates] done: results/011b/analysis/eval011b_rerun_mu15_fixedmu.csv
+== csv rows: 102 rc=0 ==
+rows: 100

@@ -1,0 +1,17 @@
+mu,massTercile,n_drops_hold,medianHoldStepBeforePulse1,hold-before-pulse-1,during-pulse-1,within-0.4s-after-pulse-1,later-after-pulse-1,during-pulse-2,within-0.4s-after-pulse-2,later-after-pulse-2,during-pulse-3,within-0.4s-after-pulse-3,later-after-pulse-3
+0.6,light,18,28,9,0,3,1,0,0,5,0,0,0
+0.6,mid,14,17.5,8,1,0,0,0,1,2,0,1,1
+0.6,heavy,15,23,9,1,0,2,0,0,2,0,0,1
+0.6,all,47,23.5,26,2,3,3,0,1,9,0,1,2
+1.0,light,17,16,13,0,2,0,0,0,1,0,0,1
+1.0,mid,15,31,11,0,1,1,0,0,1,0,0,1
+1.0,heavy,12,28,5,0,1,3,0,0,1,0,1,1
+1.0,all,44,24,29,0,4,4,0,0,3,0,1,3
+1.5,light,15,23,13,0,0,0,0,0,1,0,0,1
+1.5,mid,20,24,11,0,4,3,0,1,0,0,0,1
+1.5,heavy,19,38,11,0,3,2,0,1,0,0,0,2
+1.5,all,54,24,35,0,7,5,0,2,1,0,0,4
+pooled,light,50,23,35,0,5,1,0,0,7,0,0,2
+pooled,mid,49,24.5,30,1,5,4,0,2,3,0,1,3
+pooled,heavy,46,24,25,1,4,7,0,1,3,0,1,4
+pooled,all,145,24.0,90,2,14,12,0,3,13,0,2,9

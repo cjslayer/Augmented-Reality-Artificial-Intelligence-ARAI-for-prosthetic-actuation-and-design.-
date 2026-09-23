@@ -1,0 +1,48 @@
+=== rerun 10 ms mu 10 23:13:53
+error Assets\Scripts\Diagnostics\ArticulatedGates.cs(174,288): error CS0103: The name 'stepsPer10ms' does not exist in the current context
+error Assets\Scripts\Diagnostics\ArticulatedGates.cs(175,67): error CS0103: The name 'stepsPer10ms' does not exist in the current context
+log [Gates] eval: model results/011b/Prosthetic.onnx seeds 5001-5100 mu=1 perturb=1 K=50
+log [Gates] done: results/011b/analysis/eval011b_rerun_mu10.csv
+== csv rows: 102 rc=0 ==
+rows: 100
+=== rerun 10 ms mu 06 23:14:58
+log [Gates] eval: model results/011b/Prosthetic.onnx seeds 5001-5100 mu=1 perturb=1 K=50
+log [Gates] done: results/011b/analysis/eval011b_rerun_mu10.csv
+log [Gates] eval: model results/011b/Prosthetic.onnx seeds 5001-5100 mu=0.6 perturb=1 K=50
+log [Gates] done: results/011b/analysis/eval011b_rerun_mu06.csv
+== csv rows: 102 rc=0 ==
+rows: 100
+=== rerun 10 ms mu 15 23:16:02
+log [Gates] eval: model results/011b/Prosthetic.onnx seeds 5001-5100 mu=0.6 perturb=1 K=50
+log [Gates] done: results/011b/analysis/eval011b_rerun_mu06.csv
+log [Gates] eval: model results/011b/Prosthetic.onnx seeds 5001-5100 mu=1.5 perturb=1 K=50
+log [Gates] done: results/011b/analysis/eval011b_rerun_mu15.csv
+== csv rows: 102 rc=0 ==
+rows: 100
+setdp: [{'code': 'COMMAND_FAILED', 'message': 'Pipeline server returned 400 Bad Request: Internal Server Error. Main thread operation timed out after 5000ms'}]
+=== dt 5 ms mu 10 23:17:12
+log [Gates] done: results/011b/analysis/eval011b_rerun_mu15.csv
+log [Gates] fixedTimestep=0.005 DecisionPeriod=20
+log [Gates] eval dt override: stepsPer10ms=2 MaxStep=10000 liftBudget=400 margin=200 pulseSteps=10 holdPayBudget=100 DecisionPeriod(agent cache)=20
+log [Gates] eval: model results/011b/Prosthetic.onnx seeds 5001-5100 mu=1 perturb=1 K=50
+log [Gates] done: results/011b/analysis/eval011b_5ms_mu10.csv
+== csv rows: 102 rc=0 ==
+rows: 100
+=== dt 5 ms mu 06 23:18:44
+log [Gates] done: results/011b/analysis/eval011b_5ms_mu10.csv
+log [Gates] fixedTimestep=0.005 DecisionPeriod=20
+log [Gates] eval dt override: stepsPer10ms=2 MaxStep=10000 liftBudget=400 margin=200 pulseSteps=10 holdPayBudget=100 DecisionPeriod(agent cache)=20
+log [Gates] eval: model results/011b/Prosthetic.onnx seeds 5001-5100 mu=0.6 perturb=1 K=50
+log [Gates] done: results/011b/analysis/eval011b_5ms_mu06.csv
+== csv rows: 102 rc=0 ==
+rows: 100
+=== dt 5 ms mu 15 23:20:15
+log [Gates] done: results/011b/analysis/eval011b_5ms_mu06.csv
+log [Gates] fixedTimestep=0.005 DecisionPeriod=20
+log [Gates] eval dt override: stepsPer10ms=2 MaxStep=10000 liftBudget=400 margin=200 pulseSteps=10 holdPayBudget=100 DecisionPeriod(agent cache)=20
+log [Gates] eval: model results/011b/Prosthetic.onnx seeds 5001-5100 mu=1.5 perturb=1 K=50
+log [Gates] done: results/011b/analysis/eval011b_5ms_mu15.csv
+== csv rows: 102 rc=0 ==
+rows: 100
+setdp: [{'code': 'COMMAND_FAILED', 'message': 'Pipeline server returned 400 Bad Request: Internal Server Error. Main thread operation timed out after 5000ms'}]
+=== git status (scene must be clean) 23:22:09

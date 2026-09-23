@@ -1,0 +1,28 @@
+mu,bin,n,success
+0.6,low-k,34,0.47
+0.6,mid-k,32,0.56
+0.6,high-k,34,0.41
+0.6,mass light,33,0.42
+0.6,mass mid,33,0.48
+0.6,mass heavy,34,0.53
+0.6,groups<=9,13,0.54
+0.6,groups 10-11,41,0.56
+0.6,groups 12-14,46,0.39
+1.0,low-k,33,0.33
+1.0,mid-k,33,0.70
+1.0,high-k,34,0.59
+1.0,mass light,33,0.45
+1.0,mass mid,33,0.52
+1.0,mass heavy,34,0.65
+1.0,groups<=9,13,0.54
+1.0,groups 10-11,41,0.63
+1.0,groups 12-14,46,0.46
+1.5,low-k,33,0.21
+1.5,mid-k,33,0.45
+1.5,high-k,34,0.47
+1.5,mass light,33,0.42
+1.5,mass mid,33,0.30
+1.5,mass heavy,34,0.41
+1.5,groups<=9,13,0.38
+1.5,groups 10-11,41,0.34
+1.5,groups 12-14,46,0.41

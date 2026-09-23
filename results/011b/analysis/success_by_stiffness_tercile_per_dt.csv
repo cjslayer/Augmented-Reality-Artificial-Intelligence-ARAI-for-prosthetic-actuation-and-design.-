@@ -1,0 +1,4 @@
+run,dtMs,decisionPeriod,mu_effective,n,success,low-k n,low-k success,mid-k n,mid-k success,high-k n,high-k success,note
+original 22:50 session,10,10,1.0,100,0.51,33,0.48,32,0.66,35,0.40,
+re-run with pulse logging,10,10,1.0,100,0.54,33,0.33,33,0.70,34,0.59,episode-identical to the mu 0.6 / 1.5 re-runs of the same session (friction override ineffective there)
+dt 5 ms,5,20,1.0,100,0.51,33,0.42,33,0.52,34,0.59,"DecisionPeriod 20 set in memory only; budgets, pulse duration, hold-pay window scaled by the harness"

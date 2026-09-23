@@ -996,3 +996,27 @@ scale 0.50 / 0.50 / 0.53 (flat); finger stiffness k 0.48 / 0.67 / 0.38 (stiffest
 0.45, 11-12: 0.49, 13: 0.67, 14: 0.60; object mass 0.39 / 0.55 / 0.59 (light objects fail most: the pulses scale with
 weight, so a light object is easiest to knock out of a weak grip). Not deployed; Assets/Models/Prosthetic.onnx is still
 run 010 (cf75a06b...).
+
+### Run 011b: stage-1 analyses and a correction (2026-09-23, `results/011b/analysis/ANALYSIS.md`)
+
+**Correction to the held-out table above.** The eval harness's friction override never reached the physics: the agent
+builds the object's PhysicsMaterial once at Initialize, before `EvalSetup` set `objectFriction`, so the mu 0.6 and 1.5
+passes were physically mu 1.0 (proved by a re-run in which the three passes were episode-identical). Fixed in commit
+a834d81 (override applied to the live material, logged). Corrected held-out numbers on seeds 5001-5100, K = 50,
+perturbation 1.0: success **0.48 / 0.54 / 0.38 at mu 0.6 / 1.0 / 1.5** (lifted 0.95 / 0.98 / 0.93, palm at end
+0.69 / 0.77 / 0.63, mean contacts 4.3 / 4.2 / 3.7). The 0.59 / 0.51 / 0.52 spread of the 22:50 passes was the run-to-run
+noise of the sampled policy with identical theta (about +-0.04 at n = 100); within one Editor session the sampled
+policy is deterministic given the episode seed, across sessions it is not.
+
+**Drop timing (pulse schedule now logged).** Of 145 hold-phase drops, 90 (62 %) happen before the first pulse (median
+hold step 24, first pulse median 245), 2 during a pulse, 19 within 0.4 s after one, 34 later. Mass terciles 0.43 / 0.43
+/ 0.53. Light objects are neither flicked during closure (3 of 53 failures before the lift) nor knocked out by pulses:
+at every mass the dominant failure is early-hold instability in the first half second after the lift. Contacts at the
+drop 3.1 on 1.6 finger groups (palm 0.47, thumb 0.52) vs 5.2 on 2.6 groups (0.95, 0.99) at a successful end.
+
+**Stiff-tercile solver check.** All step-denominated task constants convert to dt 5 ms / DecisionPeriod 20 by field
+values (table in ANALYSIS.md; the harness scales them under its `fixedTimestep` override, the scene's DecisionPeriod was
+set to 20 in memory only). Success by stiffness tercile at mu 1.0: original session 0.48 / 0.67 / 0.38, re-run at 10 ms
+0.33 / 0.70 / 0.59, 5 ms 0.42 / 0.52 / 0.59. The stiff-tercile deficit did not reproduce at the training dt with the
+same theta and seeds, so it was sampling noise (n = 33 per cell), not a solver artifact; the policy transfers to 5 ms
+with -0.03 overall.

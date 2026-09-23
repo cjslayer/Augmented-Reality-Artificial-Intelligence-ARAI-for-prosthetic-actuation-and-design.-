@@ -1,0 +1,54 @@
+=== 011b_paired mu 10 07:50:59
+log [Gates] eval: object material mu=1 combine=Maximum
+log [Gates] eval: model results/011b/Prosthetic.onnx seeds 5001-5100 mu=1 perturb=1 K=50
+log [Gates] done: results/012/eval/eval011b_paired_mu10.csv
+== csv rows: 102 rc=0 ==
+rows: 100
+=== 012_paired mu 10 07:52:03
+log [Gates] eval: object material mu=1 combine=Maximum
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 5001-5100 mu=1 perturb=1 K=50
+log [Gates] done: results/012/eval/eval012_paired_mu10.csv
+== csv rows: 102 rc=0 ==
+rows: 100
+=== 012_fresh mu 10 07:53:02
+log [Gates] eval: object material mu=1 combine=Maximum
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6001-6100 mu=1 perturb=1 K=50
+log [Gates] done: results/012/eval/eval012_fresh_mu10.csv
+== csv rows: 102 rc=0 ==
+rows: 100
+=== 011b_paired mu 06 07:54:06
+log [Gates] eval: object material mu=0.6 combine=Maximum
+log [Gates] eval: model results/011b/Prosthetic.onnx seeds 5001-5100 mu=0.6 perturb=1 K=50
+log [Gates] done: results/012/eval/eval011b_paired_mu06.csv
+== csv rows: 102 rc=0 ==
+rows: 100
+=== 012_paired mu 06 07:55:11
+log [Gates] eval: object material mu=0.6 combine=Maximum
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 5001-5100 mu=0.6 perturb=1 K=50
+log [Gates] done: results/012/eval/eval012_paired_mu06.csv
+== csv rows: 102 rc=0 ==
+rows: 100
+=== 012_fresh mu 06 07:56:10
+log [Gates] eval: object material mu=0.6 combine=Maximum
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6001-6100 mu=0.6 perturb=1 K=50
+log [Gates] done: results/012/eval/eval012_fresh_mu06.csv
+== csv rows: 102 rc=0 ==
+rows: 100
+=== 011b_paired mu 15 07:57:04
+log [Gates] eval: object material mu=1.5 combine=Maximum
+log [Gates] eval: model results/011b/Prosthetic.onnx seeds 5001-5100 mu=1.5 perturb=1 K=50
+log [Gates] done: results/012/eval/eval011b_paired_mu15.csv
+== csv rows: 102 rc=0 ==
+rows: 100
+=== 012_paired mu 15 07:58:35
+log [Gates] eval: object material mu=1.5 combine=Maximum
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 5001-5100 mu=1.5 perturb=1 K=50
+log [Gates] done: results/012/eval/eval012_paired_mu15.csv
+== csv rows: 102 rc=0 ==
+rows: 100
+=== 012_fresh mu 15 07:59:34
+log [Gates] eval: object material mu=1.5 combine=Maximum
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6001-6100 mu=1.5 perturb=1 K=50
+log [Gates] done: results/012/eval/eval012_fresh_mu15.csv
+== csv rows: 102 rc=0 ==
+rows: 100

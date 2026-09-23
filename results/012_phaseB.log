@@ -1,0 +1,15 @@
+=== phase switch requested 00:56:38
+latest checkpoint results/012/Prosthetic/Prosthetic-1999948.onnx
+0
+status written: latest results/012/Prosthetic\Prosthetic-1999948.pt {'hold/decisions': {'lesson_num': 0}, 'perturb/scale': {'lesson_num': 0}, 'morph/randomize': {'lesson_num': 0}}
+[INFO] Resuming from results\012\Prosthetic.
+[INFO] Resuming training from step 1999948.
+[INFO] Parameter 'morph/randomize' is in lesson 'morph/randomize' and has value 'Float: value=1.0'.
+[INFO] Parameter 'hold/decisions' is in lesson 'hold/decisions' and has value 'Float: value=50.0'.
+[INFO] Parameter 'perturb/scale' is in lesson 'Perturb0' and has value 'Float: value=0.0'.
+[INFO] Prosthetic. Step: 2000000. Time Elapsed: 4.888 s. Mean Reward: -0.770. Std of Reward: 0.000. Training.
+[INFO] Prosthetic. Step: 2010000. Time Elapsed: 24.541 s. Mean Reward: 0.386. Std of Reward: 0.733. Training.
+[INFO] Prosthetic. Step: 2020000. Time Elapsed: 43.878 s. Mean Reward: 0.310. Std of Reward: 0.834. Training.
+10
+8
+=== phase B launched 00:57:57

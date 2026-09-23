@@ -1,0 +1,30 @@
+=== build 23:33:15
+{
+  "success": true,
+  "command": "command build",
+  "data": {
+    "command": "build",
+    "parameters": {
+      "target": "StandaloneWindows64",
+      "outputPath": "Builds/Run012/Prosthetic.exe",
+      "scenes": "[\"Assets/Scenes/Dynamic_Scene_Train.unity\"]",
+      "confirm": true
+    },
+    "result": {
+      "status": "queued",
+      "buildId": "build_52f93e0e033e"
+    },
+    "target": {
+      "host": "127.0.0.1",
+      "port": 7800,
+      "projectPath": "C:\\Users\\chris\\Augmented-Reality-Artificial-Intelligence"
+    },
+    "success": true
+  },
+  "errors": [],
+  "warnings": []
+}
+build: completed Succeeded 0
+667136 23:33:23
+5cf8283e7cb3761b
+ M ProjectSettings/PackageManagerSettings.asset

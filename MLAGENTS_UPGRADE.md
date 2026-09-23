@@ -1020,3 +1020,69 @@ set to 20 in memory only). Success by stiffness tercile at mu 1.0: original sess
 0.33 / 0.70 / 0.59, 5 ms 0.42 / 0.52 / 0.59. The stiff-tercile deficit did not reproduce at the training dt with the
 same theta and seeds, so it was sampling noise (n = 33 per cell), not a solver artifact; the policy transfers to 5 ms
 with -0.03 overall.
+
+## Run 012 (2026-09-22 23:34 -> 2026-09-23 07:46): the run-011 recipe at 12M, fresh lineage — NOT deployed
+
+`Config/run_012.yaml` / `run_012_phaseB.yaml` = the 011 yamls with `max_steps: 12000000` (diff: header comment and
+max_steps only). Player `Builds/Run012/Prosthetic.exe` rebuilt from main 05a15e3 (Assembly-CSharp sha256 cc923119...;
+the agent file had gained diagnostic record fields since the Run011 build), 8 headless envs, theater off, no init_path,
+no resume across lineages. Phase A (hold ladder) ran 0 -> 2.0M: lessons Hold10 at 1.42M, Hold20 at 1.74M, Hold50 at
+1.96M; hard stop at 2.04M and within-lineage resume from checkpoint 1999948 with the phase-B yaml (same procedure as
+011b: lesson state written by hand, fixed parameter at lesson 0). Perturbation ladder: 0.25 at 2.68M, 0.5 at 2.74M,
+1.0 at 2.77M (two lessons inside one summary window). Checkpoints every 250k (249960 ... 12000014, 51 exports). No NaN.
+Throughput: 434 steps/s over the first 100k, 403-412 sustained per 250k window for the rest (never below 400; the
+machine was 25-28 % busy, Editor idle, no competing process).
+
+| step | phase / K / perturb | reward | success | hold steps | lifted | palm | drop | steps/s |
+|---|---|---|---|---|---|---|---|---|
+| 0.55M | A, 5, 0 | 0.10 | 0.08 | 12 | 0.77 | 0.14 | 0.87 | 430 |
+| 1.04M | A, 5, 0 | 0.45 | 0.28 | 23 | 0.83 | 0.25 | 0.64 | 416 |
+| 1.54M | A, 10, 0 | 0.62 | 0.30 | 48 | 0.89 | 0.44 | 0.64 | 427 |
+| 2.04M | A, 50, 0 | 0.42 | 0.20 | 167 | 0.88 | 0.59 | 0.75 | 402 |
+| 2.52M | B, 50, 0 | 0.62 | 0.26 | 182 | 0.89 | 0.57 | 0.70 | 410 |
+| 3.02M | B, 50, 1.0 | 0.88 | 0.40 | 244 | 0.89 | 0.66 | 0.58 | 411 |
+| 3.51M | B, 50, 1.0 | 0.87 | 0.42 | 250 | 0.88 | 0.68 | 0.54 | 410 |
+| 4.01M | B, 50, 1.0 | 0.95 | 0.52 | 292 | 0.89 | 0.70 | 0.43 | 411 |
+| 4.50M | B, 50, 1.0 | 1.20 | 0.61 | 332 | 0.93 | 0.72 | 0.37 | 410 |
+| 4.99M | B, 50, 1.0 | 1.28 | 0.64 | 348 | 0.93 | 0.77 | 0.34 | 412 |
+| 5.48M | B, 50, 1.0 | 1.49 | 0.78 | 408 | 0.97 | 0.83 | 0.21 | 412 |
+| 5.98M | B, 50, 1.0 | 1.56 | 0.79 | 413 | 0.96 | 0.82 | 0.20 | 409 |
+| 6.47M | B, 50, 1.0 | 1.55 | 0.78 | 409 | 0.96 | 0.85 | 0.21 | 409 |
+| 6.96M | B, 50, 1.0 | 1.62 | 0.83 | 427 | 0.97 | 0.85 | 0.17 | 409 |
+| 7.45M | B, 50, 1.0 | 1.71 | 0.89 | 452 | 0.97 | 0.84 | 0.10 | 408 |
+| 7.94M | B, 50, 1.0 | 1.61 | 0.83 | 429 | 0.98 | 0.80 | 0.16 | 409 |
+| 8.43M | B, 50, 1.0 | 1.73 | 0.87 | 451 | 0.99 | 0.85 | 0.13 | 410 |
+| 8.92M | B, 50, 1.0 | 1.72 | 0.88 | 453 | 0.98 | 0.86 | 0.11 | 403 |
+| 9.41M | B, 50, 1.0 | 1.77 | 0.91 | 463 | 0.99 | 0.87 | 0.08 | 403 |
+| 9.91M | B, 50, 1.0 | 1.80 | 0.92 | 466 | 0.99 | 0.87 | 0.08 | 408 |
+| 10.40M | B, 50, 1.0 | 1.75 | 0.89 | 456 | 0.99 | 0.85 | 0.11 | 408 |
+| 10.88M | B, 50, 1.0 | 1.70 | 0.87 | 450 | 0.97 | 0.86 | 0.11 | 405 |
+| 11.37M | B, 50, 1.0 | 1.78 | 0.91 | 464 | 0.99 | 0.87 | 0.08 | 406 |
+| 12.00M | B, 50, 1.0 | 1.74 | 0.89 | 457 | 0.99 | 0.86 | 0.10 | 407 |
+
+The 011b plateau (0.54 at 5-6M) was the LR schedule, not a ceiling: with the linear schedule spanning 12M, 012 passes
+0.54 at 4.1M and settles at 0.87-0.92 from 7.5M on.
+
+**Held-out evaluation at 12M** (`results/012/eval/`, harness eval mode with the 011b schema plus the pulse / dt
+columns, sampled head, K = 50, perturbation 1.0, friction applied to the material; 011b and 012 evaluated back to back
+in one Editor session per mu; final model `results/012/Prosthetic.onnx` = Prosthetic-12000014, sha256 9bda654f...):
+
+| mu | model | seeds | success | lifted | palm at end | contacts | mean hold steps | paired diff 012 - 011b (bootstrap 95 % CI over seeds) |
+|---|---|---|---|---|---|---|---|---|
+| 0.6 | 011b | 5001-5100 | 0.47 | 0.94 | 0.72 | 4.23 | 280 | |
+| 0.6 | 012 | 5001-5100 | 0.92 | 0.99 | 0.90 | 4.38 | 466 | +0.45 [+0.34, +0.56] |
+| 0.6 | 012 | 6001-6100 | 0.89 | 0.99 | 0.83 | 4.63 | 458 | |
+| 1.0 | 011b | 5001-5100 | 0.53 | 0.98 | 0.72 | 3.90 | 309 | |
+| 1.0 | 012 | 5001-5100 | 0.94 | 0.97 | 0.87 | 4.35 | 476 | +0.41 [+0.30, +0.52] |
+| 1.0 | 012 | 6001-6100 | 0.83 | 0.97 | 0.80 | 4.24 | 422 | |
+| 1.5 | 011b | 5001-5100 | 0.48 | 0.93 | 0.70 | 3.97 | 297 | |
+| 1.5 | 012 | 5001-5100 | 0.96 | 1.00 | 0.88 | 4.53 | 490 | +0.48 [+0.37, +0.58] |
+| 1.5 | 012 | 6001-6100 | 0.79 | 0.97 | 0.82 | 4.34 | 407 | |
+
+Fresh-block headline (6001-6100): 0.89 / 0.83 / 0.79 at mu 0.6 / 1.0 / 1.5. The 5001-5100 block reads 0.05-0.17 higher
+for 012; the two blocks are different theta / mass draws and different sessions, so the fresh block is the number to
+quote. 011b on 5001-5100 reproduced its corrected numbers (0.47 / 0.53 / 0.48 vs 0.48 / 0.54 / 0.38).
+Theta bins for 012 at mu 1.0 (n 31-36 per tercile): stiffness 0.94 / 0.94 / 0.94 on 5001-5100, 0.77 / 0.92 / 0.79 on
+6001-6100; active groups <= 9: 0.85 / 0.89, 10-11: 0.93 / 0.83, 12-14: 0.98 / 0.82; mass light / mid / heavy 0.97 / 0.88
+/ 0.97 and 0.88 / 0.83 / 0.78. Nothing beyond the +-0.1 resolution of these bins. Run 012 is not deployed; the scene
+model stays 011b (baseline).

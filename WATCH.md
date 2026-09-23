@@ -1,5 +1,8 @@
 # Watching run 011 in the Editor (branch `articulated-hand`)
 
+Scene model = run 011b (6M), baseline, held-out 0.48/0.54/0.38 at mu 0.6/1.0/1.5 on seeds 5001-5100 (`Dynamic_Scene`,
+InferenceOnly; `Dynamic_Scene_Train` stays Default with no model for training builds).
+
 Three Editor-only modes, all compiled out of player builds. The training scene is `Assets/Scenes/Dynamic_Scene_Train.unity`
 (the agent's behavior stays Default; the modes override it at Play time). Nothing here changes the reward, observations
 or actions, and none of it touches the headless run.

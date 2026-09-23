@@ -61,7 +61,7 @@ StatsRecorder and, optionally, to a CSV (`statsCsvPath`).
 | **010** | 6M | Fresh lineage: per-episode morphology θ (link-length scales, spring ω/ζ, 14-bit mask), impedance actuation, BufferSensor + attention; hold curriculum K = 2→10 | random θ: success 0.90, drop-pass given hold 0.73 at μ = 1.0; reference hand: success 1.00, drop-pass 0.77 at μ = 1.0; deployed 2026-09-18 |
 
 Model files live under `results/<run>/` (not tracked); the deployed policy is
-`Assets/Models/Prosthetic.onnx` (currently run 010, deployed 2026-09-18).
+`Assets/Models/Prosthetic.onnx`. Scene model = run 011b (6M), baseline, held-out 0.48/0.54/0.38 at mu 0.6/1.0/1.5 on seeds 5001-5100 (articulated PhysX hand, `Dynamic_Scene`; deployed 2026-09-23, run 010 and the kinematic scene end at tag `kinematic-era-end`).
 
 ## Evaluation: drop test as a pass-vs-μ curve
 
@@ -233,7 +233,7 @@ tools\deploy_model.cmd <run-id>
 |---|---|
 | `Assets/Scripts/ArmGraspAgent.cs` | Agent: joints, penetration clamp, reward, quality score, episode stats |
 | `Assets/Scenes/Dynamic_Scene.unity` | Training / demo scene |
-| `Assets/Models/Prosthetic.onnx` | Deployed policy (run 010) |
+| `Assets/Models/Prosthetic.onnx` | Deployed policy (run 011b baseline; run 010 until 2026-09-23) |
 | `Config/` | Trainer configurations |
 | `tools/deploy_model.cmd` | Copies `results/<run>/Prosthetic.onnx` into the scene asset |
 | `tools/bo_eval/`, `Assets/Scripts/BoEval/` | Fixed-θ evaluation endpoint for morphology optimization (headless player + Python `evaluate(theta)`) |

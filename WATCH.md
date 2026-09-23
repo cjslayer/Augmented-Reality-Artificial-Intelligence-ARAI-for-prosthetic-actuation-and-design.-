@@ -6,6 +6,11 @@ or actions, and none of it touches the headless run.
 
 ## A. Checkpoint theater — watch the REAL run (`Assets/Scripts/Diagnostics/CheckpointTheater.cs`)
 
+**OFF by default** (it costs about 35 % of the headless run's throughput while the Editor is in Play mode). The run that
+is training now is `011b` (the resume of 011 from 2.0M with the K-derived budget), so use `"runId":"011b"` below;
+`results/011b/Prosthetic/` holds its checkpoints and `results/011b/run_logs/training_status.json` its lessons. Turn it on
+by creating the file and pressing Play; turn it off by stopping Play (delete the file to keep it off next time).
+
 1. Create `Temp/theater.json` in the project folder:
    ```json
    {"runId":"011","refreshMinutes":10,"behavior":"Prosthetic"}

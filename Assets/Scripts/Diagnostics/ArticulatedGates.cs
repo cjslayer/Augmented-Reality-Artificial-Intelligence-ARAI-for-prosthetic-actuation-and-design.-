@@ -131,7 +131,7 @@ public class ArticulatedGates : MonoBehaviour
         agent = GetComponent<ArmGraspAgent>(); mm = GetComponent<MorphologyManager>(); bp = GetComponent<BehaviorParameters>();
         bp.BehaviorType = BehaviorType.HeuristicOnly;
         if (cfg.holdDecisions > 0) agent.requiredHoldDecisions = cfg.holdDecisions;   // gate: 50 decisions of hold (5 s at 0.1 s)
-        float stepsPer10ms = 1f;
+        stepsPer10ms = 1f;
         {   // object-side solver settings and depenetration velocity (levers 2 and 4)
             var cgo = GameObject.FindGameObjectWithTag("Cylinder"); var crb = cgo != null ? cgo.GetComponent<Rigidbody>() : null;
             if (crb != null && cfg.objectSolverIterations > 0) crb.solverIterations = cfg.objectSolverIterations;
@@ -164,13 +164,24 @@ public class ArticulatedGates : MonoBehaviour
     }
 
     // ---- eval mode: policy runs its own episodes; the harness only seeds them (BeforeEpisodeBegin hook) and records one row per episode ----
-    int evalIndex = -1; bool evalReady;
+    int evalIndex = -1; bool evalReady; float stepsPer10ms = 1f;   // physics steps per 10 ms under the dt override (1 at the training dt)
     void EvalSetup()
     {
         mm.randomizeByDefault = true;
-        agent.MaxStep = 5000; agent.taskBudgetMarginSteps = 100; agent.liftBudgetSteps = 200;   // evaluation runs the training episode limits (budget derived from K), not the scripted-hold ones set above
+        agent.MaxStep = Mathf.RoundToInt(5000 * stepsPer10ms); agent.taskBudgetMarginSteps = Mathf.RoundToInt(100 * stepsPer10ms); agent.liftBudgetSteps = Mathf.RoundToInt(200 * stepsPer10ms);   // evaluation runs the training episode limits (budget derived from K), not the scripted-hold ones set above; scaled to the dt override so they are identical in wall time
+        if (stepsPer10ms != 1f)
+        {   // every other step-denominated agent constant, converted so that its wall-time value is unchanged (pulse duration, hold-pay window and total, per-step penalty weights); the hold requirement K x DecisionPeriod needs the scene's DecisionPeriod = 0.1 s / dt, which the agent caches at Initialize
+            agent.perturbPulseSteps = Mathf.RoundToInt(agent.perturbPulseSteps * stepsPer10ms); agent.holdRewardBudgetSteps = Mathf.RoundToInt(agent.holdRewardBudgetSteps * stepsPer10ms); agent.holdRewardPerStep /= stepsPer10ms; agent.effortWeight /= stepsPer10ms; agent.safetyWeight /= stepsPer10ms;
+            Debug.Log("[Gates] eval dt override: stepsPer10ms=" + stepsPer10ms + " MaxStep=" + agent.MaxStep + " liftBudget=" + agent.liftBudgetSteps + " margin=" + agent.taskBudgetMarginSteps + " pulseSteps=" + agent.perturbPulseSteps + " holdPayBudget=" + agent.holdRewardBudgetSteps + " DecisionPeriod(agent cache)=" + agent.DecisionPeriodCached);
+        }
         agent.requiredHoldDecisions = cfg.evalHoldDecisions; agent.perturbScaleOverride = cfg.evalPerturbScale;
         if (cfg.objectFriction >= 0f) agent.objectFriction = cfg.objectFriction;
+        if (cfg.objectFriction >= 0f)
+        {   // the agent builds the object's PhysicsMaterial once at Initialize (before this Start), so the field alone never reached the physics: apply the override to the live material
+            var cyl = GameObject.FindGameObjectWithTag("Cylinder"); var col = cyl != null ? cyl.GetComponent<Collider>() : null;
+            if (col != null && col.sharedMaterial != null) { col.sharedMaterial.staticFriction = cfg.objectFriction; col.sharedMaterial.dynamicFriction = cfg.objectFriction; Debug.Log("[Gates] eval: object material mu=" + col.sharedMaterial.dynamicFriction + " combine=" + col.sharedMaterial.frictionCombine); }
+            else Debug.LogError("[Gates] eval: object material not found, friction override NOT applied");
+        }
         try
         {
             string assetDir = "Assets/Models/Watch"; Directory.CreateDirectory(assetDir);
@@ -183,8 +194,9 @@ public class ArticulatedGates : MonoBehaviour
             evalReady = true; Debug.Log("[Gates] eval: model " + cfg.modelPath + " seeds " + cfg.seedFrom + "-" + cfg.seedTo + " mu=" + agent.objectFriction + " perturb=" + cfg.evalPerturbScale + " K=" + cfg.evalHoldDecisions);
         }
         catch (System.Exception e) { Debug.LogError("[Gates] eval: " + e.Message); }
-        sb.Length = 0; sb.AppendLine("episode,seed,success,endReason,steps,transitionStep,stepsToLift,holdSteps,holdNeeded,pulses,maxPulseN,contacts,distinctFingers,thumb,palm,forearm,mass,perturbScale,mu,maxPenMm,gripTorqueMean,retShaping,retPhase,retHold,retBonus,retDrop,lenMean,lenIndex,lenMiddle,lenRing,lenPinky,lenThumb,kFingerMean,zetaMean,inertiaScaleMean,activeGroups,mask,handSpanRatio"); Flush();
+        sb.Length = 0; sb.AppendLine("episode,seed,success,endReason,steps,transitionStep,stepsToLift,holdSteps,holdNeeded,pulses,maxPulseN,contacts,distinctFingers,thumb,palm,forearm,mass,perturbScale,mu,maxPenMm,gripTorqueMean,retShaping,retPhase,retHold,retBonus,retDrop,lenMean,lenIndex,lenMiddle,lenRing,lenPinky,lenThumb,kFingerMean,zetaMean,inertiaScaleMean,activeGroups,mask,handSpanRatio,dtMs,pulseStep1,pulseStep2,pulseStep3,lastPulseStep,pulseActiveAtDrop"); Flush();
     }
+    static int LastPulseBefore(ArmGraspAgent.EpisodeRecord r) { int best = -1; foreach (int s in new[] { r.pulseStart1, r.pulseStart2, r.pulseStart3 }) if (s >= 0 && s <= r.holdSteps && s > best) best = s; return best; }   // hold step of the last pulse that had started by the final step
     void OnDestroy2() { }
     void EvalRow()
     {
@@ -192,7 +204,7 @@ public class ArticulatedGates : MonoBehaviour
         string mask = ""; for (int g = 0; g < MorphologyManager.FingerGroupCount; g++) mask += mm.mask[g] ? "1" : "0";
         float lenMean = 0f; for (int f = 0; f < 5; f++) lenMean += mm.lengthScale[f] / 5f;
         float zMean = 0f, iMean = 0f; for (int g = 0; g < MorphologyManager.FingerGroupCount; g++) { zMean += mm.DampingRatio(g) / MorphologyManager.FingerGroupCount; iMean += mm.inertiaScale[g] / MorphologyManager.FingerGroupCount; }
-        sb.AppendLine(string.Join(",", new string[] { (idx + 1).ToString(), trials[idx].seed.ToString(), r.success ? "1" : "0", r.endReason, r.steps.ToString(), r.transitionStep.ToString(), r.stepsToLift.ToString(), r.holdSteps.ToString(), (cfg.evalHoldDecisions * 10).ToString(), r.pulsesApplied.ToString(), r.maxPulseForce.ToString("F2"), r.contacts.ToString(), r.distinctFingers.ToString(), r.thumb ? "1" : "0", r.palm ? "1" : "0", r.forearm ? "1" : "0", r.mass.ToString("F3"), r.perturbScale.ToString("F2"), agent.objectFriction.ToString("F2"), (r.maxPenetration * 1000f).ToString("F2"), r.gripForceMean.ToString("F3"), r.retShaping.ToString("F4"), r.retPhase.ToString("F2"), r.retHold.ToString("F3"), r.retBonus.ToString("F2"), r.retDrop.ToString("F2"), lenMean.ToString("F3"), mm.lengthScale[0].ToString("F3"), mm.lengthScale[1].ToString("F3"), mm.lengthScale[2].ToString("F3"), mm.lengthScale[3].ToString("F3"), mm.lengthScale[4].ToString("F3"), mm.MeanStiffness(0, MorphologyManager.FingerGroupCount).ToString("F3"), zMean.ToString("F3"), iMean.ToString("F3"), mm.ActiveCount.ToString(), mask, agent.HandSpanRatio.ToString("F3") }));
+        sb.AppendLine(string.Join(",", new string[] { (idx + 1).ToString(), trials[idx].seed.ToString(), r.success ? "1" : "0", r.endReason, r.steps.ToString(), r.transitionStep.ToString(), r.stepsToLift.ToString(), r.holdSteps.ToString(), (cfg.evalHoldDecisions * agent.DecisionPeriodCached).ToString(), r.pulsesApplied.ToString(), r.maxPulseForce.ToString("F2"), r.contacts.ToString(), r.distinctFingers.ToString(), r.thumb ? "1" : "0", r.palm ? "1" : "0", r.forearm ? "1" : "0", r.mass.ToString("F3"), r.perturbScale.ToString("F2"), agent.objectFriction.ToString("F2"), (r.maxPenetration * 1000f).ToString("F2"), r.gripForceMean.ToString("F3"), r.retShaping.ToString("F4"), r.retPhase.ToString("F2"), r.retHold.ToString("F3"), r.retBonus.ToString("F2"), r.retDrop.ToString("F2"), lenMean.ToString("F3"), mm.lengthScale[0].ToString("F3"), mm.lengthScale[1].ToString("F3"), mm.lengthScale[2].ToString("F3"), mm.lengthScale[3].ToString("F3"), mm.lengthScale[4].ToString("F3"), mm.MeanStiffness(0, MorphologyManager.FingerGroupCount).ToString("F3"), zMean.ToString("F3"), iMean.ToString("F3"), mm.ActiveCount.ToString(), mask, agent.HandSpanRatio.ToString("F3"), (Time.fixedDeltaTime * 1000f).ToString("F1"), r.pulseStart1.ToString(), r.pulseStart2.ToString(), r.pulseStart3.ToString(), LastPulseBefore(r).ToString(), r.pulseActiveAtEnd ? "1" : "0" }));
         Flush();
     }
 

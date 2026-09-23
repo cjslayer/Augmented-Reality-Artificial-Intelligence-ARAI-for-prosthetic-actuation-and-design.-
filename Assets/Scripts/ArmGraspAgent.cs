@@ -95,6 +95,8 @@ public class ArmGraspAgent : Agent
     public int taskBudgetMarginSteps = 100;
     /// <summary>This episode's task budget (physics steps after the transition), derived from the hold requirement.</summary>
     public int TaskBudgetSteps { get; private set; } = 350;
+    /// <summary>Diagnostics: the DecisionPeriod cached at Initialize (the hold requirement is K x this).</summary>
+    public int DecisionPeriodCached => m_DecisionPeriod;
     public float holdRewardPerStep = 0.004f;
     public int holdRewardBudgetSteps = 50;
     public float dropPenalty = 0.2f;
@@ -261,6 +263,7 @@ public class ArmGraspAgent : Agent
     public struct EpisodeRecord
     {
         public bool success; public string endReason; public int steps, transitionStep, stepsToLift, holdSteps, holdEntries, contacts, distinctFingers, pulsesApplied, holdStepsPaid;
+        public int pulseStart1, pulseStart2, pulseStart3; public bool pulseActiveAtEnd;   // diagnostics: scheduled pulse hold-step indices (-1 = none) and whether a pulse was being applied on the final step
         public bool thumb, palm, forearm; public float mass, perturbScale, maxPulseForce, retShaping, retPhase, retHold, retBonus, retDrop, retPenalty, retEffort, bottomAboveTop, coverageGapDeg, antipodality, verticalSpread, gripForceMean, gripForceEnd, maxPenetration, maxJointSpeed;
     }
 
@@ -703,6 +706,8 @@ public class ArmGraspAgent : Agent
             m_PulseTorque[i] = Random.onUnitSphere * (mag * perturbTorqueLever);
         }
     }
+    /// <summary>Diagnostics: true when a scheduled pulse covers the given hold step.</summary>
+    bool PulseActiveAt(int holdStep) { int len = Mathf.Max(1, perturbPulseSteps); for (int i = 0; i < m_PulseStart.Length; i++) if (holdStep >= m_PulseStart[i] && holdStep < m_PulseStart[i] + len) return true; return false; }
     void ApplyPerturbation()
     {
         if (m_CylRb == null || !m_ObjectDynamic) return;
@@ -764,7 +769,8 @@ public class ArmGraspAgent : Agent
             contacts = CurrentContacts, distinctFingers = LastDistinctFingers, pulsesApplied = m_PulsesApplied, holdStepsPaid = m_HoldStepsPaid, thumb = LastThumbTouching, palm = LastPalmTouching, forearm = LastForearmTouching,
             mass = m_Mass, perturbScale = m_PerturbScale, maxPulseForce = m_MaxPulseForce, retShaping = m_ShapingReturn, retPhase = m_PhaseReturn, retHold = m_HoldReturn, retBonus = m_BonusReturn, retDrop = m_DropReturn,
             retPenalty = m_PenaltyReturn, retEffort = m_EffortReturn, bottomAboveTop = bottom, gripForceMean = m_GripForceSteps > 0 ? m_GripForceSum / m_GripForceSteps : 0f, gripForceEnd = GripForce,
-            coverageGapDeg = LastCoverageGapDeg, antipodality = LastAntipodality, verticalSpread = LastVerticalSpread, maxPenetration = m_MaxPenetration, maxJointSpeed = m_MaxJointSpeed
+            coverageGapDeg = LastCoverageGapDeg, antipodality = LastAntipodality, verticalSpread = LastVerticalSpread, maxPenetration = m_MaxPenetration, maxJointSpeed = m_MaxJointSpeed,
+            pulseStart1 = m_PulseStart.Length > 0 ? m_PulseStart[0] : -1, pulseStart2 = m_PulseStart.Length > 1 ? m_PulseStart[1] : -1, pulseStart3 = m_PulseStart.Length > 2 ? m_PulseStart[2] : -1, pulseActiveAtEnd = PulseActiveAt(m_HoldSteps)
         };
         var rec = Academy.Instance.StatsRecorder;
         rec.Add("Grasp/Success", success ? 1f : 0f);

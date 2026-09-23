@@ -1,0 +1,16 @@
+results/011_artic2/eval011b_mu06.csv: n=100 success=0.59 lifted=0.93 palm=0.75 contacts=4.24 meanHold=325 ends={'drop': 39, 'maxStep': 2, 'success': 59}
+results/011_artic2/eval011b_mu10.csv: n=100 success=0.51 lifted=0.96 palm=0.68 contacts=3.70 meanHold=291 ends={'drop': 48, 'maxStep': 1, 'success': 51}
+  lenMean [0.857,0.979): n=32 success=0.50
+  lenMean [0.979,1.029): n=34 success=0.50
+  lenMean [1.029,1.131000001): n=34 success=0.53
+  kFingerMean [0.8,1.276): n=33 success=0.48
+  kFingerMean [1.276,1.681): n=33 success=0.67
+  kFingerMean [1.681,2.617000001): n=34 success=0.38
+  activeGroups [0,11): n=29 success=0.45
+  activeGroups [11,13): n=51 success=0.49
+  activeGroups [13,14): n=15 success=0.67
+  activeGroups [14,15): n=5 success=0.60
+  mass [0.201,0.386): n=33 success=0.39
+  mass [0.386,0.762): n=33 success=0.55
+  mass [0.762,1.470000001): n=34 success=0.59
+results/011_artic2/eval011b_mu15.csv: n=100 success=0.52 lifted=0.97 palm=0.77 contacts=4.28 meanHold=315 ends={'drop': 47, 'maxStep': 1, 'success': 52}

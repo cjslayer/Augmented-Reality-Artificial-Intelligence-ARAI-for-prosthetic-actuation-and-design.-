@@ -946,3 +946,53 @@ count) and `training_status.json` edited to hold/decisions lesson 2 (K = 20), pe
 pruned to <= 2.0M. Run 011b resumes phase A (`Config/run_011.yaml`) with the fixed budget; the phase-B switch at K = 50
 is repeated as before. Theater OFF by default (about 35 % throughput): to watch, create Temp/theater.json with
 {"runId":"011b","refreshMinutes":10,"behavior":"Prosthetic"} and press Play (see WATCH.md).
+
+### Run 011b outcome (2026-09-22, 19:58 -> 22:50)
+
+Resumed from run 011's 2.0M checkpoint (checkpoint.pt byte-identical to Prosthetic-1999963.pt) in the K = 20 lesson, trainer
+log: "Resuming training from step 1999963", hold/decisions lesson Hold20, perturb/scale 0.0. Phase A reached K = 50
+(lesson 3) between 2.04M and 2.28M; phase B (`Config/run_011_phaseB.yaml`) resumed from the 2249977 checkpoint and ran
+to 6M. Theater off throughout; throughput 375-450 steps/s (never below 50 % of the 480-544 reference).
+
+Two things learned at the phase switch, both recorded in `results/011_artic2/phaseB.log`:
+- `run_logs/training_status.json` (lesson numbers, checkpoint list) is written by ML-Agents ONLY at a graceful exit
+  (learn.py after `start_learning`). A Ctrl-C event sent to the trainer's console and killing the `mlagents-learn.exe`
+  launcher stub both left the python trainer running, so the phase-A tree was hard-stopped and the lesson state written by
+  hand, as for the 011b creation. The step and optimizer live in `checkpoint.pt`, which is unaffected.
+- A parameter declared as a fixed value (phase B: `hold/decisions: 50.0`) has a single lesson; a carried-over
+  `lesson_num` of 3 makes `get_current_samplers` raise IndexError at start-up. For a fixed parameter the status file must
+  say `lesson_num: 0`. Nothing was trained between the crash and the relaunch.
+
+Monitor rows (5-episode window means, `results/011_artic2/run011b_monitor.txt`):
+
+| step | phase / K / perturb | success | task-budget fail | hold steps | drop | palm | contacts | steps/s |
+|---|---|---|---|---|---|---|---|---|
+| 2.04M | A, K 20, 0 | 0.24 | 0.000 (budget 500) | 82 | 0.74 | 0.35 | 3.2 | 448 |
+| 2.28M | A, K 50, 0 | 0.25 | 0.003 (budget 742 mixed) | 168 | 0.70 | 0.48 | 3.0 | 389 |
+| 2.53M | B, K 50, 0 | 0.30 | 0.000 (budget 800) | 218 | 0.67 | 0.53 | 3.2 | 424 |
+| 3.01M | B, K 50, 1.0 (ladder done 2.91M) | 0.37 | 0.000 | 246 | 0.62 | 0.60 | 3.4 | 374 |
+| 3.51M | B, K 50, 1.0 | 0.39 | 0.000 | 254 | 0.58 | 0.60 | 3.5 | 398 |
+| 4.00M | B, K 50, 1.0 | 0.44 | 0.000 | 267 | 0.53 | 0.61 | 3.8 | 393 |
+| 4.49M | B, K 50, 1.0 | 0.47 | 0.000 | 290 | 0.49 | 0.65 | 3.9 | 391 |
+| 4.98M | B, K 50, 1.0 | 0.54 | 0.002 | 320 | 0.43 | 0.71 | 3.9 | 419 |
+| 5.47M | B, K 50, 1.0 | 0.52 | 0.002 | 318 | 0.45 | 0.72 | 4.0 | 423 |
+| 6.00M | B, K 50, 1.0 | 0.54 | 0.003 | 326 | 0.43 | 0.75 | 4.1 | 424 |
+
+The perturbation ladder advanced at 2.64M / 2.77M / 2.89M / 2.91M (ML-Agents' rule: smoothed mean of the last 100
+episode returns > 0.9), so 3.1M of the 3.75M resumed steps trained the final task (K = 50, perturbation 1.0). No NaN, no
+crash, task-budget failures never above 0.5 % at K = 50 (run 011 had 25-30 %).
+
+Held-out evaluation (harness eval mode, `results/011b/Prosthetic.onnx` = Prosthetic-6000087, sha256 0268b0e3...,
+seeds 5001-5100, K = 50, perturbation 1.0, theta resampled per episode; `results/011_artic2/eval011b_mu*.csv`):
+
+| object friction | success | lifted | palm contact at end | mean contacts at end | mean hold steps (all episodes) | ends |
+|---|---|---|---|---|---|---|
+| 0.6 | 0.59 | 0.93 | 0.75 | 4.24 | 325 | 59 success, 39 drop, 2 no contact |
+| 1.0 | 0.51 | 0.96 | 0.68 | 3.70 | 291 | 51 success, 48 drop, 1 no contact |
+| 1.5 | 0.52 | 0.97 | 0.77 | 4.28 | 315 | 52 success, 47 drop, 1 no contact |
+
+No task-budget end in 300 episodes. Theta-binned screening at friction 1.0 (terciles, n = 32-34 per bin): finger length
+scale 0.50 / 0.50 / 0.53 (flat); finger stiffness k 0.48 / 0.67 / 0.38 (stiffest tercile weakest); active groups < 11:
+0.45, 11-12: 0.49, 13: 0.67, 14: 0.60; object mass 0.39 / 0.55 / 0.59 (light objects fail most: the pulses scale with
+weight, so a light object is easiest to knock out of a weak grip). Not deployed; Assets/Models/Prosthetic.onnx is still
+run 010 (cf75a06b...).

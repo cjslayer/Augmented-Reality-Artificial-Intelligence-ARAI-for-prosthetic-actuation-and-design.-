@@ -1,0 +1,19 @@
+# run 011b monitor rows (5-episode-window means from TensorBoard; sps from the trainer log)
+20:00 step=2040000 phaseA K=20 reward=0.606 success=0.238 lessonHold=2 lessonPerturb=0 holdSteps=82.3 lifted=0.91 drop=0.74 budgetFail=0.000 budget=500 palm=0.35 contacts=3.23 maxPen=5.2mm sps=448
+20:10 step=2280000 phaseA K=50 reward=0.519 success=0.246 lessonHold=3 lessonPerturb=0 holdSteps=167.5 lifted=0.93 drop=0.70 budgetFail=0.003 budget=742 palm=0.48 contacts=2.99 maxPen=5.7mm sps=389
+20:17 step=2280000 phaseB K=50 reward=0.454 success=0.126 lessonPerturb=0 holdSteps=160.0 lifted=0.93 drop=0.85 budgetFail=0.000 budget=800 palm=0.36 contacts=3.36 maxPen=5.4mm sps=441   (resumed from 2249977)
+20:28 step=2530000 phaseB K=50 reward=0.635 success=0.301 lessonPerturb=0 holdSteps=218.0 lifted=0.93 drop=0.67 budgetFail=0.000 budget=800 palm=0.53 contacts=3.21 maxPen=5.2mm sps=424   <- budget guard: 0.000 > 250k after the K=50 switch, fix took
+20:38 step=2780000 phaseB K=50 reward=0.722 success=0.351 lessonPerturb=2 holdSteps=239.6 lifted=0.94 drop=0.62 budgetFail=0.000 budget=800 palm=0.60 contacts=3.57 maxPen=5.3mm sps=426   (checkpoint 2749987 written 20:36; no 2.5M checkpoint: ML-Agents skips the first interval after a resume)
+20:48 step=3010000 phaseB K=50 reward=0.784 success=0.367 lessonPerturb=4 holdSteps=245.6 lifted=0.96 drop=0.62 budgetFail=0.000 budget=800 palm=0.60 contacts=3.42 maxPen=5.6mm sps=374
+20:58 step=3260000 phaseB K=50 perturb=1.0 reward=0.817 success=0.395 lessonPerturb=4 holdSteps=259.5 lifted=0.97 drop=0.58 budgetFail=0.000 budget=800 palm=0.58 contacts=3.41 maxPen=5.6mm sps=384   (perturb ladder: lesson 1 at 2.64M, 2 at 2.77M, 3 at 2.89M, 4 at 2.91M)
+21:08 step=3510000 phaseB K=50 perturb=1.0 reward=0.806 success=0.390 holdSteps=253.7 lifted=0.95 drop=0.58 budgetFail=0.000 budget=800 palm=0.60 contacts=3.50 maxPen=5.6mm sps=398
+21:18 step=3750000 phaseB K=50 perturb=1.0 reward=0.936 success=0.470 holdSteps=287.3 lifted=0.97 drop=0.51 budgetFail=0.000 budget=800 palm=0.66 contacts=3.97 maxPen=5.4mm sps=395
+21:28 step=4000000 phaseB K=50 perturb=1.0 reward=0.864 success=0.441 holdSteps=266.7 lifted=0.95 drop=0.53 budgetFail=0.000 budget=800 palm=0.61 contacts=3.79 maxPen=5.5mm sps=393
+21:38 step=4250000 phaseB K=50 perturb=1.0 reward=0.840 success=0.426 holdSteps=265.3 lifted=0.94 drop=0.54 budgetFail=0.002 budget=800 palm=0.64 contacts=3.72 maxPen=5.2mm sps=393
+21:48 step=4490000 phaseB K=50 perturb=1.0 reward=0.929 success=0.474 holdSteps=289.8 lifted=0.95 drop=0.49 budgetFail=0.000 budget=800 palm=0.65 contacts=3.88 maxPen=5.2mm sps=391
+21:58 step=4730000 phaseB K=50 perturb=1.0 reward=0.968 success=0.503 holdSteps=301.7 lifted=0.96 drop=0.46 budgetFail=0.000 budget=800 palm=0.70 contacts=4.05 maxPen=5.4mm sps=428
+22:08 step=4980000 phaseB K=50 perturb=1.0 reward=1.039 success=0.541 holdSteps=319.7 lifted=0.96 drop=0.43 budgetFail=0.002 budget=800 palm=0.71 contacts=3.94 maxPen=5.5mm sps=419
+22:18 step=5220000 phaseB K=50 perturb=1.0 reward=1.034 success=0.529 holdSteps=309.9 lifted=0.96 drop=0.44 budgetFail=0.002 budget=800 palm=0.72 contacts=3.85 maxPen=5.5mm sps=411
+22:28 step=5470000 phaseB K=50 perturb=1.0 reward=1.026 success=0.523 holdSteps=317.5 lifted=0.96 drop=0.45 budgetFail=0.002 budget=800 palm=0.72 contacts=4.04 maxPen=5.5mm sps=423
+22:38 step=5720000 phaseB K=50 perturb=1.0 reward=1.099 success=0.561 holdSteps=330.0 lifted=0.97 drop=0.41 budgetFail=0.005 budget=800 palm=0.74 contacts=4.18 maxPen=5.5mm sps=395
+STATUS step=6000000 reward=1.053 success=0.535 lessonHold=0 lessonPerturb=4 holdSteps=325.8 lifted=0.96 drop=0.43 budgetFail=0.003 budget=800 palm=0.75 contacts=4.08 maxPen=5.5mm sps=424 nan=0 ckpts=6

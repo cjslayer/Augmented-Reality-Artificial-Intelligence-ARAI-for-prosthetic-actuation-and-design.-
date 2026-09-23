@@ -1,0 +1,24 @@
+=== phase switch requested 19:29:49
+checkpoint results/011/Prosthetic/Prosthetic-2249964.onnx at 19:31:50
+mlagents-learn.exe           46924 Console                    1     10,620 K
+Binary file Temp/run011.out matches
+=== phase B launched 19:32:37
+=== phase switch (011b) requested 20:12:40, checkpoint 2249977, hold lesson 3 seen in TB at 2.28M
+phase A stopped 20:15:00 at log step 2.37M (hard stop; status file patched: hold lesson 3, ckpt 2249977)
+[ERROR] SubprocessEnvManager had workers that didn't signal shutdown
+[ERROR] A SubprocessEnvManager worker did not shut down correctly so it was forcefully terminated.
+[ERROR] A SubprocessEnvManager worker did not shut down correctly so it was forcefully terminated.
+[ERROR] A SubprocessEnvManager worker did not shut down correctly so it was forcefully terminated.
+[ERROR] A SubprocessEnvManager worker did not shut down correctly so it was forcefully terminated.
+[ERROR] A SubprocessEnvManager worker did not shut down correctly so it was forcefully terminated.
+[ERROR] A SubprocessEnvManager worker did not shut down correctly so it was forcefully terminated.
+[ERROR] A SubprocessEnvManager worker did not shut down correctly so it was forcefully terminated.
+phase B first launch crashed: fixed hold/decisions has one lesson, index 3 out of range -> lesson_num set to 0 for the phase-B yaml; relaunch 20:16:26
+[INFO] Resuming from results\011b\Prosthetic.
+[INFO] Resuming training from step 2249977.
+[INFO] Parameter 'morph/randomize' is in lesson 'morph/randomize' and has value 'Float: value=1.0'.
+[INFO] Parameter 'hold/decisions' is in lesson 'hold/decisions' and has value 'Float: value=50.0'.
+[INFO] Parameter 'perturb/scale' is in lesson 'Perturb0' and has value 'Float: value=0.0'.
+[INFO] Prosthetic. Step: 2250000. Time Elapsed: 4.655 s. No episode was completed since last summary. Training.
+[INFO] Prosthetic. Step: 2260000. Time Elapsed: 24.782 s. Mean Reward: 0.511. Std of Reward: 0.714. Training.
+[INFO] Prosthetic. Step: 2270000. Time Elapsed: 43.743 s. Mean Reward: 0.412. Std of Reward: 0.742. Training.

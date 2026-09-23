@@ -915,3 +915,34 @@ reported as a deviation. Proposed fix (episode-termination rule, so it needs sig
 budget follow the hold requirement, e.g. taskBudgetSteps = liftBudgetSteps + HoldStepsNeeded() + 100 (i.e. 800 at
 K = 50, 200 + 50 + 100 = 350 at K = 5 - identical to today's value at the lesson-0 K), or expose it as an environment
 parameter task/budget_steps in the same curriculum. Resume from the 2.5M checkpoint with the fix is possible.
+
+## Run 011: K-dependent episode budget (2026-09-22) and the 011b resume from 2.0M
+
+**Drift.** `taskBudgetSteps` (350 physics steps after the contact transition) was sized when the hold requirement was
+K = 10 (100 steps): lift budget 200 + hold 100 + 50. The lift-and-perturb rewrite raised the scene's K to 50 and the
+hold curriculum restored the 5 -> 50 ramp, but the budget stayed at 350, so at K = 50 (500 hold steps) no episode could
+succeed: run 011 went from 29-39 % success at K = 20 to 0 at K = 50 with 25-30 % task-budget failures.
+
+**Fix (ArmGraspAgent, 7 lines).** The budget is derived every episode from the lesson: TaskBudgetSteps =
+liftBudgetSteps + HoldStepsNeeded() + taskBudgetMarginSteps (100) = 350 at K = 5 (unchanged), 400 at 10, 500 at 20,
+800 at 50; logged as Task/TaskBudgetSteps. Reward terms, observations and actions: zero diff.
+
+| K-dependent constant | value | status at K = 50 |
+|---|---|---|
+| taskBudgetSteps | derived: 200 + 10 K + 100 | 800 >= lift ~120 + hold 500 (sanity trial: 521 used) |
+| holdRewardBudgetSteps (paying steps) | 50, fixed cap | pays at most 0.2 at every K; no over-pay |
+| MaxStep | 5000 physics steps | reach ~1000 + budget 800 < 5000 |
+| liftBudgetSteps | 200 after the transition | K-independent (lift takes ~100-150) |
+| drop rule | instantaneous (11 cm from the grasp point, 60 deg tilt, below the pedestal) | no window, K-independent |
+| existential penalty | 1.0 / MaxStep per step | K-independent |
+| harness scripted modes | lift budget 600, margin 700 (budget 1300 at K = 50), MaxStep 20000; `trainingBudgets` flag keeps the training limits | sanity: scripted K = 50 hold + +1 in 521 of 800 |
+
+**Resume.** ML-Agents `--resume` always loads `Prosthetic/checkpoint.pt` (the latest) and the lesson numbers in
+`run_logs/training_status.json`; run 011's latest state is 2.5M at K = 50, trained on the impossible task. To restart
+from the 2.0M checkpoint in its K = 20 lesson state without `--initialize-from` (which resets the curriculum and
+optimizer), the 2.0M checkpoint set (Prosthetic-1999963.pt / .onnx, plus the 1.5M and 1.75M ones) was copied into a
+fresh run id `results/011b`, its `checkpoint.pt` set to the 2.0M `.pt` (which carries the optimizer state and the step
+count) and `training_status.json` edited to hold/decisions lesson 2 (K = 20), perturb/scale lesson 0, checkpoint list
+pruned to <= 2.0M. Run 011b resumes phase A (`Config/run_011.yaml`) with the fixed budget; the phase-B switch at K = 50
+is repeated as before. Theater OFF by default (about 35 % throughput): to watch, create Temp/theater.json with
+{"runId":"011b","refreshMinutes":10,"behavior":"Prosthetic"} and press Play (see WATCH.md).

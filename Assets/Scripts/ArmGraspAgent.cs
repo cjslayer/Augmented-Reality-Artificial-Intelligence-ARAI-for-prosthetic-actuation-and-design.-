@@ -91,7 +91,10 @@ public class ArmGraspAgent : Agent
     public float liftClearance = 0.03f;
     public float phaseReward = 0.1f;
     public int liftBudgetSteps = 200;
-    public int taskBudgetSteps = 350;
+    [Tooltip("Task budget (physics steps after the contact transition) = liftBudgetSteps + the hold requirement (K x DecisionPeriod) + this margin. Derived per episode from the current hold/decisions lesson (350 at K = 5, 800 at K = 50); the run-011 stop at 2.62M came from a fixed 350 that could not contain a K = 50 hold.")]
+    public int taskBudgetMarginSteps = 100;
+    /// <summary>This episode's task budget (physics steps after the transition), derived from the hold requirement.</summary>
+    public int TaskBudgetSteps { get; private set; } = 350;
     public float holdRewardPerStep = 0.004f;
     public int holdRewardBudgetSteps = 50;
     public float dropPenalty = 0.2f;
@@ -406,6 +409,7 @@ public class ArmGraspAgent : Agent
         LastCoverageGapDeg = 360f; LastAntipodality = 0f; LastVerticalSpread = 0f; LastPalmTouching = false; LastDistinctFingers = 0; LastThumbTouching = false; LastHoldCriterionMet = false;
         m_EpisodeActive = true;
         HoldDecisions = Mathf.Max(1, Mathf.RoundToInt(Academy.Instance.EnvironmentParameters.GetWithDefault("hold/decisions", Academy.Instance.EnvironmentParameters.GetWithDefault("hold_decisions", requiredHoldDecisions))));   // run 011 curriculum key hold/decisions (run-010 key hold_decisions kept)
+        TaskBudgetSteps = liftBudgetSteps + HoldStepsNeeded() + taskBudgetMarginSteps;   // every K-dependent episode length follows the lesson
     }
 
     private void SpawnCylinder()
@@ -633,7 +637,7 @@ public class ArmGraspAgent : Agent
             if (lifted && m_StepsToLift < 0) m_StepsToLift = StepCount;
             if (IsDropped()) { FailEpisode("drop"); return; }
             if (!lifted && m_StepsToLift < 0 && sinceTransition >= liftBudgetSteps) { FailEpisode("liftBudget"); return; }
-            if (sinceTransition >= taskBudgetSteps) { FailEpisode("taskBudget"); return; }
+            if (sinceTransition >= TaskBudgetSteps) { FailEpisode("taskBudget"); return; }
             if (lifted)
             {
                 if (m_Phase == TaskPhase.Lift) { m_Phase = TaskPhase.Hold; m_HoldSteps = 0; m_HoldEntries++; SchedulePerturbations(holdNeeded); }
@@ -786,6 +790,7 @@ public class ArmGraspAgent : Agent
         rec.Add("Task/EndLiftBudget", m_EndReason == "liftBudget" ? 1f : 0f);
         rec.Add("Task/EndTaskBudget", m_EndReason == "taskBudget" ? 1f : 0f);
         rec.Add("Task/EndMaxStep", m_EndReason == "maxStep" ? 1f : 0f);
+        rec.Add("Task/TaskBudgetSteps", TaskBudgetSteps);
         rec.Add("Task/ObjectMass", m_Mass);
         rec.Add("Task/PerturbScale", m_PerturbScale);
         rec.Add("Task/PulsesApplied", m_PulsesApplied);

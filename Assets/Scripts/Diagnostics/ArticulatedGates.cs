@@ -69,6 +69,7 @@ public class ArticulatedGates : MonoBehaviour
         public float objectFriction = -1f;  // >= 0: override the agent's object friction for this run (pass-vs-mu)
         public float evalPerturbScale = 1f; // perturbation scale applied through perturbScaleOverride
         public int evalHoldDecisions = 50;
+        public bool trainingBudgets = false; // true: keep the agent's training episode limits (lift budget 200, margin 100, MaxStep 5000) in scripted modes
         public float[] envelopeTargets = null;   // 14 closing targets (deg) for the envelope grip; null = k_Envelope
         public float[] pinchTargets = null;      // 14 closing targets (deg) for the pinch grip; null = k_Pinch
         public float stiffnessScale = 0f;   // > 0: diagnostic, multiply the reference k of every group for this run (non-randomized modes)
@@ -145,10 +146,9 @@ public class ArticulatedGates : MonoBehaviour
             var req = GetComponent<Unity.MLAgents.DecisionRequester>(); if (req != null) req.DecisionPeriod = Mathf.Max(1, Mathf.RoundToInt(0.1f / cfg.fixedTimestep));
             Debug.Log("[Gates] fixedTimestep=" + cfg.fixedTimestep + " DecisionPeriod=" + (req != null ? req.DecisionPeriod : -1));
         }
-        agent.taskBudgetSteps = Mathf.RoundToInt(1500 * stepsPer10ms); agent.liftBudgetSteps = Mathf.RoundToInt(600 * stepsPer10ms);   // gates: the 50-decision hold must fit inside the task budget
-        agent.MaxStep = 20000;   // the scene's episode cap would end a slow scripted lift + 500-step hold as "maxStep"
+        if (!cfg.trainingBudgets) { agent.taskBudgetMarginSteps = Mathf.RoundToInt(700 * stepsPer10ms); agent.liftBudgetSteps = Mathf.RoundToInt(600 * stepsPer10ms); agent.MaxStep = 20000; }   // gates: the task budget is derived from K (lift budget + hold + margin); the scripted lift is slower than the policy's   // the scene's episode cap would end a slow scripted lift + 500-step hold as "maxStep"
         if (cfg.ignoreSelfCollision && agent.Hand != null) { agent.Hand.ignoreAllSelfCollision = true; Debug.LogWarning("[Gates] diagnostic: self-collision ignored for this run"); }
-        if (cfg.mode == "push") { agent.dropDistance = 10f; agent.dropTiltDeg = 180f; agent.taskBudgetSteps = 5000; agent.liftBudgetSteps = 5000; }   // push: the agent must not end the episode
+        if (cfg.mode == "push") { agent.dropDistance = 10f; agent.dropTiltDeg = 180f; agent.taskBudgetMarginSteps = 5000; agent.liftBudgetSteps = 5000; }   // push: the agent must not end the episode
         if (cfg.mode != "stability") { mm.randomizeByDefault = false; for (int f = 0; f < MorphologyManager.FingerCount; f++) mm.lengthScale[f] = 1f; for (int g = 0; g < MorphologyManager.FingerGroupCount; g++) mm.mask[g] = true; }
         else mm.randomizeByDefault = true;
         if (cfg.stiffnessScale > 0f && cfg.mode != "stability") { for (int g = 0; g < MorphologyManager.GroupCount; g++) { mm.stiffness[g] = mm.ReferenceStiffness(g) * cfg.stiffnessScale; mm.damping[g] = 2f * mm.referenceZeta * Mathf.Sqrt(mm.stiffness[g] * mm.inertia[g]); } Debug.LogWarning("[Gates] diagnostic: reference stiffness x " + cfg.stiffnessScale + " (indexBase k=" + mm.stiffness[0].ToString("F2") + ")"); }
@@ -168,7 +168,7 @@ public class ArticulatedGates : MonoBehaviour
     void EvalSetup()
     {
         mm.randomizeByDefault = true;
-        agent.MaxStep = 5000; agent.taskBudgetSteps = 350; agent.liftBudgetSteps = 200;   // evaluation runs the training episode limits, not the scripted-hold ones set above
+        agent.MaxStep = 5000; agent.taskBudgetMarginSteps = 100; agent.liftBudgetSteps = 200;   // evaluation runs the training episode limits (budget derived from K), not the scripted-hold ones set above
         agent.requiredHoldDecisions = cfg.evalHoldDecisions; agent.perturbScaleOverride = cfg.evalPerturbScale;
         if (cfg.objectFriction >= 0f) agent.objectFriction = cfg.objectFriction;
         try

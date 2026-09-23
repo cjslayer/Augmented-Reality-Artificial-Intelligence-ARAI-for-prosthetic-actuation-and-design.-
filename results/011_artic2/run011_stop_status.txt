@@ -1,0 +1,1 @@
+STATUS step=2620000 reward=0.380 success=0.000 lessonHold=0 lessonPerturb=0 holdSteps=121.3 lifted=0.93 drop=0.78 palm=0.49 contacts=3.22 maxPen=5.5mm sps=333 nan=0 ckpts=6

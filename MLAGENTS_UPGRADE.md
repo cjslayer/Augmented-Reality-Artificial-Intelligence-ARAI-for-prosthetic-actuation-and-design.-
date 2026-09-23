@@ -898,3 +898,20 @@ training episode limits (MaxStep 5000, budgets 350 / 200) with theta randomizati
 with the theta descriptors (length scales, k, zeta, inertia scale, mask, active groups) for the theta-binned screening.
 Verified on throwaway seeds 4990-4994; the final evaluation uses seeds 5001-5100 at K = 50 and perturb 1.0 for
 mu = 0.6 / 1.0 / 1.5.
+
+## Run 011 stopped at 2.62M (2026-09-22 19:52): the training scene's task budget cannot contain a K = 50 hold
+
+Phase A progressed as intended: reward -2.8 -> +0.8, hold lessons 5 -> 10 (1.59M) -> 20 (1.88M) -> 50 (2.18M), success
+27-39 % at K = 5-20, lift entries 90 %, palm contact 40-50 %, penetration 5-6 mm, 333-366 steps/s with the theater
+sharing the CPU, no NaN. The phase-B resume (perturbation ladder, hold fixed 50) started at 2.25M and ran to 2.62M.
+
+At the K = 50 switch Grasp/Success fell from 0.29-0.39 to 0.000 in every period and Task/EndTaskBudget rose from 0 to
+25-30 %: the agent's `taskBudgetSteps` is 350 physics steps after the transition (scene value, sized for the K = 10
+era), while the K = 50 hold alone needs 500 steps (HoldStepsNeeded = K x DecisionPeriod). At K = 20 the hold (200) plus
+the lift still fit; at K = 50 no episode can succeed - the same configuration drift that raised K to 50 left the budget
+at 350. The run was stopped (checkpoints 1.75M-2.5M kept under results/011, latest Prosthetic-2499991.onnx) rather than
+train 3.4M more steps on an impossible objective; this is outside the NaN / crash / throughput stop conditions and is
+reported as a deviation. Proposed fix (episode-termination rule, so it needs sign-off before training): make the task
+budget follow the hold requirement, e.g. taskBudgetSteps = liftBudgetSteps + HoldStepsNeeded() + 100 (i.e. 800 at
+K = 50, 200 + 50 + 100 = 350 at K = 5 - identical to today's value at the lesson-0 K), or expose it as an environment
+parameter task/budget_steps in the same curriculum. Resume from the 2.5M checkpoint with the fix is possible.

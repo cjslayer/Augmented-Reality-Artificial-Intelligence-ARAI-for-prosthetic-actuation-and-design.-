@@ -1,0 +1,10 @@
+=== 1d det 1 worker pass A 21:14:20
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6001-6100 mu=1 perturb=1 K=50 head=deterministic passIndex=0 deterministicInference=True legacyNoReseed=False
+log [Gates] done: results/012/checks/determinism/reg1d_det_A.csv
+== csv rows: 102 rc=0 ==
+rows: 100
+=== 1d det 1 worker pass B 21:15:27
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6001-6100 mu=1 perturb=1 K=50 head=deterministic passIndex=0 deterministicInference=True legacyNoReseed=False
+log [Gates] done: results/012/checks/determinism/reg1d_det_B.csv
+== csv rows: 102 rc=0 ==
+rows: 100

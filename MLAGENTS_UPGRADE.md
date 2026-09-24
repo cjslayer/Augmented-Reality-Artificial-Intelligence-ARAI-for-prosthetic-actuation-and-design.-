@@ -1092,7 +1092,11 @@ model stays 011b (baseline).
 **Amendment to the Part A determinism statement (bo_eval, 2026-09-18).** "Deterministic per build (per-process noise
 seed + common random numbers)" was established on the kinematic run-010 setup with the deterministic head. For the
 articulated hand it holds only under three conditions, now provided by the Editor harness (`ArticulatedGates` mode `eval`,
-Diagnostics only): (1) every episode is re-seeded at the top of `OnEpisodeBegin` with `DerivedSeed(seed, mu, passIndex)`
+Diagnostics only): (1) every episode is re-seeded at the top of `OnEpisodeBegin` with `DerivedSeed(seed, passIndex)`
+(FNV-1a/murmur-style mix of the words `seed`, `1000`, `passIndex`; the middle word was `round(mu * 1000)` in commit 1716818
+and became the constant 1000 in the closeout commit, so passes at different mu now share theta, mass, spawn and pulse draws;
+mu 1.0 passes, including `results/012/eval_n300`, are identical under both hashes, whereas the mu 0.6 / 1.5 passes of
+`eval_n300` were drawn with the old hash and are not theta-paired with the mu 1.0 pass)
 for both `UnityEngine.Random` (theta, mass, spawn, pulses) and `Unity.InferenceEngine.Random.SetSeed` (the ONNX
 `RandomNormalLike` of the sampled head draws from the package's static stream; nothing else resets it — not worker
 re-creation, not the ML-Agents inference seed, which is inert for this export); (2) the job system runs one worker

@@ -1,0 +1,26 @@
+=== reg1d_det_C 21:17:47
+log [Gates] done: results/012/checks/determinism/reg1d_det_C.csv
+== csv rows: 102 rc=0 ==
+rows: 100 21:18:52
+=== forced recompile 21:18:52
+compile(5s): {"status":"up_to_date","failed":false,"errors":[]}
+=== recompile done 21:19:00, immediate pass
+=== reg1d_det_D 21:19:00
+log [Gates] done: results/012/checks/determinism/reg1d_det_D.csv
+== csv rows: 102 rc=0 ==
+rows: 100 21:20:05
+=== reg1d_det_E 21:20:05
+log [Gates] done: results/012/checks/determinism/reg1d_det_E.csv
+== csv rows: 102 rc=0 ==
+rows: 100 21:21:09
+=== real recompile (comment edit) 21:21:32
+compile(5s): {"status":"completed","failed":false,"errors":[]}
+=== recompile done 21:21:48, immediate pass
+=== reg1d_det_F 21:21:48
+log [Gates] done: results/012/checks/determinism/reg1d_det_F.csv
+== csv rows: 102 rc=0 ==
+rows: 100 21:22:56
+=== reg1d_det_G 21:22:56
+log [Gates] done: results/012/checks/determinism/reg1d_det_G.csv
+== csv rows: 102 rc=0 ==
+rows: 100 21:24:00

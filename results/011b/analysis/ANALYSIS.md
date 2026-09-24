@@ -144,3 +144,18 @@ so the hold task is not sensitive to the 10 ms solver step.
 - Any pass-vs-mu number quoted for 011b must be the corrected one (0.48 / 0.54 / 0.38 at mu 0.6 / 1.0 / 1.5).
 - Per-tercile theta screening at n = 100 per pass cannot resolve differences below about 0.2; treat it as a smoke check.
 - The 012 vs 011b paired comparison must be run in one Editor session per mu to remove the session noise.
+
+## ADDENDUM 09-24 (harness closeout)
+
+Every eval CSV produced before commit 1716818 logged the theta columns of the NEXT episode on each row (the harness read
+`MorphologyManager` live after the following reset; `RNG_INVENTORY.md` section D). Object mass is not affected: it is
+captured in the agent's episode record at episode end (`ArmGraspAgent.cs:770`, `mass = m_Mass`) and read from the
+record (`r.mass`). Therefore in this document:
+- VOID: the stiffness-tercile rows and the 1c stiffness-per-dt table, the active-group bins, the finger-length bins and
+  `success_by_theta_bins.csv` / `success_by_stiffness_tercile_per_dt.csv` (theta assigned to the wrong episode). The 1c
+  decision is unaffected at the aggregate level (0.54 -> 0.51 at 5 ms), but the "stiff-tercile deficit was noise"
+  finding is unsupported either way, because the tercile membership was wrong in both sessions.
+- STAND: everything keyed on mass (1a mass-tercile x phase, hold-drop step buckets by mass, 1b contacts by mass), the
+  pulse-index tables (pulse columns come from the record), the drop-timing conclusions, the friction-override correction
+  and the reproduction check.
+Re-derived per-theta tables on the reproducible harness: `results/lineage/LINEAGE_011b_012.md` (closeout Part 3).

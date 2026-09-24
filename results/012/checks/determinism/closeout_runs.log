@@ -1,0 +1,12 @@
+=== closeout_throwaway 11:05:12
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6091-6100 mu=1 perturb=1 K=50 head=deterministic passIndex=0 deterministicInference=True legacyNoReseed=False
+log [Gates] done: results/012/checks/determinism/closeout_throwaway.csv
+warn [Worker1] Import Error Code:(4) | Message: Build asset version error: assets/ml-agents/timers/dynamic_scene_timers.json in SourceAssetDB has modification time of '2026-09-24T04:01:33.9174126Z' while content on disk has modification time of '2026-09-24T17:05:26.6187758Z' | 
+== csv rows: 12 rc=0 ==
+rows: 10 11:05:34
+=== closeout_det_A 11:05:34
+log [Gates] eval: object material mu=1 combine=Maximum
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6001-6100 mu=1 perturb=1 K=50 head=deterministic passIndex=0 deterministicInference=True legacyNoReseed=False
+log [Gates] done: results/012/checks/determinism/closeout_det_A.csv
+== csv rows: 102 rc=0 ==
+rows: 100 11:06:22

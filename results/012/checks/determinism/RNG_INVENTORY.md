@@ -11,13 +11,24 @@ frame-count based feeds a decision in eval mode.
 
 The hook `ArmGraspAgent.BeforeEpisodeBegin` is invoked at `ArmGraspAgent.cs:367`, the first RNG-touching statement of
 every episode (nothing draws before it in `OnEpisodeBegin`, `FailEpisode`, `LogEpisode` or `EndEpisode`). The harness
-installs it at `ArticulatedGates.cs:239` (working tree) and it now runs, per episode:
-`SnapshotTheta(); evalIndex++; d = DerivedSeed(seed, mu, passIndex); UnityEngine.Random.InitState(d); Unity.InferenceEngine.Random.SetSeed(d != 0 ? d : 1);`
+installs it at `ArticulatedGates.cs:245` and it runs, per episode:
+`SnapshotTheta(); evalIndex++; d = DerivedSeed(seed, passIndex); UnityEngine.Random.InitState(d); Unity.InferenceEngine.Random.SetSeed(d != 0 ? d : 1);` (or, with `legacyNoReseed`, `UnityEngine.Random.InitState(seed)` only)
 
-`DerivedSeed(seed, mu, pass)` (`ArticulatedGates.cs:173-182`): FNV-1a/murmur-style mix, `h = 2166136261; for v in
-[seed, round(mu*1000), pass]: h ^= v; h *= 16777619; h ^= h >> 13; h *= 0x5bd1e995; h ^= h >> 15; return (int)h`.
-Consequence: the same nominal seed gives different theta at different mu (mu passes are no longer theta-paired) and a
-different `passIndex` gives an independent replicate.
+`DerivedSeed(seed, pass)` (`ArticulatedGates.cs:176-185`, harness closeout 2026-09-24): FNV-1a/murmur-style mix, `h = 2166136261; for v in
+[seed, 1000, pass]: h ^= v; h *= 16777619; h ^= h >> 13; h *= 0x5bd1e995; h ^= h >> 15; return (int)h`. The middle word
+is the constant 1000; it was `round(mu*1000)` in commit 1716818, so mu was mixed into the seed and passes at different mu
+were NOT theta / pulse-paired. **`results/012/eval_n300` (and the `repro*`, `t_*`, `jw1_*` tests) were produced with the
+old hash: their mu 0.6 and 1.5 passes use different theta than the mu 1.0 pass; the mu 1.0 passes are identical under
+both hashes.** From this change on, every pass at any mu on the same block shares theta, mass, spawn and pulse draws
+(common random numbers across mu); a different `passIndex` gives an independent replicate.
+`legacyNoReseed` (discriminator only): `UnityEngine.Random.InitState(raw seed)` per episode and no Inference Engine
+reseed, i.e. the pre-1716818 seeding; theta snapshot, `head_mode` and `jobWorkers` stay in effect.
+Rows with `endReason maxStep` and record steps 0 are ML-Agents MaxStep interruptions (`Agent.cs:1344-1351` zeroes
+`m_StepCount` before `OnEpisodeBegin`, where the agent logs the record): real 5000-step episodes without a grasp, not
+aborted ones; the harness writes `steps = MaxStep` and flags them in the `maxStepTimeout` column. Flagged rows stay in the
+CSV but are EXCLUDED from every aggregate (n, success, lifted, palm, contacts, hold); each summary reports the count as
+`excluded_zero_step`. Object mass is NOT affected by the theta off-by-one: it is captured in the agent's record at episode end
+(`ArmGraspAgent.cs:770`, `mass = m_Mass`) and read from the record (`r.mass`, harness row line 207 at b71fa17).
 
 | file:line | draw | decides | when |
 |---|---|---|---|
@@ -84,3 +95,19 @@ extra discarded episode's theta). Fixed: `SnapshotTheta()` (`ArticulatedGates.cs
 before the next episode's draws. Every eval CSV committed before this patch (`results/011_artic2/eval011b_*`,
 `results/011b/analysis/eval011b_*`, `results/012/eval/*`, `results/012/checks/eval012_fresh_repeat_*`) carries theta
 shifted by one episode; aggregate theta distributions are unaffected, per-episode theta-bin tables are invalid.
+
+## E. Decision phase — HYPOTHESIS, untested as of this commit (2026-09-24)
+
+ML-Agents' `DecisionRequester` requests a decision when `Academy.StepCount % DecisionPeriod == DecisionStep`
+(`Runtime/DecisionRequester.cs:120-123`; the scene's component: DecisionPeriod 10, DecisionStep 0,
+TakeActionsBetweenDecisions 1). `Academy.StepCount` is the global counter (`Academy.cs:578-580`: `AgentPreStep(m_StepCount)`,
+then `m_StepCount += 1`), reset only by a trainer-driven environment reset (`Academy.cs:612`), never in eval.
+Hypothesis: an episode's decision phase (the number of zero-action steps between its reset and its first decision, 0-9)
+is the step count at its reset modulo 10, so it depends on the lengths of every preceding episode in the Play session and
+on the number of steps consumed by the discarded warm-up episode. A first Play after a recompile may consume a different
+number of warm-up steps, which would explain the two trajectory families of 2026-09-23 (deterministic head, one job
+worker, seeds 6001-6100, mu 1.0): "X" = `repro_deterministic_A` = `reg1d_det_A` (each the first pass after a recompile,
+success 1.00), "Y" = `reg1d_det_B`-`G` = `jw1_det_*` = `repro2_deterministic_B` (0.99, byte-identical across relaunches).
+Nothing has measured the phase yet: no pass has logged `Academy.StepCount` at reset, the `pin_tail` / `pin_warm3` passes of
+2026-09-23 ran the unpinned harness (a pinning patch was drafted but never applied), and PhysX-scene history remains an
+alternative explanation. The planned test logs `academyStepAtBegin` / `phaseAtBegin` per episode and compares X and Y.

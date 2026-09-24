@@ -1,0 +1,3 @@
+file,head,mu,n_total,excluded_zero_step,n,success,wilson95_lo,wilson95_hi,lifted,palm,contacts,meanHold,ends
+closeout_det_A.csv,deterministic,1.00,100,0,100,0.9900,0.9455,0.9982,1.0000,0.9700,5.580,496.0,{'drop': 1; 'success': 99}
+closeout_throwaway.csv,deterministic,1.00,10,0,10,1.0000,0.7225,1.0000,1.0000,0.9000,5.400,500.0,{'success': 10}

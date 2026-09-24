@@ -1,0 +1,16 @@
+=== pin_det_A 21:27:14
+cp: cannot stat '/c/Users/chris/AppData/Local/Temp/claude/C--Users-chris-Augmented-Reality-Artificial-Intelligence/82b7bbc6-b945-4adf-9ad9-15474d07998c/scratchpad/pin_det_A.json': No such file or dire
+rows:  21:27:15
+=== pin_det_B 21:27:15
+cp: cannot stat '/c/Users/chris/AppData/Local/Temp/claude/C--Users-chris-Augmented-Reality-Artificial-Intelligence/82b7bbc6-b945-4adf-9ad9-15474d07998c/scratchpad/pin_det_B.json': No such file or dire
+rows:  21:27:17
+=== pin_tail 21:27:17
+log [Gates] done: results/012/checks/determinism/reg1d_det_G.csv
+log [Gates] done: results/012/checks/determinism/pin_tail.csv
+== csv rows: 12 rc=0 ==
+rows: 10 21:27:54
+=== pin_warm3 21:27:54
+log [Gates] done: results/012/checks/determinism/pin_tail.csv
+log [Gates] done: results/012/checks/determinism/pin_warm3.csv
+== csv rows: 102 rc=0 ==
+rows: 100 21:28:59

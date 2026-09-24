@@ -61,7 +61,7 @@ StatsRecorder and, optionally, to a CSV (`statsCsvPath`).
 | **010** | 6M | Fresh lineage: per-episode morphology θ (link-length scales, spring ω/ζ, 14-bit mask), impedance actuation, BufferSensor + attention; hold curriculum K = 2→10 | random θ: success 0.90, drop-pass given hold 0.73 at μ = 1.0; reference hand: success 1.00, drop-pass 0.77 at μ = 1.0; deployed 2026-09-18 |
 
 Model files live under `results/<run>/` (not tracked); the deployed policy is
-`Assets/Models/Prosthetic.onnx`. Scene model = run 012 (12M). Held-out, deterministic head, seeds 7001-7300, n=300 per mu: success 0.97 [0.94, 0.98] / 0.98 [0.96, 0.99] / 0.99 [0.97, 1.00] at mu 0.6 / 1.0 / 1.5 (95 % Wilson). Sampled-head success at mu 1.0: 0.92 [0.88, 0.95]. Earlier n=100 sampled-head figures carried +-0.1 session spread (see results/012/checks/CHECKS.md). (articulated PhysX hand, `Dynamic_Scene`; deployed 2026-09-23; run 010 and the kinematic scene end at tag `kinematic-era-end`).
+`Assets/Models/Prosthetic.onnx`. 011b (6M) baseline, deterministic head, seeds 7001-7300: 0.67 / 0.70 / 0.60 at mu 0.6 / 1.0 / 1.5 (reach failures counted; `results/lineage/LINEAGE_011b_012.md`). Scene model = run 012 (12M). Held-out, deterministic head, seeds 7001-7300, n=300 per mu: success 0.97 [0.94, 0.98] / 0.98 [0.96, 0.99] / 0.99 [0.97, 1.00] at mu 0.6 / 1.0 / 1.5 (95 % Wilson). Sampled-head success at mu 1.0: 0.92 [0.88, 0.95]. Earlier n=100 sampled-head figures carried +-0.1 session spread (see results/012/checks/CHECKS.md). (articulated PhysX hand, `Dynamic_Scene`; deployed 2026-09-23; run 010 and the kinematic scene end at tag `kinematic-era-end`).
 
 ## Evaluation: drop test as a pass-vs-μ curve
 

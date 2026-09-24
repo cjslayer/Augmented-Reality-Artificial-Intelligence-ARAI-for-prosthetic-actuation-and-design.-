@@ -1087,6 +1087,10 @@ Theta bins for 012 at mu 1.0 (n 31-36 per tercile): stiffness 0.94 / 0.94 / 0.94
 / 0.97 and 0.88 / 0.83 / 0.78. Nothing beyond the +-0.1 resolution of these bins. Run 012 is not deployed; the scene
 model stays 011b (baseline).
 
+**Relabel (2026-09-24, one instrument):** 011b (6M) baseline, deterministic head, seeds 7001-7300: 0.67 / 0.70 / 0.60
+at mu 0.6 / 1.0 / 1.5 (reach failures counted; n = 300 per mu, `results/lineage/LINEAGE_011b_012.md`). The 0.48 / 0.54 /
+0.38 figures above were read with the sampled head on 5001-5100 with the pre-1716818 harness and are superseded.
+
 ## Eval-harness reproducibility and the n = 300 re-measurement of run 012 (2026-09-23, commit 1716818 and the next)
 
 **Amendment to the Part A determinism statement (bo_eval, 2026-09-18).** "Deterministic per build (per-process noise

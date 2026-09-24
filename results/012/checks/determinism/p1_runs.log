@@ -1,0 +1,39 @@
+=== recompile 11:08:17
+compile(5s): {"status":"completed","failed":false,"errors":[]}
+=== launch (i) at 11:08:24 (recompile done above)
+=== p1_recompile_A 11:08:24
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6001-6100 mu=1 perturb=1 K=50 head=deterministic passIndex=0 deterministicInference=True legacyNoReseed=False
+log [Gates] eval: first seeded episode at Academy step 1 DecisionPeriod=10 phase=1
+log [Gates] done: results/012/checks/determinism/p1_recompile_A.csv
+== csv rows: 102 rc=0 ==
+rows: 100 11:09:12
+=== p1_later_A 11:09:12
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6001-6100 mu=1 perturb=1 K=50 head=deterministic passIndex=0 deterministicInference=True legacyNoReseed=False
+log [Gates] eval: first seeded episode at Academy step 1 DecisionPeriod=10 phase=1
+log [Gates] done: results/012/checks/determinism/p1_later_A.csv
+== csv rows: 102 rc=0 ==
+rows: 100 11:10:00
+=== p1_tail_A 11:10:00
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6091-6100 mu=1 perturb=1 K=50 head=deterministic passIndex=0 deterministicInference=True legacyNoReseed=False
+log [Gates] eval: first seeded episode at Academy step 1 DecisionPeriod=10 phase=1
+log [Gates] done: results/012/checks/determinism/p1_tail_A.csv
+== csv rows: 12 rc=0 ==
+rows: 10 11:10:21
+=== comment-only edit B, recompile 11:12:17
+compile(5s): {"status":"completed","failed":false,"errors":[]}
+=== launch (i) retry B at 11:12:24
+=== p1_recompile_B 11:12:24
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6001-6100 mu=1 perturb=1 K=50 head=deterministic passIndex=0 deterministicInference=True legacyNoReseed=False
+log [Gates] eval: first seeded episode at Academy step 1 DecisionPeriod=10 phase=1
+log [Gates] done: results/012/checks/determinism/p1_recompile_B.csv
+== csv rows: 102 rc=0 ==
+rows: 100 11:13:12
+=== comment-only edit C, recompile 11:13:13
+compile(5s): {"status":"completed","failed":false,"errors":[]}
+=== launch (i) retry C at 11:13:20
+=== p1_recompile_C 11:13:20
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6001-6100 mu=1 perturb=1 K=50 head=deterministic passIndex=0 deterministicInference=True legacyNoReseed=False
+log [Gates] eval: first seeded episode at Academy step 1 DecisionPeriod=10 phase=1
+log [Gates] done: results/012/checks/determinism/p1_recompile_C.csv
+== csv rows: 102 rc=0 ==
+rows: 100 11:14:08

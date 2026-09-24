@@ -111,3 +111,11 @@ success 1.00), "Y" = `reg1d_det_B`-`G` = `jw1_det_*` = `repro2_deterministic_B` 
 Nothing has measured the phase yet: no pass has logged `Academy.StepCount` at reset, the `pin_tail` / `pin_warm3` passes of
 2026-09-23 ran the unpinned harness (a pinning patch was drafted but never applied), and PhysX-scene history remains an
 alternative explanation. The planned test logs `academyStepAtBegin` / `phaseAtBegin` per episode and compares X and Y.
+
+**Measured 2026-09-24 (`p1_phase_tables.md`, harness columns `academyStepAtBegin` / `phaseAtBegin` / `warmupSteps`):** four 100-seed passes
+(three launched within 30 s of a forced recompile, one after a pause) all reproduced family Y with the same phase sequence
+(first seeded episode at Academy step 1, phase 1); family X did not recur, so it has no phase record. Seeds 6091-6100 run alone
+start at different phases than inside the 100-seed pass and differ from those rows, except seed 6095, which starts at phase 1 in
+both runs and still differs (584 vs 591 steps): the decision phase is NOT the only history channel, so pinning the phase cannot
+by itself make an episode independent of the episodes run before it. Verdict INCONCLUSIVE for the X/Y question; no pinning or
+padding was implemented. `reg1d_burst.log` (2026-09-23) belongs to the same X/Y investigation (Burst was not switched).

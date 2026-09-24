@@ -1,0 +1,6 @@
+file,head,mu,n_total,excluded_zero_step,n,success,wilson95_lo,wilson95_hi,lifted,palm,contacts,meanHold,ends
+legacy_smp_A.csv,sampled,1.00,100,2,98,0.8776,0.7981,0.9285,0.9898,0.8776,4.582,452.2,{'drop': 12; 'success': 86}
+legacy_smp_B.csv,sampled,1.00,100,2,98,0.8776,0.7981,0.9285,0.9898,0.8776,4.582,452.2,{'drop': 12; 'success': 86}
+legacy_smp_C.csv,sampled,1.00,100,2,98,0.8776,0.7981,0.9285,0.9898,0.8776,4.582,452.2,{'drop': 12; 'success': 86}
+newpath_smp_A.csv,sampled,1.00,100,0,100,0.9600,0.9016,0.9843,1.0000,0.8900,4.810,480.6,{'drop': 4; 'success': 96}
+throwaway_smp.csv,sampled,1.00,10,0,10,0.8000,0.4902,0.9433,1.0000,0.9000,4.700,448.8,{'drop': 2; 'success': 8}

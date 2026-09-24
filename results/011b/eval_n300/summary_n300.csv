@@ -1,0 +1,5 @@
+file,head,mu,n_total,excluded_zero_step,n,success,wilson95_lo,wilson95_hi,lifted,palm,contacts,meanHold,ends
+eval011b_n300_det_mu06.csv,deterministic,0.60,300,40,260,0.7769,0.7225,0.8233,1.0000,0.9192,5.623,411.1,{'drop': 58; 'success': 202}
+eval011b_n300_det_mu10.csv,deterministic,1.00,300,58,242,0.8719,0.8239,0.9083,1.0000,0.9132,6.008,448.0,{'drop': 31; 'success': 211}
+eval011b_n300_det_mu15.csv,deterministic,1.50,300,77,223,0.8027,0.7455,0.8496,0.9865,0.8296,5.830,410.0,{'drop': 44; 'success': 179}
+eval011b_n300_smp_mu10.csv,sampled,1.00,300,15,285,0.5825,0.5245,0.6382,0.9895,0.6877,3.975,337.4,{'drop': 119; 'success': 166}

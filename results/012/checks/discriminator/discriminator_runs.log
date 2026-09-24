@@ -1,0 +1,48 @@
+=== disc_throwaway_smp 16:02:39
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6091-6100 mu=1 perturb=1 K=50 head=sampled passIndex=0 deterministicInference=False legacyNoReseed=False
+log [Gates] eval: first seeded episode at Academy step 1 DecisionPeriod=10 phase=1
+log [Gates] done: results/012/checks/discriminator/throwaway_smp.csv
+== csv rows: 12 rc=0 ==
+rows: 10 16:03:01
+=== disc_legacy_A 16:03:01
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6001-6100 mu=1 perturb=1 K=50 head=sampled passIndex=0 deterministicInference=False legacyNoReseed=True
+log [Gates] eval: first seeded episode at Academy step 1 DecisionPeriod=10 phase=1
+log [Gates] done: results/012/checks/discriminator/legacy_smp_A.csv
+== csv rows: 102 rc=0 ==
+rows: 100 16:03:54
+=== disc_throwaway_smp 16:03:54
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6091-6100 mu=1 perturb=1 K=50 head=sampled passIndex=0 deterministicInference=False legacyNoReseed=False
+log [Gates] eval: first seeded episode at Academy step 1 DecisionPeriod=10 phase=1
+log [Gates] done: results/012/checks/discriminator/throwaway_smp.csv
+== csv rows: 12 rc=0 ==
+rows: 10 16:04:16
+=== disc_legacy_B 16:04:16
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6001-6100 mu=1 perturb=1 K=50 head=sampled passIndex=0 deterministicInference=False legacyNoReseed=True
+log [Gates] eval: first seeded episode at Academy step 1 DecisionPeriod=10 phase=1
+log [Gates] done: results/012/checks/discriminator/legacy_smp_B.csv
+== csv rows: 102 rc=0 ==
+rows: 100 16:05:04
+=== disc_throwaway_smp 16:05:04
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6091-6100 mu=1 perturb=1 K=50 head=sampled passIndex=0 deterministicInference=False legacyNoReseed=False
+log [Gates] eval: first seeded episode at Academy step 1 DecisionPeriod=10 phase=1
+log [Gates] done: results/012/checks/discriminator/throwaway_smp.csv
+== csv rows: 12 rc=0 ==
+rows: 10 16:05:25
+=== disc_legacy_C 16:05:25
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6001-6100 mu=1 perturb=1 K=50 head=sampled passIndex=0 deterministicInference=False legacyNoReseed=True
+log [Gates] eval: first seeded episode at Academy step 1 DecisionPeriod=10 phase=1
+log [Gates] done: results/012/checks/discriminator/legacy_smp_C.csv
+== csv rows: 102 rc=0 ==
+rows: 100 16:06:19
+=== disc_throwaway_smp 16:06:19
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6091-6100 mu=1 perturb=1 K=50 head=sampled passIndex=0 deterministicInference=False legacyNoReseed=False
+log [Gates] eval: first seeded episode at Academy step 1 DecisionPeriod=10 phase=1
+log [Gates] done: results/012/checks/discriminator/throwaway_smp.csv
+== csv rows: 12 rc=0 ==
+rows: 10 16:06:40
+=== disc_newpath_A 16:06:40
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6001-6100 mu=1 perturb=1 K=50 head=sampled passIndex=0 deterministicInference=False legacyNoReseed=False
+log [Gates] eval: first seeded episode at Academy step 1 DecisionPeriod=10 phase=1
+log [Gates] done: results/012/checks/discriminator/newpath_smp_A.csv
+== csv rows: 102 rc=0 ==
+rows: 100 16:07:28

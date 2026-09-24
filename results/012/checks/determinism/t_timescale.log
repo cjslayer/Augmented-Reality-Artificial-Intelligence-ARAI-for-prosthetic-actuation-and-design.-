@@ -1,0 +1,24 @@
+=== t_det_ts20_A 19:10:34
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6001-6010 mu=1 perturb=1 K=50 head=deterministic passIndex=0 deterministicInference=True
+log [Gates] done: results/012/checks/determinism/t_det_ts20_A.csv
+== csv rows: 12 rc=0 ==
+=== t_det_ts20_B 19:11:12
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6001-6010 mu=1 perturb=1 K=50 head=deterministic passIndex=0 deterministicInference=True
+log [Gates] done: results/012/checks/determinism/t_det_ts20_B.csv
+== csv rows: 12 rc=0 ==
+=== t_det_ts1_A 19:11:44
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6001-6010 mu=1 perturb=1 K=50 head=deterministic passIndex=0 deterministicInference=True
+log [Gates] done: results/012/checks/determinism/t_det_ts1_A.csv
+== csv rows: 12 rc=0 ==
+=== t_det_ts1_B 19:13:16
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6001-6010 mu=1 perturb=1 K=50 head=deterministic passIndex=0 deterministicInference=True
+log [Gates] done: results/012/checks/determinism/t_det_ts1_B.csv
+== csv rows: 12 rc=0 ==
+=== t_smp_ts20_A 19:14:48
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6001-6010 mu=1 perturb=1 K=50 head=sampled passIndex=0 deterministicInference=False
+log [Gates] done: results/012/checks/determinism/t_smp_ts20_A.csv
+== csv rows: 12 rc=0 ==
+=== t_smp_ts20_B 19:15:25
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6001-6010 mu=1 perturb=1 K=50 head=sampled passIndex=0 deterministicInference=False
+log [Gates] done: results/012/checks/determinism/t_smp_ts20_B.csv
+== csv rows: 12 rc=0 ==

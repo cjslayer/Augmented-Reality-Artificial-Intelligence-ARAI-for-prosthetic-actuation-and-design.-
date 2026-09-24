@@ -1,0 +1,20 @@
+=== deterministic pass A 19:16:44
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6001-6100 mu=1 perturb=1 K=50 head=deterministic passIndex=0 deterministicInference=True
+log [Gates] done: results/012/checks/determinism/repro2_deterministic_A.csv
+== csv rows: 102 rc=0 ==
+rows: 100
+=== deterministic pass B 19:17:50
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6001-6100 mu=1 perturb=1 K=50 head=deterministic passIndex=0 deterministicInference=True
+log [Gates] done: results/012/checks/determinism/repro2_deterministic_B.csv
+== csv rows: 102 rc=0 ==
+rows: 100
+=== sampled pass A 19:18:54
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6001-6100 mu=1 perturb=1 K=50 head=sampled passIndex=0 deterministicInference=False
+log [Gates] done: results/012/checks/determinism/repro2_sampled_A.csv
+== csv rows: 102 rc=0 ==
+rows: 100
+=== sampled pass B 19:19:59
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6001-6100 mu=1 perturb=1 K=50 head=sampled passIndex=0 deterministicInference=False
+log [Gates] done: results/012/checks/determinism/repro2_sampled_B.csv
+== csv rows: 102 rc=0 ==
+rows: 100

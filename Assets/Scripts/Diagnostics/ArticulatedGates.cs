@@ -69,6 +69,9 @@ public class ArticulatedGates : MonoBehaviour
         public float objectFriction = -1f;  // >= 0: override the agent's object friction for this run (pass-vs-mu)
         public float evalPerturbScale = 1f; // perturbation scale applied through perturbScaleOverride
         public int evalHoldDecisions = 50;
+        public string headMode = "sampled";   // "sampled" = the policy's stochastic head (the training-time behaviour); "deterministic" = the ONNX mean head (BehaviorParameters.DeterministicInference)
+        public int passIndex = 0;
+        public int jobWorkers = 0;            // > 0: Unity job-system worker thread count for this Play session (PhysX simulation tasks run on it); 1 = single-threaded physics, the reproducibility setting; 0 = leave the default             // enters the per-episode seed hash: two passes with the same (seed, mu, passIndex) are meant to be identical; change it for an independent replicate
         public bool trainingBudgets = false; // true: keep the agent's training episode limits (lift budget 200, margin 100, MaxStep 5000) in scripted modes
         public float[] envelopeTargets = null;   // 14 closing targets (deg) for the envelope grip; null = k_Envelope
         public float[] pinchTargets = null;      // 14 closing targets (deg) for the pinch grip; null = k_Pinch
@@ -147,6 +150,7 @@ public class ArticulatedGates : MonoBehaviour
             Debug.Log("[Gates] fixedTimestep=" + cfg.fixedTimestep + " DecisionPeriod=" + (req != null ? req.DecisionPeriod : -1));
         }
         if (!cfg.trainingBudgets) { agent.taskBudgetMarginSteps = Mathf.RoundToInt(700 * stepsPer10ms); agent.liftBudgetSteps = Mathf.RoundToInt(600 * stepsPer10ms); agent.MaxStep = 20000; }   // gates: the task budget is derived from K (lift budget + hold + margin); the scripted lift is slower than the policy's   // the scene's episode cap would end a slow scripted lift + 500-step hold as "maxStep"
+        if (cfg.jobWorkers > 0) { jobWorkers0 = Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobWorkerCount; Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobWorkerCount = cfg.jobWorkers; Debug.Log("[Gates] job workers " + jobWorkers0 + " -> " + Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobWorkerCount + " (max " + Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobWorkerMaximumCount + ")"); }
         if (cfg.ignoreSelfCollision && agent.Hand != null) { agent.Hand.ignoreAllSelfCollision = true; Debug.LogWarning("[Gates] diagnostic: self-collision ignored for this run"); }
         if (cfg.mode == "push") { agent.dropDistance = 10f; agent.dropTiltDeg = 180f; agent.taskBudgetMarginSteps = 5000; agent.liftBudgetSteps = 5000; }   // push: the agent must not end the episode
         if (cfg.mode != "stability") { mm.randomizeByDefault = false; for (int f = 0; f < MorphologyManager.FingerCount; f++) mm.lengthScale[f] = 1f; for (int g = 0; g < MorphologyManager.FingerGroupCount; g++) mm.mask[g] = true; }
@@ -164,7 +168,29 @@ public class ArticulatedGates : MonoBehaviour
     }
 
     // ---- eval mode: policy runs its own episodes; the harness only seeds them (BeforeEpisodeBegin hook) and records one row per episode ----
-    int evalIndex = -1; bool evalReady; float stepsPer10ms = 1f;   // physics steps per 10 ms under the dt override (1 at the training dt)
+    int evalIndex = -1; bool evalReady; float stepsPer10ms = 1f; int jobWorkers0 = -1;
+    // per-episode seed: every harness-owned draw (theta, mass, spawn, pulse schedule; all through UnityEngine.Random) is re-seeded at the top of
+    // OnEpisodeBegin with DerivedSeed(seed, mu, passIndex) = FNV-1a/murmur-style mix of (seed, round(mu * 1000), passIndex), so an episode is a
+    // pure function of (build, seed, mu, passIndex) up to the policy head's own noise (see headMode)
+    static int DerivedSeed(int seed, float mu, int pass)
+    {
+        unchecked
+        {
+            uint h = 2166136261u;
+            foreach (uint v in new[] { (uint)seed, (uint)Mathf.RoundToInt(mu * 1000f), (uint)pass }) { h ^= v; h *= 16777619u; h ^= h >> 13; h *= 0x5bd1e995u; h ^= h >> 15; }
+            return (int)h;
+        }
+    }
+    // theta of the episode whose row is pending: captured in the hook (top of OnEpisodeBegin, before the next episode's draws), because
+    // EvalRow runs after the next episode has already re-sampled MorphologyManager (the old live read logged the NEXT episode's theta)
+    string snapMask = ""; float[] snapLen = new float[5]; float snapK, snapZeta, snapInertia, snapSpan; int snapActive;
+    void SnapshotTheta()
+    {
+        snapMask = ""; for (int g = 0; g < MorphologyManager.FingerGroupCount; g++) snapMask += mm.mask[g] ? "1" : "0";
+        for (int f = 0; f < 5; f++) snapLen[f] = mm.lengthScale[f];
+        snapZeta = 0f; snapInertia = 0f; for (int g = 0; g < MorphologyManager.FingerGroupCount; g++) { snapZeta += mm.DampingRatio(g) / MorphologyManager.FingerGroupCount; snapInertia += mm.inertiaScale[g] / MorphologyManager.FingerGroupCount; }
+        snapK = mm.MeanStiffness(0, MorphologyManager.FingerGroupCount); snapActive = mm.ActiveCount; snapSpan = agent.HandSpanRatio;
+    }   // physics steps per 10 ms under the dt override (1 at the training dt)
     void EvalSetup()
     {
         mm.randomizeByDefault = true;
@@ -190,21 +216,20 @@ public class ArticulatedGates : MonoBehaviour
             UnityEditor.AssetDatabase.ImportAsset(assetPath, UnityEditor.ImportAssetOptions.ForceSynchronousImport);
             var asset = UnityEditor.AssetDatabase.LoadAssetAtPath<Unity.InferenceEngine.ModelAsset>(assetPath);
             if (asset == null) { Debug.LogError("[Gates] eval: model import failed " + assetPath); return; }
+            bp.DeterministicInference = cfg.headMode == "deterministic";   // read when the policy is created below (harness switch only; the scene keeps its serialized value)
             agent.SetModel(bp.BehaviorName, asset, Unity.MLAgents.Policies.InferenceDevice.Default); bp.BehaviorType = BehaviorType.InferenceOnly;
-            evalReady = true; Debug.Log("[Gates] eval: model " + cfg.modelPath + " seeds " + cfg.seedFrom + "-" + cfg.seedTo + " mu=" + agent.objectFriction + " perturb=" + cfg.evalPerturbScale + " K=" + cfg.evalHoldDecisions);
+            evalReady = true; Debug.Log("[Gates] eval: model " + cfg.modelPath + " seeds " + cfg.seedFrom + "-" + cfg.seedTo + " mu=" + agent.objectFriction + " perturb=" + cfg.evalPerturbScale + " K=" + cfg.evalHoldDecisions + " head=" + cfg.headMode + " passIndex=" + cfg.passIndex + " deterministicInference=" + bp.DeterministicInference);
         }
         catch (System.Exception e) { Debug.LogError("[Gates] eval: " + e.Message); }
-        sb.Length = 0; sb.AppendLine("episode,seed,success,endReason,steps,transitionStep,stepsToLift,holdSteps,holdNeeded,pulses,maxPulseN,contacts,distinctFingers,thumb,palm,forearm,mass,perturbScale,mu,maxPenMm,gripTorqueMean,retShaping,retPhase,retHold,retBonus,retDrop,lenMean,lenIndex,lenMiddle,lenRing,lenPinky,lenThumb,kFingerMean,zetaMean,inertiaScaleMean,activeGroups,mask,handSpanRatio,dtMs,pulseStep1,pulseStep2,pulseStep3,lastPulseStep,pulseActiveAtDrop"); Flush();
+        sb.Length = 0; sb.AppendLine("episode,seed,success,endReason,steps,transitionStep,stepsToLift,holdSteps,holdNeeded,pulses,maxPulseN,contacts,distinctFingers,thumb,palm,forearm,mass,perturbScale,mu,maxPenMm,gripTorqueMean,retShaping,retPhase,retHold,retBonus,retDrop,lenMean,lenIndex,lenMiddle,lenRing,lenPinky,lenThumb,kFingerMean,zetaMean,inertiaScaleMean,activeGroups,mask,handSpanRatio,dtMs,pulseStep1,pulseStep2,pulseStep3,lastPulseStep,pulseActiveAtDrop,head_mode"); Flush();
     }
     static int LastPulseBefore(ArmGraspAgent.EpisodeRecord r) { int best = -1; foreach (int s in new[] { r.pulseStart1, r.pulseStart2, r.pulseStart3 }) if (s >= 0 && s <= r.holdSteps && s > best) best = s; return best; }   // hold step of the last pulse that had started by the final step
     void OnDestroy2() { }
     void EvalRow()
     {
         var r = agent.LastEpisode; int idx = evalIndex - 1; if (idx < 0 || idx >= trials.Count) return;   // the hook has already advanced to the next episode's seed
-        string mask = ""; for (int g = 0; g < MorphologyManager.FingerGroupCount; g++) mask += mm.mask[g] ? "1" : "0";
-        float lenMean = 0f; for (int f = 0; f < 5; f++) lenMean += mm.lengthScale[f] / 5f;
-        float zMean = 0f, iMean = 0f; for (int g = 0; g < MorphologyManager.FingerGroupCount; g++) { zMean += mm.DampingRatio(g) / MorphologyManager.FingerGroupCount; iMean += mm.inertiaScale[g] / MorphologyManager.FingerGroupCount; }
-        sb.AppendLine(string.Join(",", new string[] { (idx + 1).ToString(), trials[idx].seed.ToString(), r.success ? "1" : "0", r.endReason, r.steps.ToString(), r.transitionStep.ToString(), r.stepsToLift.ToString(), r.holdSteps.ToString(), (cfg.evalHoldDecisions * agent.DecisionPeriodCached).ToString(), r.pulsesApplied.ToString(), r.maxPulseForce.ToString("F2"), r.contacts.ToString(), r.distinctFingers.ToString(), r.thumb ? "1" : "0", r.palm ? "1" : "0", r.forearm ? "1" : "0", r.mass.ToString("F3"), r.perturbScale.ToString("F2"), agent.objectFriction.ToString("F2"), (r.maxPenetration * 1000f).ToString("F2"), r.gripForceMean.ToString("F3"), r.retShaping.ToString("F4"), r.retPhase.ToString("F2"), r.retHold.ToString("F3"), r.retBonus.ToString("F2"), r.retDrop.ToString("F2"), lenMean.ToString("F3"), mm.lengthScale[0].ToString("F3"), mm.lengthScale[1].ToString("F3"), mm.lengthScale[2].ToString("F3"), mm.lengthScale[3].ToString("F3"), mm.lengthScale[4].ToString("F3"), mm.MeanStiffness(0, MorphologyManager.FingerGroupCount).ToString("F3"), zMean.ToString("F3"), iMean.ToString("F3"), mm.ActiveCount.ToString(), mask, agent.HandSpanRatio.ToString("F3"), (Time.fixedDeltaTime * 1000f).ToString("F1"), r.pulseStart1.ToString(), r.pulseStart2.ToString(), r.pulseStart3.ToString(), LastPulseBefore(r).ToString(), r.pulseActiveAtEnd ? "1" : "0" }));
+        string mask = snapMask; float lenMean = 0f; for (int f = 0; f < 5; f++) lenMean += snapLen[f] / 5f; float zMean = snapZeta, iMean = snapInertia;   // theta of THIS episode (snapshot taken in the hook)
+        sb.AppendLine(string.Join(",", new string[] { (idx + 1).ToString(), trials[idx].seed.ToString(), r.success ? "1" : "0", r.endReason, r.steps.ToString(), r.transitionStep.ToString(), r.stepsToLift.ToString(), r.holdSteps.ToString(), (cfg.evalHoldDecisions * agent.DecisionPeriodCached).ToString(), r.pulsesApplied.ToString(), r.maxPulseForce.ToString("F2"), r.contacts.ToString(), r.distinctFingers.ToString(), r.thumb ? "1" : "0", r.palm ? "1" : "0", r.forearm ? "1" : "0", r.mass.ToString("F3"), r.perturbScale.ToString("F2"), agent.objectFriction.ToString("F2"), (r.maxPenetration * 1000f).ToString("F2"), r.gripForceMean.ToString("F3"), r.retShaping.ToString("F4"), r.retPhase.ToString("F2"), r.retHold.ToString("F3"), r.retBonus.ToString("F2"), r.retDrop.ToString("F2"), lenMean.ToString("F3"), snapLen[0].ToString("F3"), snapLen[1].ToString("F3"), snapLen[2].ToString("F3"), snapLen[3].ToString("F3"), snapLen[4].ToString("F3"), snapK.ToString("F3"), zMean.ToString("F3"), iMean.ToString("F3"), snapActive.ToString(), mask, snapSpan.ToString("F3"), (Time.fixedDeltaTime * 1000f).ToString("F1"), r.pulseStart1.ToString(), r.pulseStart2.ToString(), r.pulseStart3.ToString(), LastPulseBefore(r).ToString(), r.pulseActiveAtEnd ? "1" : "0", cfg.headMode }));
         Flush();
     }
 
@@ -213,7 +238,8 @@ public class ArticulatedGates : MonoBehaviour
         if (cfg.mode == "eval")
         {
             if (!evalReady) return;
-            if (warmup > 0) { warmup--; if (warmup == 0) { lastCompleted = agent.CompletedEpisodes; ArmGraspAgent.BeforeEpisodeBegin = () => { evalIndex++; if (evalIndex >= 0 && evalIndex < trials.Count) Random.InitState(trials[evalIndex].seed); }; agent.EndEpisode(); } return; }   // the initial (unseeded) episode is discarded; the hook, installed just before the reset, seeds every following one
+            // hook: Random.InitState seeds every harness/agent draw; InferenceEngine.Random.SetSeed seeds the policy's sampled head (RandomNormalLike without a seed attribute draws from the package's static stream; 0 would mean 'default seed')
+            if (warmup > 0) { warmup--; if (warmup == 0) { lastCompleted = agent.CompletedEpisodes; ArmGraspAgent.BeforeEpisodeBegin = () => { SnapshotTheta(); evalIndex++; if (evalIndex >= 0 && evalIndex < trials.Count) { int d = DerivedSeed(trials[evalIndex].seed, agent.objectFriction, cfg.passIndex); Random.InitState(d); Unity.InferenceEngine.Random.SetSeed(d != 0 ? d : 1); } }; agent.EndEpisode(); } return; }   // the initial (unseeded) episode is discarded; the hook, installed just before the reset, seeds every following one
             int done = agent.CompletedEpisodes;
             if (done != lastCompleted) { lastCompleted = done; EvalRow(); if (evalIndex >= trials.Count) { ArmGraspAgent.BeforeEpisodeBegin = null; Finish(); } }
             return;
@@ -661,10 +687,11 @@ public class ArticulatedGates : MonoBehaviour
     void Flush() { try { File.WriteAllText(cfg.csv, sb.ToString()); } catch (System.Exception e) { Debug.LogWarning(e.Message); } }
     void Finish()
     {
+        if (jobWorkers0 >= 0) { Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobWorkerCount = jobWorkers0; jobWorkers0 = -1; }
         if (cfg.mode == "audit") { try { File.AppendAllText(cfg.csv, "DONE\n"); } catch (System.Exception e) { Debug.LogWarning(e.Message); } } else { sb.AppendLine("DONE"); Flush(); }
         Debug.Log("[Gates] done: " + cfg.csv); phase = "idle"; enabled = false; Time.timeScale = 1f;
         UnityEditor.EditorApplication.isPlaying = false;
     }
-    void OnDestroy() { Time.timeScale = 1f; }
+    void OnDestroy() { Time.timeScale = 1f; if (jobWorkers0 >= 0) { Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobWorkerCount = jobWorkers0; jobWorkers0 = -1; } }   // the worker count persists across Play sessions in the Editor: always restore
 }
 #endif

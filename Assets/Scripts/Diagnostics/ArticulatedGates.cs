@@ -73,6 +73,17 @@ public class ArticulatedGates : MonoBehaviour
         public int passIndex = 0;             // enters the per-episode seed hash: two passes with the same (seed, passIndex) are meant to be identical; change it for an independent replicate
         public int jobWorkers = 0;            // > 0: Unity job-system worker thread count for this Play session (PhysX simulation tasks run on it); 1 = single-threaded physics, the reproducibility setting; 0 = leave the default
         public bool legacyNoReseed = false;   // discriminator only: the pre-1716818 seeding (UnityEngine.Random.InitState(raw seed) per episode, NO Inference Engine reseed); theta snapshot, headMode and jobWorkers stay in effect
+        // fixed theta (BO Part B, 2026-09-24): every episode's morphology is pinned through the Academy's environment parameters, the trainer's own path
+        // (MorphologyManager.ApplyForEpisode: present keys win: morph/randomize 0, morph/len_*, morph/k_*, morph/b_*, morph/I_*, morph/mask_*), and the link masses
+        // are scaled by thetaInertia right after the rig rebuild, before the episode's first physics step (ArticulatedGatesLate, execution order +100), because
+        // ApplyForEpisode resets inertiaScale to 1 before the rebuild when not randomizing (MorphologyManager.cs:159). Works in eval and in the scripted modes.
+        public bool thetaFixed = false;
+        public float[] thetaLength = null;   // 5 link-length scales (index, middle, ring, pinky, thumb)
+        public float[] thetaK = null;        // 16 joint stiffnesses k (N m/rad), MorphologyManager group order (14 finger groups, wrist flexion, wrist pronation)
+        public float[] thetaZeta = null;     // 16 damping ratios (b = 2 zeta sqrt(k I))
+        public float[] thetaInertia = null;  // 16 inertia scales (link masses x scale, as MorphologyManager.Sample draws them)
+        public string thetaMask = "";        // 14 chars '0' / '1': finger-group actuation mask
+        public float massMin = 0f, massMax = 0f;   // > 0: object-mass range for this run through the environment parameters mass/min, mass/max (log-uniform draw as in training; the observation normalisation keeps the agent's serialized range)
         public bool trainingBudgets = false; // true: keep the agent's training episode limits (lift budget 200, margin 100, MaxStep 5000) in scripted modes
         public float[] envelopeTargets = null;   // 14 closing targets (deg) for the envelope grip; null = k_Envelope
         public float[] pinchTargets = null;      // 14 closing targets (deg) for the pinch grip; null = k_Pinch
@@ -126,7 +137,7 @@ public class ArticulatedGates : MonoBehaviour
         const string path = "Temp/gates.json";
         if (!File.Exists(path)) return;
         Config c; try { c = JsonUtility.FromJson<Config>(File.ReadAllText(path)); } catch (System.Exception e) { Debug.LogError("[Gates] bad config: " + e.Message); return; }
-        foreach (var a in FindObjectsByType<ArmGraspAgent>(FindObjectsSortMode.None)) if (a.isActiveAndEnabled) { var h = a.gameObject.AddComponent<ArticulatedGates>(); h.cfg = c; Instance = h; return; }
+        foreach (var a in FindObjectsByType<ArmGraspAgent>(FindObjectsSortMode.None)) if (a.isActiveAndEnabled) { var h = a.gameObject.AddComponent<ArticulatedGates>(); h.cfg = c; Instance = h; if (c.thetaFixed) a.gameObject.AddComponent<ArticulatedGatesLate>(); return; }
         Debug.LogError("[Gates] no active ArmGraspAgent");
     }
 
@@ -162,6 +173,8 @@ public class ArticulatedGates : MonoBehaviour
         if (cfg.mode == "stability") { trials.Clear(); for (int i = 0; i < cfg.draws; i++) trials.Add(new Trial { mass = 0.6f, scale = 0f, grip = "walk", seed = i }); }
         if (cfg.mode == "audit") { trials.Clear(); trials.Add(new Trial { mass = 0.6f, scale = 0f, grip = "audit", seed = 0 }); }
         if (cfg.mode == "eval") { trials.Clear(); for (int sd = cfg.seedFrom; sd <= cfg.seedTo; sd++) trials.Add(new Trial { mass = 0f, scale = cfg.evalPerturbScale, grip = "policy", seed = sd }); EvalSetup(); }
+        if (cfg.massMin > 0f && cfg.massMax > 0f) { SetEnvParam("mass/min", cfg.massMin); SetEnvParam("mass/max", cfg.massMax); Debug.Log("[Gates] mass range " + cfg.massMin + "-" + cfg.massMax + " kg (environment parameters)"); }
+        if (cfg.thetaFixed && cfg.mode != "eval") ArmGraspAgent.BeforeEpisodeBegin = ApplyFixedTheta;   // eval installs its own hook (which calls ApplyFixedTheta) at the end of the warm-up
         Time.timeScale = cfg.timeScale;
         if (cfg.mode != "eval") sb.AppendLine("trial,mode,grip,mass,scale,seed,success,endReason,steps,gateStep,transitionStep,liftStart,stepsToLift,holdSteps,pulses,maxPulseN,weightN,contactsEnd,palm,forearm,bottomAboveTop,maxPenMm,maxJointSpeedDeg,nan,gripTorqueMean,retPhase,retHold,retBonus,retDrop,note");
         Flush();
@@ -254,12 +267,12 @@ public class ArticulatedGates : MonoBehaviour
         {
             if (!evalReady) return;
             // hook: Random.InitState seeds every harness/agent draw; InferenceEngine.Random.SetSeed seeds the policy's sampled head (RandomNormalLike without a seed attribute draws from the package's static stream; 0 would mean 'default seed')
-            if (warmup > 0) { warmup--; if (warmup == 0) { lastCompleted = agent.CompletedEpisodes; ArmGraspAgent.BeforeEpisodeBegin = () => { SnapshotTheta(); SnapshotPhase(); evalIndex++; if (evalIndex >= 0 && evalIndex < trials.Count) { if (cfg.legacyNoReseed) Random.InitState(trials[evalIndex].seed); else { int d = DerivedSeed(trials[evalIndex].seed, cfg.passIndex); Random.InitState(d); Unity.InferenceEngine.Random.SetSeed(d != 0 ? d : 1); } } }; agent.EndEpisode(); } return; }   // the initial (unseeded) episode is discarded; the hook, installed just before the reset, seeds every following one
+            if (warmup > 0) { warmup--; PreApplyTheta(); if (warmup == 0) { lastCompleted = agent.CompletedEpisodes; ArmGraspAgent.BeforeEpisodeBegin = () => { SnapshotTheta(); SnapshotPhase(); ApplyFixedTheta(); evalIndex++; if (evalIndex >= 0 && evalIndex < trials.Count) { if (cfg.legacyNoReseed) Random.InitState(trials[evalIndex].seed); else { int d = DerivedSeed(trials[evalIndex].seed, cfg.passIndex); Random.InitState(d); Unity.InferenceEngine.Random.SetSeed(d != 0 ? d : 1); } } }; agent.EndEpisode(); } return; }   // the initial (unseeded) episode is discarded; the hook, installed just before the reset, seeds every following one
             int done = agent.CompletedEpisodes;
             if (done != lastCompleted) { lastCompleted = done; EvalRow(); if (evalIndex >= trials.Count) { ArmGraspAgent.BeforeEpisodeBegin = null; Finish(); } }
             return;
         }
-        if (warmup > 0) { warmup--; if (warmup == 0) { hand = agent.Hand; palm = hand.PalmLink; float halfH = cyl.position.y - cylCol.bounds.min.y; restY = agent.PlatformTop + halfH + agent.restClearance; objRadius = 0.5f * cylCol.bounds.size.x; /* upright object at warmup */ lastCompleted = agent.CompletedEpisodes; lastSuccess = agent.SuccessCount; agent.EndEpisode(); } return; }
+        if (warmup > 0) { warmup--; PreApplyTheta(); if (warmup == 0) { hand = agent.Hand; palm = hand.PalmLink; float halfH = cyl.position.y - cylCol.bounds.min.y; restY = agent.PlatformTop + halfH + agent.restClearance; objRadius = 0.5f * cylCol.bounds.size.x; /* upright object at warmup */ lastCompleted = agent.CompletedEpisodes; lastSuccess = agent.SuccessCount; agent.EndEpisode(); } return; }
         int completed = agent.CompletedEpisodes;
         if (completed != lastCompleted) { bool success = agent.SuccessCount != lastSuccess; lastSuccess = agent.SuccessCount; lastCompleted = completed; EndTrial(success, ""); BeginTrial(); return; }
         if (phase == "idle") return;
@@ -699,6 +712,39 @@ public class ArticulatedGates : MonoBehaviour
         Destroy(camGo); rt.Release(); Debug.Log("[Gates] closeups written to Temp/closeup_*.png");
     }
 
+    // ---- fixed theta through the ML-Agents environment-parameter channel (the trainer's path; MorphologyManager.ApplyForEpisode: present keys win) ----
+    static readonly System.Guid k_EnvParamsChannel = new System.Guid("534c891e-810f-11ea-a9d0-822485860400");   // EnvironmentParametersChannel.k_EnvParamsId
+    static System.Reflection.MethodInfo s_ProcessSideChannelData;
+    static void SetEnvParam(string key, float value)
+    {   // wire format of SideChannelManager.ProcessSideChannelData: [16-byte channel id][int32 length][message]; message = WriteString(key) (int32 length + ASCII), WriteInt32(0 = float), WriteFloat32(value)
+        var body = new MemoryStream(); using (var bw = new BinaryWriter(body)) { var kb = System.Text.Encoding.ASCII.GetBytes(key); bw.Write(kb.Length); bw.Write(kb); bw.Write(0); bw.Write(value); }
+        var all = new MemoryStream(); using (var w = new BinaryWriter(all)) { w.Write(k_EnvParamsChannel.ToByteArray()); byte[] b = body.ToArray(); w.Write(b.Length); w.Write(b); }
+        if (s_ProcessSideChannelData == null) s_ProcessSideChannelData = typeof(Unity.MLAgents.SideChannels.SideChannelManager).GetMethod("ProcessSideChannelData", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static, null, new[] { typeof(byte[]) }, null);
+        s_ProcessSideChannelData.Invoke(null, new object[] { all.ToArray() });
+    }
+    bool preApplied, massScalePending, massLogged;
+    void ApplyFixedTheta()
+    {   // at the top of OnEpisodeBegin (before ApplyForEpisode): I = NominalInertia of the current rig (exact from the second application on, hence the pre-apply reset in the warm-up) x scale, b = 2 zeta sqrt(k I)
+        if (cfg == null || !cfg.thetaFixed || mm == null) return;
+        mm.randomizeByDefault = false; SetEnvParam("morph/randomize", 0f);
+        for (int f = 0; f < MorphologyManager.FingerCount; f++) SetEnvParam("morph/len_" + MorphologyManager.FingerNames[f], cfg.thetaLength[f]);
+        for (int g = 0; g < MorphologyManager.GroupCount; g++) { float k = cfg.thetaK[g], I = mm.NominalInertia[g] * cfg.thetaInertia[g]; SetEnvParam("morph/k_" + MorphologyManager.GroupNames[g], k); SetEnvParam("morph/I_" + MorphologyManager.GroupNames[g], I); SetEnvParam("morph/b_" + MorphologyManager.GroupNames[g], 2f * cfg.thetaZeta[g] * Mathf.Sqrt(Mathf.Max(k * I, 0f))); }
+        for (int g = 0; g < MorphologyManager.FingerGroupCount; g++) SetEnvParam("morph/mask_" + MorphologyManager.GroupNames[g], cfg.thetaMask[g] == '1' ? 1f : 0f);
+        massScalePending = true;
+    }
+    void PreApplyTheta()
+    {   // one discarded reset with theta applied so that the rig (and NominalInertia) already carry the fixed link scales when the first counted episode begins
+        if (cfg == null || !cfg.thetaFixed || preApplied || warmup != 1) return;
+        preApplied = true; var prev = ArmGraspAgent.BeforeEpisodeBegin; ArmGraspAgent.BeforeEpisodeBegin = ApplyFixedTheta; agent.EndEpisode(); ArmGraspAgent.BeforeEpisodeBegin = prev; lastCompleted = agent.CompletedEpisodes;
+    }
+    internal void LateFixedUpdate()
+    {   // execution order +100: runs after the Academy stepper (whose step rebuilt the rig in OnEpisodeBegin) and before this cycle's physics step
+        if (cfg == null || !cfg.thetaFixed || !massScalePending || agent == null || agent.Hand == null) return;
+        massScalePending = false; var h = agent.Hand;
+        for (int g = 0; g < ArticulatedHand.GroupCount; g++) if (h.Groups[g] != null) h.Groups[g].mass *= cfg.thetaInertia[g];
+        foreach (var (eb, eg) in h.ExtraLinks) if (eb != null) eb.mass *= cfg.thetaInertia[eg];
+        if (!massLogged) { massLogged = true; Debug.Log("[Gates] theta fixed: lengths " + string.Join("/", System.Array.ConvertAll(cfg.thetaLength, v => v.ToString("F3"))) + " k0=" + mm.stiffness[0].ToString("F3") + " zeta0=" + mm.DampingRatio(0).ToString("F3") + " inertiaScale0=" + mm.inertiaScale[0].ToString("F3") + " indexBase mass=" + (h.Groups[0] != null ? h.Groups[0].mass.ToString("F5") : "-") + " mask=" + cfg.thetaMask + " active=" + mm.ActiveCount + " randomizing=" + mm.Randomizing); }
+    }
     void Flush() { try { File.WriteAllText(cfg.csv, sb.ToString()); } catch (System.Exception e) { Debug.LogWarning(e.Message); } }
     void Finish()
     {
@@ -707,6 +753,8 @@ public class ArticulatedGates : MonoBehaviour
         Debug.Log("[Gates] done: " + cfg.csv); phase = "idle"; enabled = false; Time.timeScale = 1f;
         UnityEditor.EditorApplication.isPlaying = false;
     }
-    void OnDestroy() { Time.timeScale = 1f; if (jobWorkers0 >= 0) { Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobWorkerCount = jobWorkers0; jobWorkers0 = -1; } }   // the worker count persists across Play sessions in the Editor: always restore
+    void OnDestroy() { Time.timeScale = 1f; if (cfg != null && cfg.thetaFixed) ArmGraspAgent.BeforeEpisodeBegin = null; if (jobWorkers0 >= 0) { Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobWorkerCount = jobWorkers0; jobWorkers0 = -1; } }   // the worker count persists across Play sessions in the Editor: always restore
 }
+[DefaultExecutionOrder(100)]
+public class ArticulatedGatesLate : MonoBehaviour { void FixedUpdate() { if (ArticulatedGates.Instance != null) ArticulatedGates.Instance.LateFixedUpdate(); } }   // after the Academy stepper, before the physics step: scales the rebuilt rig's link masses for a fixed theta
 #endif

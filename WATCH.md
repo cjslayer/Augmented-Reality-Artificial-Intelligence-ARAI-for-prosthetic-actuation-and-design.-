@@ -1,6 +1,6 @@
 # Watching run 011 in the Editor (branch `articulated-hand`)
 
-Scene model = run 012 (12M). Held-out on fresh seeds 6001-6100 (K=50, perturb 1.0): success 0.89/0.83/0.79 at mu 0.6/1.0/1.5; paired vs 011b on 5001-5100: +0.45/+0.41/+0.48. 011b remains tagged `011b-baseline`.
+Scene model = run 012 (12M). Held-out, deterministic head, seeds 7001-7300, n=300 per mu: success 0.97 [0.94, 0.98] / 0.98 [0.96, 0.99] / 0.99 [0.97, 1.00] at mu 0.6 / 1.0 / 1.5 (95 % Wilson). Sampled-head success at mu 1.0: 0.92 [0.88, 0.95]. Earlier n=100 sampled-head figures carried +-0.1 session spread (see results/012/checks/CHECKS.md).
 (`Dynamic_Scene`, InferenceOnly; `Dynamic_Scene_Train` stays Default with no model for training builds.)
 
 Three Editor-only modes, all compiled out of player builds. The training scene is `Assets/Scenes/Dynamic_Scene_Train.unity`

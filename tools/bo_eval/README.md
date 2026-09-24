@@ -73,6 +73,15 @@ unity command build --target StandaloneWindows64 --outputPath Builds/BoEval/BoEv
 
 ## Validation (2026-09-18, details in MLAGENTS_UPGRADE.md)
 
+**Amendment (2026-09-23).** The statement below ("deterministic per build") was verified on the kinematic run-010 setup
+with the deterministic head. For the articulated hand (runs 011+) it holds only with: per-episode re-seeding of both
+`UnityEngine.Random` and `Unity.InferenceEngine.Random` (the ONNX sampled head draws from the inference package's static
+stream, which neither worker re-creation nor the ML-Agents inference seed resets), the job system restricted to one worker
+(PhysX contact resolution diverges sporadically with the default worker count), and one pass per theta (an episode
+depends on the episodes run before it in the same Play session). The Editor harness `ArticulatedGates` mode `eval`
+provides all three (`headMode`, `jobWorkers`, `passIndex`; commit 1716818). **The BO objective uses the deterministic
+head** with these settings. Evidence: `results/012/checks/determinism/DETERMINISM.md`. This code (bo_eval) is unchanged.
+
 - Inference fidelity: deterministic head on 64 fixed observation sets, Editor vs player: max |difference| 0.0; a
   two-episode trajectory with the deterministic head is identical decision for decision (267/267) between Editor and
   player.

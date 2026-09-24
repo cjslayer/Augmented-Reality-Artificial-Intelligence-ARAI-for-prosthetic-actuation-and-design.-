@@ -1,0 +1,28 @@
+=== det_mu10 19:28:14
+log [Gates] job workers 23 -> 1 (max 23)
+log [Gates] eval: object material mu=1 combine=Maximum
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 7001-7300 mu=1 perturb=1 K=50 head=deterministic passIndex=0 deterministicInference=True
+log [Gates] done: results/012/eval_n300/eval012_n300_det_mu10.csv
+== csv rows: 302 rc=0 ==
+rows: 300 19:30:22
+=== det_mu06 19:30:22
+log [Gates] job workers 23 -> 1 (max 23)
+log [Gates] eval: object material mu=0.6 combine=Maximum
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 7001-7300 mu=0.6 perturb=1 K=50 head=deterministic passIndex=0 deterministicInference=True
+log [Gates] done: results/012/eval_n300/eval012_n300_det_mu06.csv
+== csv rows: 302 rc=0 ==
+rows: 300 19:32:35
+=== det_mu15 19:32:35
+log [Gates] job workers 23 -> 1 (max 23)
+log [Gates] eval: object material mu=1.5 combine=Maximum
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 7001-7300 mu=1.5 perturb=1 K=50 head=deterministic passIndex=0 deterministicInference=True
+log [Gates] done: results/012/eval_n300/eval012_n300_det_mu15.csv
+== csv rows: 302 rc=0 ==
+rows: 300 19:34:43
+=== smp_mu10 19:34:43
+log [Gates] job workers 23 -> 1 (max 23)
+log [Gates] eval: object material mu=1 combine=Maximum
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 7001-7300 mu=1 perturb=1 K=50 head=sampled passIndex=0 deterministicInference=False
+log [Gates] done: results/012/eval_n300/eval012_n300_smp_mu10.csv
+== csv rows: 302 rc=0 ==
+rows: 300 19:36:46

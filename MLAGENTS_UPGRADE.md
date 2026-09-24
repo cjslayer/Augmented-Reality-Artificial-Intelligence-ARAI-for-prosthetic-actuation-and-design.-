@@ -1086,3 +1086,38 @@ Theta bins for 012 at mu 1.0 (n 31-36 per tercile): stiffness 0.94 / 0.94 / 0.94
 6001-6100; active groups <= 9: 0.85 / 0.89, 10-11: 0.93 / 0.83, 12-14: 0.98 / 0.82; mass light / mid / heavy 0.97 / 0.88
 / 0.97 and 0.88 / 0.83 / 0.78. Nothing beyond the +-0.1 resolution of these bins. Run 012 is not deployed; the scene
 model stays 011b (baseline).
+
+## Eval-harness reproducibility and the n = 300 re-measurement of run 012 (2026-09-23, commit 1716818 and the next)
+
+**Amendment to the Part A determinism statement (bo_eval, 2026-09-18).** "Deterministic per build (per-process noise
+seed + common random numbers)" was established on the kinematic run-010 setup with the deterministic head. For the
+articulated hand it holds only under three conditions, now provided by the Editor harness (`ArticulatedGates` mode `eval`,
+Diagnostics only): (1) every episode is re-seeded at the top of `OnEpisodeBegin` with `DerivedSeed(seed, mu, passIndex)`
+for both `UnityEngine.Random` (theta, mass, spawn, pulses) and `Unity.InferenceEngine.Random.SetSeed` (the ONNX
+`RandomNormalLike` of the sampled head draws from the package's static stream; nothing else resets it — not worker
+re-creation, not the ML-Agents inference seed, which is inert for this export); (2) the job system runs one worker
+(`jobWorkers: 1`): with the default worker count PhysX contact resolution diverged sporadically (two events in about
+500 episodes; the divergence columns are gripTorqueMean / maxPenMm / contacts), and every later episode of that pass
+then differed; (3) the reproducible unit is a whole pass — an episode's result depends on the episodes run before it in
+the same Play session (the PhysX scene persists across the per-episode rig teardown / rebuild), so a single (build, seed)
+episode is reproducible only inside the same seed sequence. Evidence: `results/012/checks/determinism/DETERMINISM.md`
+(sampled head reseeded: 100 / 100 rows byte-identical across sessions; deterministic head with one job worker: three
+sessions byte-identical; theta columns 100 / 100 after the snapshot fix). **The BO objective will use the deterministic
+head** with `jobWorkers: 1`, one pass per theta. Also found: every eval CSV before commit 1716818 logged the NEXT
+episode's theta on each row (live read after the next reset), so their per-episode theta-bin tables are invalid;
+aggregate theta distributions are unaffected.
+
+**n = 300 re-measurement of the deployed 012 model** (`results/012/eval_n300/`, fresh seeds 7001-7300, K = 50,
+perturbation 1.0, friction on the material, deterministic head, one job worker, `passIndex` 0; the same block with the
+sampled head at mu 1.0):
+
+| head | mu | n | success [95 % Wilson] | lifted | palm at end | contacts | mean hold steps | ends |
+|---|---|---|---|---|---|---|---|---|
+| deterministic | 0.6 | 300 | 0.97 [0.94, 0.98] | 0.97 | 0.96 | 5.56 | 484 | 290 success, 6 drop, 4 no contact |
+| deterministic | 1.0 | 300 | 0.98 [0.96, 0.99] | 0.99 | 0.96 | 5.51 | 490 | 294 success, 5 drop, 1 no contact |
+| deterministic | 1.5 | 300 | 0.99 [0.97, 1.00] | 0.99 | 0.94 | 5.62 | 495 | 297 success, 2 drop, 1 no contact |
+| sampled | 1.0 | 300 | 0.92 [0.88, 0.95] | 0.99 | 0.89 | 4.42 | 468 | 276 success, 23 drop, 1 no contact |
+
+Deterministic minus sampled at mu 1.0 (same theta, 300 / 300 rows paired): +0.060, 95 % CI +0.025 to +0.095. The
+earlier n = 100 sampled-head figures (0.89 / 0.83 / 0.79 and 0.90 / 0.89 / 0.66 in two sessions) were the sampled head
+with the unseeded noise stream and multithreaded physics; the label now carries the deterministic-head numbers.

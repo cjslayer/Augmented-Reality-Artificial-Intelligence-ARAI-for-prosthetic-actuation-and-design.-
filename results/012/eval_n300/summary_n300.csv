@@ -1,0 +1,5 @@
+head,mu,n,success,wilson95_lo,wilson95_hi,lifted,palm,contacts,meanHold,ends
+deterministic,0.6,300,0.967,0.940,0.982,0.970,0.960,5.56,484,{'drop': 6; 'maxStep': 4; 'success': 290}
+deterministic,1.0,300,0.980,0.957,0.991,0.987,0.957,5.51,490,{'drop': 5; 'maxStep': 1; 'success': 294}
+deterministic,1.5,300,0.990,0.971,0.997,0.993,0.943,5.62,495,{'drop': 2; 'maxStep': 1; 'success': 297}
+sampled,1.0,300,0.920,0.884,0.946,0.990,0.893,4.42,468,{'drop': 23; 'maxStep': 1; 'success': 276}

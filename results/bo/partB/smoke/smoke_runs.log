@@ -1,0 +1,18 @@
+=== smoke_throwaway 16:58:08
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6091-6100 mu=1 perturb=1 K=50 head=deterministic passIndex=0 deterministicInference=True legacyNoReseed=False
+log [Gates] eval: first seeded episode at Academy step 1 DecisionPeriod=10 phase=1
+log [Gates] done: results/bo/partB/smoke/throwaway.csv
+== csv rows: 12 rc=0 ==
+rows: 10 16:58:30
+=== smoke_ref 16:58:30
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6091-6100 mu=1 perturb=1 K=50 head=deterministic passIndex=0 deterministicInference=True legacyNoReseed=False
+log [Gates] eval: first seeded episode at Academy step 1 DecisionPeriod=10 phase=1
+log [Gates] done: results/bo/partB/smoke/smoke_ref.csv
+== csv rows: 12 rc=0 ==
+rows: 10 16:58:52
+=== smoke_inertia2 16:58:52
+log [Gates] eval: model results/012/Prosthetic.onnx seeds 6091-6100 mu=1 perturb=1 K=50 head=deterministic passIndex=0 deterministicInference=True legacyNoReseed=False
+log [Gates] eval: first seeded episode at Academy step 1 DecisionPeriod=10 phase=1
+log [Gates] done: results/bo/partB/smoke/smoke_inertia2.csv
+== csv rows: 12 rc=0 ==
+rows: 10 16:59:13

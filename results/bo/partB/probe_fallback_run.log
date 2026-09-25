@@ -1,0 +1,50 @@
+theta  0 scale 1.0 mass (0.4, 3.0): success 0.94 reach_fail 0.00 (42 s)
+theta  1 scale 1.0 mass (0.4, 3.0): success 1.00 reach_fail 0.00 (42 s)
+theta  2 scale 1.0 mass (0.4, 3.0): success 1.00 reach_fail 0.00 (42 s)
+theta  3 scale 1.0 mass (0.4, 3.0): success 1.00 reach_fail 0.00 (42 s)
+theta  4 scale 1.0 mass (0.4, 3.0): success 1.00 reach_fail 0.00 (42 s)
+theta  5 scale 1.0 mass (0.4, 3.0): success 0.76 reach_fail 0.07 (57 s)
+theta  6 scale 1.0 mass (0.4, 3.0): success 1.00 reach_fail 0.00 (42 s)
+theta  7 scale 1.0 mass (0.4, 3.0): success 1.00 reach_fail 0.00 (42 s)
+theta  8 scale 1.0 mass (0.4, 3.0): success 0.99 reach_fail 0.00 (42 s)
+theta  9 scale 1.0 mass (0.4, 3.0): success 1.00 reach_fail 0.00 (42 s)
+theta 10 scale 1.0 mass (0.4, 3.0): success 0.83 reach_fail 0.10 (68 s)
+theta 11 scale 1.0 mass (0.4, 3.0): success 0.93 reach_fail 0.01 (47 s)
+theta 12 scale 1.0 mass (0.4, 3.0): success 1.00 reach_fail 0.00 (42 s)
+theta 13 scale 1.0 mass (0.4, 3.0): success 1.00 reach_fail 0.00 (42 s)
+theta 14 scale 1.0 mass (0.4, 3.0): success 0.66 reach_fail 0.09 (62 s)
+theta 15 scale 1.0 mass (0.4, 3.0): success 1.00 reach_fail 0.00 (42 s)
+theta 16 scale 1.0 mass (0.4, 3.0): success 0.96 reach_fail 0.00 (42 s)
+theta 17 scale 1.0 mass (0.4, 3.0): success 0.98 reach_fail 0.00 (42 s)
+theta 18 scale 1.0 mass (0.4, 3.0): success 0.99 reach_fail 0.00 (42 s)
+theta 19 scale 1.0 mass (0.4, 3.0): success 1.00 reach_fail 0.00 (42 s)
+theta  0 scale 2.0 mass (0.4, 3.0): success 1.00 reach_fail 0.00 (42 s)
+theta  1 scale 2.0 mass (0.4, 3.0): success 0.99 reach_fail 0.00 (47 s)
+theta  2 scale 2.0 mass (0.4, 3.0): success 1.00 reach_fail 0.00 (42 s)
+theta  3 scale 2.0 mass (0.4, 3.0): success 1.00 reach_fail 0.00 (42 s)
+theta  4 scale 2.0 mass (0.4, 3.0): success 1.00 reach_fail 0.00 (42 s)
+theta  5 scale 2.0 mass (0.4, 3.0): success 0.76 reach_fail 0.04 (52 s)
+theta  6 scale 2.0 mass (0.4, 3.0): success 1.00 reach_fail 0.00 (42 s)
+theta  7 scale 2.0 mass (0.4, 3.0): success 0.99 reach_fail 0.00 (42 s)
+theta  8 scale 2.0 mass (0.4, 3.0): success 0.99 reach_fail 0.00 (42 s)
+theta  9 scale 2.0 mass (0.4, 3.0): success 1.00 reach_fail 0.00 (42 s)
+theta 10 scale 2.0 mass (0.4, 3.0): success 1.00 reach_fail 0.00 (47 s)
+theta 11 scale 2.0 mass (0.4, 3.0): success 0.93 reach_fail 0.01 (47 s)
+theta 12 scale 2.0 mass (0.4, 3.0): success 0.99 reach_fail 0.00 (47 s)
+theta 13 scale 2.0 mass (0.4, 3.0): success 1.00 reach_fail 0.00 (42 s)
+theta 14 scale 2.0 mass (0.4, 3.0): success 0.57 reach_fail 0.10 (62 s)
+theta 15 scale 2.0 mass (0.4, 3.0): success 1.00 reach_fail 0.00 (42 s)
+theta 16 scale 2.0 mass (0.4, 3.0): success 0.93 reach_fail 0.00 (47 s)
+theta 17 scale 2.0 mass (0.4, 3.0): success 1.00 reach_fail 0.00 (47 s)
+theta 18 scale 2.0 mass (0.4, 3.0): success 0.86 reach_fail 0.05 (57 s)
+theta 19 scale 2.0 mass (0.4, 3.0): success 1.00 reach_fail 0.00 (47 s)
+| scale | mass range | n theta | mean success | min | max | SD across theta | qualifies |
+|---|---|---|---|---|---|---|---|
+| 1.0 | default (0.2-1.5) | 20 | 0.994 | 0.91 | 1.00 | 0.020 | no |
+| 1.5 | default (0.2-1.5) | 20 | 0.993 | 0.93 | 1.00 | 0.017 | no |
+| 2.0 | default (0.2-1.5) | 20 | 0.987 | 0.85 | 1.00 | 0.040 | no |
+| 3.0 | default (0.2-1.5) | 20 | 0.976 | 0.85 | 1.00 | 0.051 | no |
+| 1.0 | 0.40-3.00 | 20 | 0.952 | 0.66 | 1.00 | 0.094 | no |
+| 2.0 | 0.40-3.00 | 20 | 0.951 | 0.57 | 1.00 | 0.108 | no |
+
+chosen level: NONE

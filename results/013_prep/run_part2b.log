@@ -1,0 +1,55 @@
+throwaway_144335: n 10 success 1.000 [0.722, 1.000] reach_fail 0 lifted 1.000 palm 0.900 hash 472f834277346b35 (16 s)
+train_8001_8300_p0: n 299 success 0.234 [0.190, 0.285] reach_fail 153 lifted 0.358 palm 0.746 hash 8f956b1588019974 (440 s)
+train_8001_8300_p1: n 299 success 0.338 [0.287, 0.393] reach_fail 133 lifted 0.435 palm 0.779 hash d286d2b685c49708 (403 s)
+train_8001_8300_p2: n 300 success 0.220 [0.177, 0.270] reach_fail 172 lifted 0.317 palm 0.777 hash 23c3a3a8f9f5549c (481 s)
+heldout_8001_8300_p0: n 300 success 0.017 [0.007, 0.038] reach_fail 261 lifted 0.043 palm 0.767 hash b5bf37861ed56c43 (672 s)
+heldout_8001_8300_p1: n 300 success 0.197 [0.156, 0.245] reach_fail 163 lifted 0.303 palm 0.747 hash a0e8180b5d9390f5 (460 s)
+grid_h05_8301_8400_p0: n 99 success 0.131 [0.078, 0.212] reach_fail 58 lifted 0.253 palm 0.707 hash df00bb712b7c8199 (166 s)
+grid_h05_8301_8400_p1: n 100 success 0.010 [0.002, 0.054] reach_fail 71 lifted 0.030 palm 0.730 hash 56f4b8bb37493d07 (197 s)
+grid_h05_8301_8400_p2: n 100 success 0.040 [0.016, 0.098] reach_fail 77 lifted 0.040 palm 0.760 hash 8ec014702134c5eb (212 s)
+grid_h05_8301_8400_p3: n 99 success 0.141 [0.086, 0.223] reach_fail 50 lifted 0.253 palm 0.697 hash 6d3f48762340d42d (150 s)
+grid_h11_8301_8400_p0: n 99 success 0.030 [0.010, 0.085] reach_fail 77 lifted 0.091 palm 0.808 hash da151813bea529fe (212 s)
+grid_h11_8301_8400_p1: n 100 success 0.100 [0.055, 0.174] reach_fail 63 lifted 0.210 palm 0.750 hash 8dd223b6a094ab57 (176 s)
+grid_h11_8301_8400_p2 FAILED EditorError('pass did not complete (rc=4, 218 s): []')
+Traceback (most recent call last):
+  File "C:\Users\chris\AppData\Local\Programs\Python\Python310\lib\runpy.py", line 196, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "C:\Users\chris\AppData\Local\Programs\Python\Python310\lib\runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "C:\Users\chris\Augmented-Reality-Artificial-Intelligence\tools\objects\run_zero_shot.py", line 83, in <module>
+    for s in (a or ["all"]): stage(s, dry)
+  File "C:\Users\chris\Augmented-Reality-Artificial-Intelligence\tools\objects\run_zero_shot.py", line 75, in stage
+    for p in range(4): run(f"grid_h{h:02d}_8301_8400_p{p}", base_config((8301, 8400), f"{OUT}/grid_h{h:02d}_8301_8400_p{p}.csv", pass_index=p, stratify="all", theta=probe_theta(h)), dry)
+  File "C:\Users\chris\Augmented-Reality-Artificial-Intelligence\tools\objects\run_zero_shot.py", line 40, in run
+    path, wall = run_pass(cfg, max_wait=max_wait)
+  File "C:\Users\chris\Augmented-Reality-Artificial-Intelligence\tools\bo\gates_runner.py", line 69, in run_pass
+    raise EditorError(f"pass did not complete (rc={rc}, {wall:.0f} s): {errs}")
+tools.bo.gates_runner.EditorError: pass did not complete (rc=4, 218 s): []
+exit 1
+skip (done) grid_h05_8301_8400_p0
+skip (done) grid_h05_8301_8400_p1
+skip (done) grid_h05_8301_8400_p2
+skip (done) grid_h05_8301_8400_p3
+skip (done) grid_h11_8301_8400_p0
+skip (done) grid_h11_8301_8400_p1
+skip (done) grid_h11_8301_8400_p2
+grid_h11_8301_8400_p3: n 99 success 0.081 [0.042, 0.151] reach_fail 64 lifted 0.192 palm 0.808 hash ce3eaae30835cfb8 (186 s)
+grid_h14_8301_8400_p0: n 99 success 0.162 [0.102, 0.247] reach_fail 59 lifted 0.253 palm 0.727 hash 81790d570e87da1d (171 s)
+grid_h14_8301_8400_p1: n 100 success 0.220 [0.150, 0.311] reach_fail 50 lifted 0.360 palm 0.710 hash 5fd2c3426e503e18 (150 s)
+grid_h14_8301_8400_p2: n 100 success 0.160 [0.101, 0.244] reach_fail 68 lifted 0.250 palm 0.790 hash a2441d4d2324d4e5 (192 s)
+grid_h14_8301_8400_p3: n 99 success 0.131 [0.078, 0.212] reach_fail 54 lifted 0.242 palm 0.626 hash 093baa663830ddcb (161 s)
+grid_h01_8301_8400_p0: n 100 success 0.110 [0.063, 0.186] reach_fail 81 lifted 0.120 palm 0.810 hash 0d584fea12b41886 (217 s)
+grid_h01_8301_8400_p1: n 100 success 0.000 [0.000, 0.037] reach_fail 86 lifted 0.030 palm 0.750 hash 0baca172f117fd03 (228 s)
+grid_h01_8301_8400_p2: n 99 success 0.354 [0.266, 0.452] reach_fail 41 lifted 0.505 palm 0.758 hash 03499abc9de1ea3a (135 s)
+grid_h01_8301_8400_p3: n 100 success 0.520 [0.423, 0.615] reach_fail 31 lifted 0.660 palm 0.820 hash dbf0c32f80a6131c (109 s)
+grid_h02_8301_8400_p0: n 99 success 0.242 [0.169, 0.335] reach_fail 57 lifted 0.323 palm 0.838 hash e025a9dc403879b6 (166 s)
+grid_h02_8301_8400_p1: n 100 success 0.440 [0.347, 0.538] reach_fail 35 lifted 0.570 palm 0.900 hash bebe26ffe839d5b0 (114 s)
+grid_h02_8301_8400_p2: n 100 success 0.110 [0.063, 0.186] reach_fail 67 lifted 0.230 palm 0.790 hash 70db632d12a1f80e (186 s)
+grid_h02_8301_8400_p3: n 100 success 0.330 [0.246, 0.427] reach_fail 46 lifted 0.430 palm 0.800 hash 9ece10a84c4d20b7 (145 s)
+grid_h03_8301_8400_p0: n 100 success 0.320 [0.237, 0.417] reach_fail 39 lifted 0.410 palm 0.650 hash 7cc29917f6180149 (124 s)
+grid_h03_8301_8400_p1: n 100 success 0.160 [0.101, 0.244] reach_fail 60 lifted 0.200 palm 0.720 hash f1cf16a0faa74e31 (171 s)
+grid_h03_8301_8400_p2: n 100 success 0.030 [0.010, 0.085] reach_fail 80 lifted 0.070 palm 0.750 hash 4ac26d66a10fef6d (217 s)
+grid_h03_8301_8400_p3: n 100 success 0.160 [0.101, 0.244] reach_fail 57 lifted 0.280 palm 0.690 hash ccf9ebaeb70aa4b4 (161 s)
+wrist_h14_kWristPron_median_4001_4100: n 100 success 0.800 [0.711, 0.867] reach_fail 0 lifted 0.940 palm 0.480 hash 2e3d0bef7f97f30f (37 s)
+exit 0
+anchor_fixed0_tilt_7001_7300: n 300 success 0.990 [0.971, 0.997] reach_fail 2 lifted 0.993 palm 0.947 hash 4072bc92a69f1226 (104 s)

@@ -171,6 +171,9 @@ public class ArmGraspAgent : Agent
     public float FingerLengthRatio => m_FingerLengthRatio;
     public MorphologyManager Morphology => m_Morph;
     public ArticulatedHand Hand => m_Hand;
+    /// <summary>Half-height (m) of the object above its centre in its rest orientation, used for the pedestal rest height (SpawnCylinder). Measured once at
+    /// Initialize from the scene object; the object bank (ObjectBank, run 013 prep) sets it per episode when it swaps the shape and restores the Initialize value for the anchor.</summary>
+    public float ObjectHalfHeight { get => m_CylHalfHeight; set => m_CylHalfHeight = value; }
     float[] m_Setpoint = new float[GroupCount]; bool[] m_Masked = new bool[GroupCount]; float[] m_WristSetpoint = new float[2];
     /// <summary>State of a finger group (angle deg, velocity deg/s, drive target deg).</summary>
     public Vector3 GetGroupState(int g) => m_Hand != null && m_Hand.Built ? new Vector3(m_Hand.GroupAngle(g), m_Hand.GroupVelocity(g), m_Setpoint[g]) : Vector3.zero;
@@ -390,6 +393,7 @@ public class ArmGraspAgent : Agent
         m_Hand.ClearContacts();
         m_LimitEvents = m_SaturationEvents = 0; m_EpisodeSaturationEvents = m_EpisodeLimitEvents = 0; m_EffortReturn = m_SafetyReturn = 0f;
 
+        if (ObjectBank.Instance != null) ObjectBank.Instance.ApplyForEpisode(this);   // object bank (run 013 prep): swaps the object's mesh + convex collider and the rest half-height per the object/mode environment parameter; the default anchorOnly mode touches nothing
         SpawnCylinder();
 
         previousDistances.Clear(); initialDistances.Clear();

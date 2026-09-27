@@ -98,6 +98,15 @@ public class ArticulatedGates : MonoBehaviour
         public float capBaseDeg = 60f, capMiddleDeg = 70f, capEndDeg = 30f, capThumbBaseDeg = 45f, capThumbEndDeg = 45f;
         public int preloadSettleSteps = 20; // steps after the preload target is set before the group counts as done
         public bool thumbActive = true;     // diagnostic: false = the thumb stays at its (abducted) rest pose and does not take part in the close
+        // object bank (run 013 prep, 2026-09-27): draw-mode plumbing only. objectMode "" = leave the runtime default (anchorOnly, nothing touched);
+        // "anchorOnly" | "trainUniform" | "heldoutUniform" | "fixedIndex" are pushed to the environment parameter object/mode (with object/index for
+        // fixedIndex, object/seed when > 0). objectStratify "train" | "heldout" | "all" (eval mode): fixedIndex with the bank index assigned per episode
+        // as first + (episodeOrdinal + passIndex x episodes) mod count, so every pass is exactly stratified over the split and consumes no random draw.
+        // When either is set, the eval CSV gains the columns objIndex,objSplit,objA1mm,objA2mm,objA3mm,objE1,objE2,objVolCm3 (snapshot taken in the hook).
+        public string objectMode = "";
+        public int objectIndex = -1;
+        public int objectSeed = 0;
+        public string objectStratify = "";
     }
     public static ArticulatedGates Instance;
     Config cfg; ArmGraspAgent agent; ArticulatedHand hand; MorphologyManager mm; BehaviorParameters bp;
@@ -174,6 +183,13 @@ public class ArticulatedGates : MonoBehaviour
         if (cfg.mode == "audit") { trials.Clear(); trials.Add(new Trial { mass = 0.6f, scale = 0f, grip = "audit", seed = 0 }); }
         if (cfg.mode == "eval") { trials.Clear(); for (int sd = cfg.seedFrom; sd <= cfg.seedTo; sd++) trials.Add(new Trial { mass = 0f, scale = cfg.evalPerturbScale, grip = "policy", seed = sd }); EvalSetup(); }
         if (cfg.massMin > 0f && cfg.massMax > 0f) { SetEnvParam("mass/min", cfg.massMin); SetEnvParam("mass/max", cfg.massMax); Debug.Log("[Gates] mass range " + cfg.massMin + "-" + cfg.massMax + " kg (environment parameters)"); }
+        if (ObjectColumns)
+        {   // object bank plumbing: mode code to the environment parameters (ObjectBank reads them in ApplyForEpisode); stratified assignment sets object/index per episode in the hook
+            int code = cfg.objectStratify != "" ? 3 : System.Array.IndexOf(new[] { "anchorOnly", "trainUniform", "heldoutUniform", "fixedIndex" }, cfg.objectMode);
+            if (code < 0) { Debug.LogError("[Gates] unknown objectMode '" + cfg.objectMode + "'"); code = 0; }
+            SetEnvParam("object/mode", code); if (cfg.objectIndex >= 0) SetEnvParam("object/index", cfg.objectIndex); if (cfg.objectSeed > 0) SetEnvParam("object/seed", cfg.objectSeed);
+            Debug.Log("[Gates] object mode " + cfg.objectMode + " (code " + code + ") index " + cfg.objectIndex + " stratify '" + cfg.objectStratify + "' bank seed " + (ObjectBank.Instance != null ? ObjectBank.Instance.BankSeed : -1) + " entries " + (ObjectBank.Instance != null ? ObjectBank.Instance.Entries.Count : 0));
+        }
         if (cfg.thetaFixed && cfg.mode != "eval") ArmGraspAgent.BeforeEpisodeBegin = ApplyFixedTheta;   // eval installs its own hook (which calls ApplyFixedTheta) at the end of the warm-up
         Time.timeScale = cfg.timeScale;
         if (cfg.mode != "eval") sb.AppendLine("trial,mode,grip,mass,scale,seed,success,endReason,steps,gateStep,transitionStep,liftStart,stepsToLift,holdSteps,pulses,maxPulseN,weightN,contactsEnd,palm,forearm,bottomAboveTop,maxPenMm,maxJointSpeedDeg,nan,gripTorqueMean,retPhase,retHold,retBonus,retDrop,note");
@@ -199,6 +215,15 @@ public class ArticulatedGates : MonoBehaviour
     // theta of the episode whose row is pending: captured in the hook (top of OnEpisodeBegin, before the next episode's draws), because
     // EvalRow runs after the next episode has already re-sampled MorphologyManager (the old live read logged the NEXT episode's theta)
     string snapMask = ""; float[] snapLen = new float[5]; float snapK, snapZeta, snapInertia, snapSpan; int snapActive;
+    // object bank (run 013 prep): the object of the episode whose row is pending, captured in the hook before ObjectBank swaps for the next episode
+    ObjectBank.Entry snapObj; bool ObjectColumns => !string.IsNullOrEmpty(cfg.objectMode) || !string.IsNullOrEmpty(cfg.objectStratify);
+    void SnapshotObject() { snapObj = ObjectBank.Instance != null ? ObjectBank.Instance.Current : default; }
+    int StratifiedObjectIndex(int ordinal)
+    {   // exact stratification over the split across passes: first + (ordinal + passIndex x episodes) mod count
+        int first = cfg.objectStratify == "heldout" ? ObjectBank.HeldoutFrom : ObjectBank.TrainFrom, count = cfg.objectStratify == "heldout" ? ObjectBank.HeldoutTo - ObjectBank.HeldoutFrom + 1 : cfg.objectStratify == "all" ? ObjectBank.HeldoutTo - ObjectBank.TrainFrom + 1 : ObjectBank.TrainTo - ObjectBank.TrainFrom + 1;
+        return first + (ordinal + cfg.passIndex * trials.Count) % count;
+    }
+    string ObjectCells() => ObjectColumns ? "," + string.Join(",", new[] { snapObj.index.ToString(), snapObj.split ?? "", snapObj.a1mm.ToString("F3"), snapObj.a2mm.ToString("F3"), snapObj.a3mm.ToString("F3"), snapObj.e1.ToString("F4"), snapObj.e2.ToString("F4"), snapObj.volumeCm3.ToString("F2") }) : "";
     // decision phase (measurement, 2026-09-24): Academy.StepCount at the reset and that count modulo the scene DecisionRequester's period. The DecisionRequester
     // requests a decision at the Academy steps whose pre-step count is a multiple of the period (DecisionStep 0), and the hook runs after the step counter has
     // advanced, so phaseAtBegin = 0 means the first decision comes at the very next step and phase p means (period - p) zero-action steps precede it.
@@ -248,7 +273,7 @@ public class ArticulatedGates : MonoBehaviour
             evalReady = true; Debug.Log("[Gates] eval: model " + cfg.modelPath + " seeds " + cfg.seedFrom + "-" + cfg.seedTo + " mu=" + agent.objectFriction + " perturb=" + cfg.evalPerturbScale + " K=" + cfg.evalHoldDecisions + " head=" + cfg.headMode + " passIndex=" + cfg.passIndex + " deterministicInference=" + bp.DeterministicInference + " legacyNoReseed=" + cfg.legacyNoReseed);
         }
         catch (System.Exception e) { Debug.LogError("[Gates] eval: " + e.Message); }
-        sb.Length = 0; sb.AppendLine("episode,seed,success,endReason,steps,transitionStep,stepsToLift,holdSteps,holdNeeded,pulses,maxPulseN,contacts,distinctFingers,thumb,palm,forearm,mass,perturbScale,mu,maxPenMm,gripTorqueMean,retShaping,retPhase,retHold,retBonus,retDrop,lenMean,lenIndex,lenMiddle,lenRing,lenPinky,lenThumb,kFingerMean,zetaMean,inertiaScaleMean,activeGroups,mask,handSpanRatio,dtMs,pulseStep1,pulseStep2,pulseStep3,lastPulseStep,pulseActiveAtDrop,head_mode,maxStepTimeout,academyStepAtBegin,phaseAtBegin,warmupSteps"); Flush();
+        sb.Length = 0; sb.AppendLine("episode,seed,success,endReason,steps,transitionStep,stepsToLift,holdSteps,holdNeeded,pulses,maxPulseN,contacts,distinctFingers,thumb,palm,forearm,mass,perturbScale,mu,maxPenMm,gripTorqueMean,retShaping,retPhase,retHold,retBonus,retDrop,lenMean,lenIndex,lenMiddle,lenRing,lenPinky,lenThumb,kFingerMean,zetaMean,inertiaScaleMean,activeGroups,mask,handSpanRatio,dtMs,pulseStep1,pulseStep2,pulseStep3,lastPulseStep,pulseActiveAtDrop,head_mode,maxStepTimeout,academyStepAtBegin,phaseAtBegin,warmupSteps" + (ObjectColumns ? ",objIndex,objSplit,objA1mm,objA2mm,objA3mm,objE1,objE2,objVolCm3" : "")); Flush();
     }
     static int LastPulseBefore(ArmGraspAgent.EpisodeRecord r) { int best = -1; foreach (int s in new[] { r.pulseStart1, r.pulseStart2, r.pulseStart3 }) if (s >= 0 && s <= r.holdSteps && s > best) best = s; return best; }   // hold step of the last pulse that had started by the final step
     void OnDestroy2() { }
@@ -257,7 +282,7 @@ public class ArticulatedGates : MonoBehaviour
         var r = agent.LastEpisode; int idx = evalIndex - 1; if (idx < 0 || idx >= trials.Count) return;   // the hook has already advanced to the next episode's seed
         bool timeout = r.endReason == "maxStep" && r.steps == 0; if (timeout) r.steps = agent.MaxStep;   // ML-Agents' MaxStep interruption resets StepCount before OnEpisodeBegin logs the record: a real 5000-step episode without a grasp, not an aborted one
         string mask = snapMask; float lenMean = 0f; for (int f = 0; f < 5; f++) lenMean += snapLen[f] / 5f; float zMean = snapZeta, iMean = snapInertia;   // theta of THIS episode (snapshot taken in the hook)
-        sb.AppendLine(string.Join(",", new string[] { (idx + 1).ToString(), trials[idx].seed.ToString(), r.success ? "1" : "0", r.endReason, r.steps.ToString(), r.transitionStep.ToString(), r.stepsToLift.ToString(), r.holdSteps.ToString(), (cfg.evalHoldDecisions * agent.DecisionPeriodCached).ToString(), r.pulsesApplied.ToString(), r.maxPulseForce.ToString("F2"), r.contacts.ToString(), r.distinctFingers.ToString(), r.thumb ? "1" : "0", r.palm ? "1" : "0", r.forearm ? "1" : "0", r.mass.ToString("F3"), r.perturbScale.ToString("F2"), agent.objectFriction.ToString("F2"), (r.maxPenetration * 1000f).ToString("F2"), r.gripForceMean.ToString("F3"), r.retShaping.ToString("F4"), r.retPhase.ToString("F2"), r.retHold.ToString("F3"), r.retBonus.ToString("F2"), r.retDrop.ToString("F2"), lenMean.ToString("F3"), snapLen[0].ToString("F3"), snapLen[1].ToString("F3"), snapLen[2].ToString("F3"), snapLen[3].ToString("F3"), snapLen[4].ToString("F3"), snapK.ToString("F3"), zMean.ToString("F3"), iMean.ToString("F3"), snapActive.ToString(), mask, snapSpan.ToString("F3"), (Time.fixedDeltaTime * 1000f).ToString("F1"), r.pulseStart1.ToString(), r.pulseStart2.ToString(), r.pulseStart3.ToString(), LastPulseBefore(r).ToString(), r.pulseActiveAtEnd ? "1" : "0", cfg.headMode, timeout ? "1" : "0", rowAcademyStep.ToString(), rowPhase.ToString(), warmupAcademySteps.ToString() }));
+        sb.AppendLine(string.Join(",", new string[] { (idx + 1).ToString(), trials[idx].seed.ToString(), r.success ? "1" : "0", r.endReason, r.steps.ToString(), r.transitionStep.ToString(), r.stepsToLift.ToString(), r.holdSteps.ToString(), (cfg.evalHoldDecisions * agent.DecisionPeriodCached).ToString(), r.pulsesApplied.ToString(), r.maxPulseForce.ToString("F2"), r.contacts.ToString(), r.distinctFingers.ToString(), r.thumb ? "1" : "0", r.palm ? "1" : "0", r.forearm ? "1" : "0", r.mass.ToString("F3"), r.perturbScale.ToString("F2"), agent.objectFriction.ToString("F2"), (r.maxPenetration * 1000f).ToString("F2"), r.gripForceMean.ToString("F3"), r.retShaping.ToString("F4"), r.retPhase.ToString("F2"), r.retHold.ToString("F3"), r.retBonus.ToString("F2"), r.retDrop.ToString("F2"), lenMean.ToString("F3"), snapLen[0].ToString("F3"), snapLen[1].ToString("F3"), snapLen[2].ToString("F3"), snapLen[3].ToString("F3"), snapLen[4].ToString("F3"), snapK.ToString("F3"), zMean.ToString("F3"), iMean.ToString("F3"), snapActive.ToString(), mask, snapSpan.ToString("F3"), (Time.fixedDeltaTime * 1000f).ToString("F1"), r.pulseStart1.ToString(), r.pulseStart2.ToString(), r.pulseStart3.ToString(), LastPulseBefore(r).ToString(), r.pulseActiveAtEnd ? "1" : "0", cfg.headMode, timeout ? "1" : "0", rowAcademyStep.ToString(), rowPhase.ToString(), warmupAcademySteps.ToString() }) + ObjectCells());
         Flush();
     }
 
@@ -267,7 +292,7 @@ public class ArticulatedGates : MonoBehaviour
         {
             if (!evalReady) return;
             // hook: Random.InitState seeds every harness/agent draw; InferenceEngine.Random.SetSeed seeds the policy's sampled head (RandomNormalLike without a seed attribute draws from the package's static stream; 0 would mean 'default seed')
-            if (warmup > 0) { warmup--; PreApplyTheta(); if (warmup == 0) { lastCompleted = agent.CompletedEpisodes; ArmGraspAgent.BeforeEpisodeBegin = () => { SnapshotTheta(); SnapshotPhase(); ApplyFixedTheta(); evalIndex++; if (evalIndex >= 0 && evalIndex < trials.Count) { if (cfg.legacyNoReseed) Random.InitState(trials[evalIndex].seed); else { int d = DerivedSeed(trials[evalIndex].seed, cfg.passIndex); Random.InitState(d); Unity.InferenceEngine.Random.SetSeed(d != 0 ? d : 1); } } }; agent.EndEpisode(); } return; }   // the initial (unseeded) episode is discarded; the hook, installed just before the reset, seeds every following one
+            if (warmup > 0) { warmup--; PreApplyTheta(); if (warmup == 0) { lastCompleted = agent.CompletedEpisodes; ArmGraspAgent.BeforeEpisodeBegin = () => { SnapshotTheta(); SnapshotPhase(); SnapshotObject(); ApplyFixedTheta(); evalIndex++; if (evalIndex >= 0 && evalIndex < trials.Count) { if (cfg.legacyNoReseed) Random.InitState(trials[evalIndex].seed); else { int d = DerivedSeed(trials[evalIndex].seed, cfg.passIndex); Random.InitState(d); Unity.InferenceEngine.Random.SetSeed(d != 0 ? d : 1); } if (!string.IsNullOrEmpty(cfg.objectStratify)) SetEnvParam("object/index", StratifiedObjectIndex(evalIndex)); } }; agent.EndEpisode(); } return; }   // the initial (unseeded) episode is discarded; the hook, installed just before the reset, seeds every following one
             int done = agent.CompletedEpisodes;
             if (done != lastCompleted) { lastCompleted = done; EvalRow(); if (evalIndex >= trials.Count) { ArmGraspAgent.BeforeEpisodeBegin = null; Finish(); } }
             return;

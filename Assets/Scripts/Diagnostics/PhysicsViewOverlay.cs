@@ -69,10 +69,14 @@ public class PhysicsViewOverlay : MonoBehaviour
         }
         var cyl = GameObject.FindGameObjectWithTag("Cylinder");
         if (cyl != null)
-        {   // the object is a unit cylinder mesh scaled by its transform: a cylinder primitive with the same local scale coincides with its convex collider
-            var g = GameObject.CreatePrimitive(PrimitiveType.Cylinder); Destroy(g.GetComponent<Collider>());
-            g.transform.SetParent(cyl.transform, false); g.transform.localPosition = Vector3.zero; g.transform.localRotation = Quaternion.identity; g.transform.localScale = new Vector3(1.02f, 1.02f, 1.02f);
-            g.GetComponent<Renderer>().sharedMaterial = matObj; g.name = "physview_object"; drawn.Add(g);
+        {   // the object's convex collider mesh (the scene's cylinder, or the object bank's shape of this episode), drawn 2 % larger in the object's own frame; rebuilt every episode with the skeleton
+            var mc = cyl.GetComponent<MeshCollider>(); var mfSrc = cyl.GetComponent<MeshFilter>();
+            var mesh = mc != null && mc.sharedMesh != null ? mc.sharedMesh : (mfSrc != null ? mfSrc.sharedMesh : null);
+            if (mesh != null)
+            {
+                var g = new GameObject("physview_object"); g.transform.SetParent(cyl.transform, false); g.transform.localPosition = Vector3.zero; g.transform.localRotation = Quaternion.identity; g.transform.localScale = new Vector3(1.02f, 1.02f, 1.02f);
+                g.AddComponent<MeshFilter>().sharedMesh = mesh; g.AddComponent<MeshRenderer>().sharedMaterial = matObj; drawn.Add(g);
+            }
         }
     }
 

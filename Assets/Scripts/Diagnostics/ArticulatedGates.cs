@@ -102,7 +102,8 @@ public class ArticulatedGates : MonoBehaviour
         // "anchorOnly" | "trainUniform" | "heldoutUniform" | "fixedIndex" are pushed to the environment parameter object/mode (with object/index for
         // fixedIndex, object/seed when > 0). objectStratify "train" | "heldout" | "all" (eval mode): fixedIndex with the bank index assigned per episode
         // as first + (episodeOrdinal + passIndex x episodes) mod count, so every pass is exactly stratified over the split and consumes no random draw.
-        // When either is set, the eval CSV gains the columns objIndex,objSplit,objA1mm,objA2mm,objA3mm,objE1,objE2,objVolCm3 (snapshot taken in the hook).
+        // When either is set, the eval CSV gains the columns objIndex,objSplit,objA1mm,objA2mm,objA3mm,objE1,objE2,objVolCm3,objSpawnTiltDeg (snapshot taken in the
+        // hook; objSpawnTiltDeg = tilt of the object's length axis from world up at the top of the episode's reset, the X/Z tilt the spawn carries from the previous end pose).
         public string objectMode = "";
         public int objectIndex = -1;
         public int objectSeed = 0;
@@ -217,13 +218,14 @@ public class ArticulatedGates : MonoBehaviour
     string snapMask = ""; float[] snapLen = new float[5]; float snapK, snapZeta, snapInertia, snapSpan; int snapActive;
     // object bank (run 013 prep): the object of the episode whose row is pending, captured in the hook before ObjectBank swaps for the next episode
     ObjectBank.Entry snapObj; bool ObjectColumns => !string.IsNullOrEmpty(cfg.objectMode) || !string.IsNullOrEmpty(cfg.objectStratify);
-    void SnapshotObject() { snapObj = ObjectBank.Instance != null ? ObjectBank.Instance.Current : default; }
+    float snapTilt = float.NaN;
+    void SnapshotObject() { snapObj = ObjectBank.Instance != null ? ObjectBank.Instance.Current : default; snapTilt = ObjectBank.Instance != null ? ObjectBank.Instance.LastSpawnTiltDeg : float.NaN; }
     int StratifiedObjectIndex(int ordinal)
     {   // exact stratification over the split across passes: first + (ordinal + passIndex x episodes) mod count
         int first = cfg.objectStratify == "heldout" ? ObjectBank.HeldoutFrom : ObjectBank.TrainFrom, count = cfg.objectStratify == "heldout" ? ObjectBank.HeldoutTo - ObjectBank.HeldoutFrom + 1 : cfg.objectStratify == "all" ? ObjectBank.HeldoutTo - ObjectBank.TrainFrom + 1 : ObjectBank.TrainTo - ObjectBank.TrainFrom + 1;
         return first + (ordinal + cfg.passIndex * trials.Count) % count;
     }
-    string ObjectCells() => ObjectColumns ? "," + string.Join(",", new[] { snapObj.index.ToString(), snapObj.split ?? "", snapObj.a1mm.ToString("F3"), snapObj.a2mm.ToString("F3"), snapObj.a3mm.ToString("F3"), snapObj.e1.ToString("F4"), snapObj.e2.ToString("F4"), snapObj.volumeCm3.ToString("F2") }) : "";
+    string ObjectCells() => ObjectColumns ? "," + string.Join(",", new[] { snapObj.index.ToString(), snapObj.split ?? "", snapObj.a1mm.ToString("F3"), snapObj.a2mm.ToString("F3"), snapObj.a3mm.ToString("F3"), snapObj.e1.ToString("F4"), snapObj.e2.ToString("F4"), snapObj.volumeCm3.ToString("F2"), snapTilt.ToString("F1") }) : "";
     // decision phase (measurement, 2026-09-24): Academy.StepCount at the reset and that count modulo the scene DecisionRequester's period. The DecisionRequester
     // requests a decision at the Academy steps whose pre-step count is a multiple of the period (DecisionStep 0), and the hook runs after the step counter has
     // advanced, so phaseAtBegin = 0 means the first decision comes at the very next step and phase p means (period - p) zero-action steps precede it.
@@ -273,7 +275,7 @@ public class ArticulatedGates : MonoBehaviour
             evalReady = true; Debug.Log("[Gates] eval: model " + cfg.modelPath + " seeds " + cfg.seedFrom + "-" + cfg.seedTo + " mu=" + agent.objectFriction + " perturb=" + cfg.evalPerturbScale + " K=" + cfg.evalHoldDecisions + " head=" + cfg.headMode + " passIndex=" + cfg.passIndex + " deterministicInference=" + bp.DeterministicInference + " legacyNoReseed=" + cfg.legacyNoReseed);
         }
         catch (System.Exception e) { Debug.LogError("[Gates] eval: " + e.Message); }
-        sb.Length = 0; sb.AppendLine("episode,seed,success,endReason,steps,transitionStep,stepsToLift,holdSteps,holdNeeded,pulses,maxPulseN,contacts,distinctFingers,thumb,palm,forearm,mass,perturbScale,mu,maxPenMm,gripTorqueMean,retShaping,retPhase,retHold,retBonus,retDrop,lenMean,lenIndex,lenMiddle,lenRing,lenPinky,lenThumb,kFingerMean,zetaMean,inertiaScaleMean,activeGroups,mask,handSpanRatio,dtMs,pulseStep1,pulseStep2,pulseStep3,lastPulseStep,pulseActiveAtDrop,head_mode,maxStepTimeout,academyStepAtBegin,phaseAtBegin,warmupSteps" + (ObjectColumns ? ",objIndex,objSplit,objA1mm,objA2mm,objA3mm,objE1,objE2,objVolCm3" : "")); Flush();
+        sb.Length = 0; sb.AppendLine("episode,seed,success,endReason,steps,transitionStep,stepsToLift,holdSteps,holdNeeded,pulses,maxPulseN,contacts,distinctFingers,thumb,palm,forearm,mass,perturbScale,mu,maxPenMm,gripTorqueMean,retShaping,retPhase,retHold,retBonus,retDrop,lenMean,lenIndex,lenMiddle,lenRing,lenPinky,lenThumb,kFingerMean,zetaMean,inertiaScaleMean,activeGroups,mask,handSpanRatio,dtMs,pulseStep1,pulseStep2,pulseStep3,lastPulseStep,pulseActiveAtDrop,head_mode,maxStepTimeout,academyStepAtBegin,phaseAtBegin,warmupSteps" + (ObjectColumns ? ",objIndex,objSplit,objA1mm,objA2mm,objA3mm,objE1,objE2,objVolCm3,objSpawnTiltDeg" : "")); Flush();
     }
     static int LastPulseBefore(ArmGraspAgent.EpisodeRecord r) { int best = -1; foreach (int s in new[] { r.pulseStart1, r.pulseStart2, r.pulseStart3 }) if (s >= 0 && s <= r.holdSteps && s > best) best = s; return best; }   // hold step of the last pulse that had started by the final step
     void OnDestroy2() { }

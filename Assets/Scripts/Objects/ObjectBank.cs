@@ -47,6 +47,9 @@ public class ObjectBank : MonoBehaviour
     public int CurrentIndex { get; private set; }             // bank index of the object in the current episode (0 = anchor)
     public Entry Current => CurrentIndex >= 0 && CurrentIndex < Entries.Count ? Entries[CurrentIndex] : default;
     public int SwapCount { get; private set; }
+    /// <summary>Tilt (deg) of the object's length axis from world up at the top of the last ApplyForEpisode, i.e. the X/Z tilt the spawn keeps from the
+    /// previous episode's end pose (the yaw draw about world Y does not change it). Read-only diagnostic, logged by the eval harness.</summary>
+    public float LastSpawnTiltDeg { get; private set; } = float.NaN;
 
     MeshFilter mf; MeshCollider mc; Rigidbody rb;
     Mesh anchorMesh; Vector3 anchorScale; float anchorHalfHeight = float.NaN; int applied = 0; bool seedWarned;
@@ -125,6 +128,7 @@ public class ObjectBank : MonoBehaviour
     public void ApplyForEpisode(ArmGraspAgent agent)
     {
         if (float.IsNaN(anchorHalfHeight) && agent != null) anchorHalfHeight = agent.ObjectHalfHeight;   // the Initialize value of the untouched scene object
+        LastSpawnTiltDeg = Vector3.Angle(transform.up, Vector3.up);   // diagnostic only (no physics, no random draw)
         var ep = Academy.Instance.EnvironmentParameters;
         int mode = Mathf.RoundToInt(ep.GetWithDefault("object/mode", 0f));
         int seed = Mathf.RoundToInt(ep.GetWithDefault("object/seed", -1f));

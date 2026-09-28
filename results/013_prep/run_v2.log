@@ -1,0 +1,58 @@
+=== SESSION 1 ===
+[18:15:34] killing editor 29996
+[18:15:46] launching editor
+7800	ready	C:\Users\chris\Augmented-Reality-Artificial-Intelligence	6000.3.18f1	27668
+[18:17:34] editor ready
+throwaway_181735: n 10 success 1.000 [0.722, 1.000] reach_fail 0 lifted 1.000 palm 1.000 hash 2676025693a9c0e2 (16 s)
+repro_first_181755: n 100 success 1.000 [0.963, 1.000] reach_fail 0 lifted 1.000 palm 0.970 hash 98c71b6ea102bd42 (42 s)
+repro_later_181841: n 100 success 1.000 [0.963, 1.000] reach_fail 0 lifted 1.000 palm 0.970 hash 98c71b6ea102bd42 (42 s)
+repro_rs_181926: n 99 success 0.303 [0.221, 0.400] reach_fail 64 lifted 0.303 palm 0.778 hash 6d05406887c1d71e (181 s)
+=== SESSION 2 ===
+[18:22:32] killing editor 27668
+[18:22:44] launching editor
+7800	ready	C:\Users\chris\Augmented-Reality-Artificial-Intelligence	6000.3.18f1	33588
+[18:23:37] editor ready
+throwaway_182338: n 10 success 1.000 [0.722, 1.000] reach_fail 0 lifted 1.000 palm 1.000 hash 2676025693a9c0e2 (16 s)
+repro_first_182357: n 100 success 1.000 [0.963, 1.000] reach_fail 0 lifted 1.000 palm 0.970 hash 98c71b6ea102bd42 (42 s)
+repro_rs_182443: n 99 success 0.303 [0.221, 0.400] reach_fail 64 lifted 0.303 palm 0.778 hash 6d05406887c1d71e (181 s)
+=== PARTS 3-4 (session 2 continues) ===
+anchor_canonical_7001_7300: n 300 success 1.000 [0.987, 1.000] reach_fail 0 lifted 1.000 palm 0.967 hash 97dc6dee31200cb5 (99 s)
+train_canonical_9001_9300_p0: n 300 success 0.650 [0.594, 0.702] reach_fail 67 lifted 0.713 palm 0.827 hash 0ee1eff3d5a514bf (254 s)
+train_canonical_9001_9300_p1: n 300 success 0.627 [0.571, 0.679] reach_fail 71 lifted 0.663 palm 0.840 hash 638cbf6deb7b269b (269 s)
+train_canonical_9001_9300_p2: n 300 success 0.630 [0.574, 0.683] reach_fail 74 lifted 0.673 palm 0.817 hash 7e81b9facd058323 (274 s)
+heldout_canonical_9001_9300_p0: n 299 success 0.542 [0.485, 0.597] reach_fail 88 lifted 0.625 palm 0.836 hash 97ef8b15e655fae8 (310 s)
+heldout_canonical_9001_9300_p1: n 300 success 0.527 [0.470, 0.582] reach_fail 96 lifted 0.627 palm 0.793 hash b2e8fc4e1d2b3294 (321 s)
+train_randomStable_9001_9300_p0: n 299 success 0.013 [0.005, 0.034] reach_fail 263 lifted 0.023 palm 0.799 hash 0b5a1d08285d8dcf (677 s)
+train_randomStable_9001_9300_p1 runner race (CSV complete); registering
+train_randomStable_9001_9300_p1: n 299 success 0.000 [0.000, 0.013] reach_fail 279 lifted 0.000 palm 0.763 hash 415f747c48ed08b5 (-1 s)
+train_randomStable_9001_9300_p2: n 299 success 0.000 [0.000, 0.013] reach_fail 264 lifted 0.013 palm 0.793 hash c4a894223ca698ee (682 s)
+heldout_randomStable_9001_9300_p0: n 299 success 0.000 [0.000, 0.013] reach_fail 276 lifted 0.007 palm 0.803 hash 67c2b0e0d294357d (708 s)
+heldout_randomStable_9001_9300_p1: n 299 success 0.000 [0.000, 0.013] reach_fail 287 lifted 0.003 palm 0.746 hash f8ae508478389716 (745 s)
+grid_rs_h05_9301_9400_p0: n 99 success 0.020 [0.006, 0.071] reach_fail 86 lifted 0.020 palm 0.768 hash d090f1a0d3a352c9 (233 s)
+grid_rs_h05_9301_9400_p1: n 100 success 0.010 [0.002, 0.054] reach_fail 89 lifted 0.010 palm 0.630 hash 1acf3465919779db (238 s)
+grid_rs_h05_9301_9400_p2: n 100 success 0.000 [0.000, 0.037] reach_fail 92 lifted 0.010 palm 0.770 hash d0b8b0676769d090 (243 s)
+grid_rs_h05_9301_9400_p3: n 100 success 0.000 [0.000, 0.037] reach_fail 82 lifted 0.000 palm 0.760 hash 24add7007dc447ed (217 s)
+grid_rs_h11_9301_9400_p0: n 99 success 0.020 [0.006, 0.071] reach_fail 95 lifted 0.020 palm 0.768 hash 13ba23bccd0d11ff (254 s)
+grid_rs_h11_9301_9400_p1 runner race (CSV complete); registering
+grid_rs_h11_9301_9400_p1: n 99 success 0.010 [0.002, 0.055] reach_fail 95 lifted 0.010 palm 0.788 hash ee70f4ed95fc0c52 (-1 s)
+grid_rs_h11_9301_9400_p2: n 99 success 0.000 [0.000, 0.037] reach_fail 91 lifted 0.000 palm 0.758 hash 8ba500944edf0434 (243 s)
+grid_rs_h11_9301_9400_p3: n 99 success 0.000 [0.000, 0.037] reach_fail 90 lifted 0.010 palm 0.828 hash 6bea1b5aa7142aca (238 s)
+grid_rs_h14_9301_9400_p0: n 99 success 0.020 [0.006, 0.071] reach_fail 93 lifted 0.020 palm 0.788 hash 1ea115d95f790536 (248 s)
+grid_rs_h14_9301_9400_p1: n 100 success 0.000 [0.000, 0.037] reach_fail 96 lifted 0.000 palm 0.740 hash 87491b6d5d084150 (254 s)
+grid_rs_h14_9301_9400_p2: n 100 success 0.000 [0.000, 0.037] reach_fail 95 lifted 0.020 palm 0.830 hash 8674c9f76e94762e (248 s)
+grid_rs_h14_9301_9400_p3: n 100 success 0.000 [0.000, 0.037] reach_fail 92 lifted 0.000 palm 0.750 hash 52ad5af1a90818f8 (243 s)
+grid_rs_h01_9301_9400_p0: n 99 success 0.020 [0.006, 0.071] reach_fail 96 lifted 0.020 palm 0.788 hash 2575ee848d67954e (254 s)
+grid_rs_h01_9301_9400_p1: n 99 success 0.010 [0.002, 0.055] reach_fail 96 lifted 0.010 palm 0.758 hash 3c28b4fa0d27a417 (254 s)
+grid_rs_h01_9301_9400_p2: n 99 success 0.000 [0.000, 0.037] reach_fail 96 lifted 0.020 palm 0.798 hash 78f03edf5b2e33d1 (254 s)
+grid_rs_h01_9301_9400_p3: n 99 success 0.000 [0.000, 0.037] reach_fail 96 lifted 0.010 palm 0.848 hash 4bec10c73a4d0ecb (254 s)
+grid_rs_h02_9301_9400_p0: n 99 success 0.030 [0.010, 0.085] reach_fail 92 lifted 0.030 palm 0.768 hash 8ad65c487fb41779 (248 s)
+grid_rs_h02_9301_9400_p1: n 99 success 0.010 [0.002, 0.055] reach_fail 92 lifted 0.010 palm 0.687 hash 8f766fc92c443d7f (243 s)
+grid_rs_h02_9301_9400_p2: n 100 success 0.010 [0.002, 0.054] reach_fail 94 lifted 0.010 palm 0.690 hash 3b6761cccad611cb (248 s)
+grid_rs_h02_9301_9400_p3: n 99 success 0.000 [0.000, 0.037] reach_fail 93 lifted 0.000 palm 0.768 hash 847ef533d5670c8d (249 s)
+grid_rs_h03_9301_9400_p0: n 99 success 0.020 [0.006, 0.071] reach_fail 90 lifted 0.020 palm 0.657 hash d01abb8e76eb178b (239 s)
+grid_rs_h03_9301_9400_p1: n 99 success 0.010 [0.002, 0.055] reach_fail 89 lifted 0.010 palm 0.707 hash 855d26b080d8c9aa (239 s)
+grid_rs_h03_9301_9400_p2: n 100 success 0.010 [0.002, 0.054] reach_fail 90 lifted 0.010 palm 0.670 hash 2362cd27f764de27 (238 s)
+grid_rs_h03_9301_9400_p3: n 99 success 0.000 [0.000, 0.037] reach_fail 85 lifted 0.000 palm 0.717 hash c9abfb1b7a3d7fc7 (228 s)
+h14_thumbBase_wristPron_4001_4100: n 100 success 1.000 [0.963, 1.000] reach_fail 0 lifted 1.000 palm 0.990 hash 7274d61beebcc668 (42 s)
+ALL DONE 21:32:48
+exit 0

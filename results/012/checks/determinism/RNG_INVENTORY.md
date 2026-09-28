@@ -119,3 +119,21 @@ start at different phases than inside the 100-seed pass and differ from those ro
 both runs and still differs (584 vs 591 steps): the decision phase is NOT the only history channel, so pinning the phase cannot
 by itself make an episode independent of the episodes run before it. Verdict INCONCLUSIVE for the X/Y question; no pinning or
 padding was implemented. `reg1d_burst.log` (2026-09-23) belongs to the same X/Y investigation (Burst was not switched).
+
+## Addendum 2026-09-27: deterministic object reset (commit 9539a15) and the reproducibility retest
+
+The spawn used to keep the object's X/Z tilt from the previous episode's end pose (`SpawnCylinder`, `baseRot` from the current Euler
+angles), so the object pose was a cross-episode and cross-pass state channel: the first pass after an Editor launch started from the
+scene's pristine upright object while every later pass started from whatever the previous pass left, which is why the first long pass
+of a session diverged from later passes at episode 3 (`results/013_prep/ANCHOR_REGRESSION.md`). Since 9539a15 the base orientation is
+set per episode from the pose mode (`object/pose`: canonical | randomStable, `ObjectBank.ApplyForEpisode`), velocities are zeroed and
+the yaw is the only orientation draw. Retest on seeds 6001-6100 (anchor, 012, mu 1.0, deterministic head, one worker,
+`results/013_prep/passes_v2/`): (a) first full pass after launch = later pass in the same session, byte-identical; (b) first passes of
+two relaunched sessions, byte-identical; (d) randomStable pass across two sessions, byte-identical; throwaway passes across sessions,
+byte-identical. (c) seeds 6091-6100 run alone versus the same seeds inside a 100-episode pass: every seed differs (first: 6091,
+columns steps / transitionStep / stepsToLift / contacts / maxPenMm); the decision phase (`phaseAtBegin`, Academy step count modulo
+the DecisionPeriod at the reset) differs for 6 of the 10 seeds, and the 4 seeds with an equal phase differ as well, so a residual
+deterministic physics-scene state (PhysX contact / articulation state persisting across the per-episode rig rebuild) still links an
+episode to the episodes before it. Consequence: the reproducible unit remains a whole pass, but a pass no longer depends on what ran
+before it in the session or on being the first pass after a launch. The throwaway pass and the first-episode exclusion are therefore
+no longer needed for pass-level reproducibility; they are kept for now (not removed by this brief).

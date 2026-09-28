@@ -787,6 +787,16 @@ public class ArmGraspAgent : Agent
         };
         var rec = Academy.Instance.StatsRecorder;
         rec.Add("Grasp/Success", success ? 1f : 0f);
+        if (ObjectBank.Instance != null)
+        {   // run 013 stats only (no reward / observation / action change): success, reach-gate and lift rates split by this episode's presentation
+            // ("Canonical" = the canonical pose, "Lying" = a randomStable rest pose); the overall gate and lift rates are Task/Transitioned and Task/Lifted below
+            string pm = ObjectBank.Instance.CurrentPoseMode == ObjectBank.PoseMode.canonical ? "Canonical" : "Lying";
+            rec.Add("Success/" + pm, success ? 1f : 0f);
+            rec.Add("Gate/" + pm, m_TransitionStep >= 0 ? 1f : 0f);
+            rec.Add("Lift/" + pm, m_StepsToLift >= 0 ? 1f : 0f);
+            rec.Add("Pose/CanonicalShare", pm == "Canonical" ? 1f : 0f);
+            rec.Add("Pose/CanonicalFraction", ObjectBank.Instance.CurrentCanonicalFraction);
+        }
         rec.Add("Grasp/StepsToFirstSixContacts", m_StepsToFirstSixContacts);
         rec.Add("Grasp/StepsToSuccess", success ? StepCount : -1);
         rec.Add("Grasp/ContactsAtEnd", CurrentContacts);

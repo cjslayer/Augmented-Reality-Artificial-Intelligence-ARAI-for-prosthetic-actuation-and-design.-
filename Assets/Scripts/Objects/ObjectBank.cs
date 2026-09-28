@@ -60,6 +60,7 @@ public class ObjectBank : MonoBehaviour
         public Quaternion rotation;   // yaw-free: minimal rotation taking bodyUp to world up
         public Vector3 bodyUp;        // body-frame axis that ends up pointing up
         public int fromCandidate;     // 0..5 = +X -X +Y -Y +Z -Z
+        public int classId = -1;      // symmetry class within the shape (ClassKey); -1 = unsettled (never drawn)
         public bool settled; public int settleStep; public float tiltFromUprightDeg; public float restHalfHeightM;
         public float finalAngSpeed, finalSpeed, lastDrift, lastRotDeg;   // cook diagnostics at the last step: |omega| (rad/s), |v| (m/s), centre drift (m) and orientation change (deg) over the last window
     }
@@ -67,6 +68,12 @@ public class ObjectBank : MonoBehaviour
     public static ObjectBank Instance { get; private set; }
     public readonly List<Entry> Entries = new List<Entry>();
     public readonly Dictionary<int, List<StablePose>> Poses = new Dictionary<int, List<StablePose>>();
+    /// <summary>Settled poses of each shape grouped into symmetry classes (class id order = cache order): randomStable draws a class uniformly, then a pose
+    /// uniformly within it, so a physical presentation is not over-weighted by how many equivalent orientations the cook happened to find.</summary>
+    public readonly Dictionary<int, List<List<StablePose>>> Classes = new Dictionary<int, List<List<StablePose>>>();
+    public int CurrentPoseClass { get; private set; } = -1;
+    /// <summary>Probability of a canonical presentation this episode (pose/canonicalFraction; see ApplyForEpisode).</summary>
+    public float CurrentCanonicalFraction { get; private set; } = 1f;
     public int BankSeed { get; private set; } = -1;
     public bool Loaded { get; private set; }
     public DrawMode CurrentMode { get; private set; } = DrawMode.anchorOnly;
@@ -105,10 +112,23 @@ public class ObjectBank : MonoBehaviour
 #if UNITY_EDITOR
         ExportAnchorIfMissing();
 #endif
+#if UNITY_EDITOR
+        ReadHarnessFraction();
+#endif
         LoadOrCookPoses();
+        int nClasses = 0; foreach (var kv in Classes) nClasses += kv.Value.Count;
+        Debug.Log("[ObjectBank] bank ready: " + Entries.Count + " shapes, " + nClasses + " pose classes over " + Classes.Count + " shapes, seed " + BankSeed + ", dir " + Dir + (Application.isEditor ? " (Editor)" : " (player)"));
+        if (!Application.isEditor && (!Loaded || Classes.Count < Entries.Count))
+        {   // a player must never train or evaluate on a silently reduced bank: refuse to start
+            Debug.LogError("[ObjectBank] FATAL: bank or pose cache missing / incomplete in the player (" + Entries.Count + " shapes loaded, " + Classes.Count + " with pose classes; expected " + (HeldoutTo + 1) + ") under " + Dir + "; quitting");
+            Application.Quit(1);
+        }
     }
 
-    string Dir => Path.Combine(Application.dataPath, BankDir);
+    // Editor: Assets/Objects/Bank. Player: <Prosthetic>_Data/StreamingAssets/ObjectBank, copied next to the player by ObjectBankBuild (post-build step);
+    // the bank is not embedded as assets, so the player reads the same files (OBJ, CSV, JSON) the Editor reads.
+    public const string PlayerBankDir = "ObjectBank";
+    string Dir => Application.isEditor ? Path.Combine(Application.dataPath, BankDir) : Path.Combine(Application.streamingAssetsPath, PlayerBankDir);
 
     void LoadBank()
     {
@@ -168,7 +188,13 @@ public class ObjectBank : MonoBehaviour
         int seed = Mathf.RoundToInt(ep.GetWithDefault("object/seed", -1f));
         int pose = Mathf.RoundToInt(ep.GetWithDefault("object/pose", 0f));
         if (seed >= 0 && BankSeed >= 0 && seed != BankSeed && !seedWarned) { seedWarned = true; Debug.LogError("[ObjectBank] object/seed " + seed + " requested but the loaded bank is seed " + BankSeed); }
-        CurrentMode = (DrawMode)Mathf.Clamp(mode, 0, 3); CurrentPoseMode = (PoseMode)Mathf.Clamp(pose, 0, 1);
+        CurrentMode = (DrawMode)Mathf.Clamp(mode, 0, 3);
+        // canonical fraction: pose/canonicalFraction when the trainer (or the harness) sets it; else the Editor harness config key poseCanonicalFraction
+        // (Temp/gates.json, read once); else the legacy object/pose switch (0 canonical -> 1.0, 1 randomStable -> 0.0). Default 1.0 = canonical always.
+        float frac = ep.GetWithDefault("pose/canonicalFraction", -1f);
+        if (frac < 0f && s_HarnessFraction >= 0f) frac = s_HarnessFraction;
+        if (frac < 0f) frac = Mathf.Clamp(pose, 0, 1) == 1 ? 0f : 1f;
+        CurrentCanonicalFraction = Mathf.Clamp01(frac);
         int idx = 0;
         if (CurrentMode != DrawMode.anchorOnly)
         {
@@ -181,11 +207,19 @@ public class ObjectBank : MonoBehaviour
             }
         }
         ApplyShape(idx);
-        // pose: one draw in both modes (keeps canonical and randomStable passes paired on every later draw)
+        // pose: exactly one draw per episode in every mode (keeps passes at any canonical fraction paired on every later draw). Bits 15-29 of the draw give the
+        // canonical-vs-randomStable Bernoulli (u in [0, 1), canonical if u < fraction: fraction 1 is always canonical, 0 never); bits 0-14 pick the class
+        // uniformly, then the pose uniformly within the class.
         int poseDraw = Random.Range(0, 1 << 30);
-        Quaternion poseRot = CanonicalRotation; CurrentPoseIndex = -1;
-        if (CurrentPoseMode == PoseMode.randomStable && Poses.TryGetValue(idx, out var list) && list.Count > 0) { CurrentPoseIndex = poseDraw % list.Count; poseRot = list[CurrentPoseIndex].rotation; }
-        else if (CurrentPoseMode == PoseMode.randomStable && !seedWarned) { seedWarned = true; Debug.LogError("[ObjectBank] randomStable requested but no stable poses for index " + idx + "; using canonical"); }
+        float u = (poseDraw >> 15) / 32768f; int low = poseDraw & 0x7FFF;
+        CurrentPoseMode = u < CurrentCanonicalFraction ? PoseMode.canonical : PoseMode.randomStable;
+        Quaternion poseRot = CanonicalRotation; CurrentPoseIndex = -1; CurrentPoseClass = -1;
+        if (CurrentPoseMode == PoseMode.randomStable && Classes.TryGetValue(idx, out var cls) && cls.Count > 0)
+        {
+            CurrentPoseClass = low % cls.Count; var members = cls[CurrentPoseClass]; var chosen = members[(low / cls.Count) % members.Count];
+            poseRot = chosen.rotation; CurrentPoseIndex = Poses[idx].IndexOf(chosen);
+        }
+        else if (CurrentPoseMode == PoseMode.randomStable) { CurrentPoseMode = PoseMode.canonical; if (!seedWarned) { seedWarned = true; Debug.LogError("[ObjectBank] randomStable requested but no stable poses for index " + idx + "; using canonical"); } }
         CurrentPoseRotation = poseRot;
         transform.rotation = poseRot;
         if (rb != null) { rb.linearVelocity = Vector3.zero; rb.angularVelocity = Vector3.zero; rb.Sleep(); }
@@ -224,13 +258,26 @@ public class ObjectBank : MonoBehaviour
         measureCountdown = -1;
     }
 
+    // ---------------------------------------------------------------- Editor harness: canonical fraction from the harness config (no harness code change)
+    static float s_HarnessFraction = -1f;
+    [System.Serializable] class HarnessPoseCfg { public float poseCanonicalFraction = -1f; }
+#if UNITY_EDITOR
+    static void ReadHarnessFraction()
+    {
+        s_HarnessFraction = -1f;
+        try { if (File.Exists("Temp/gates.json")) { var c = JsonUtility.FromJson<HarnessPoseCfg>(File.ReadAllText("Temp/gates.json")); if (c != null && c.poseCanonicalFraction >= 0f) { s_HarnessFraction = Mathf.Clamp01(c.poseCanonicalFraction); Debug.Log("[ObjectBank] harness poseCanonicalFraction " + s_HarnessFraction); } } }
+        catch (System.Exception ex) { Debug.LogWarning("[ObjectBank] harness config not readable: " + ex.Message); }
+    }
+#endif
+
     // ---------------------------------------------------------------- stable-pose cache
     string PoseCachePath => Path.Combine(Dir, "stable_poses.json");
 
     void LoadOrCookPoses()
     {
-        bool recook = File.Exists("Temp/recook_poses");
+        bool recook = Application.isEditor && File.Exists("Temp/recook_poses");
         if (File.Exists(PoseCachePath) && !recook) { ReadPoses(PoseCachePath); return; }
+        if (!Application.isEditor) { Debug.LogError("[ObjectBank] pose cache missing in the player: " + PoseCachePath); return; }   // the player never cooks
         string outPath = File.Exists(PoseCachePath) ? Path.Combine(Dir, "stable_poses.recook.json") : PoseCachePath;
         try { CookAll(outPath); } catch (System.Exception ex) { Debug.LogError("[ObjectBank] pose cook failed: " + ex); }
         if (File.Exists(PoseCachePath)) ReadPoses(PoseCachePath);
@@ -238,7 +285,7 @@ public class ObjectBank : MonoBehaviour
 
     void ReadPoses(string path)
     {   // minimal JSON reader for the format written by WritePoses (one object per line inside "poses": {...})
-        Poses.Clear(); int nPoses = 0, nUnsettled = 0;
+        Poses.Clear(); Classes.Clear(); int nPoses = 0, nUnsettled = 0;
         foreach (var raw in File.ReadLines(path))
         {
             var line = raw.Trim(); if (!line.StartsWith("{\"index\"")) continue;
@@ -246,8 +293,43 @@ public class ObjectBank : MonoBehaviour
             if (!p.Value.settled) { nUnsettled++; continue; }   // a candidate still turning at the end of the settle is recorded in the cache but is not a rest pose to draw from
             if (!Poses.ContainsKey(p.Key)) Poses[p.Key] = new List<StablePose>(); Poses[p.Key].Add(p.Value);
         }
+        foreach (var kv in Poses)
+        {   // classes: the cached class id when present (cook output), else computed with the same rule
+            var e = kv.Key < Entries.Count ? Entries[kv.Key] : AnchorEntry(); bool cached = kv.Value.TrueForAll(p => p.classId >= 0);
+            if (!cached) AssignClasses(kv.Value, e);
+            var cl = new List<List<StablePose>>();
+            foreach (var p in kv.Value) { while (cl.Count <= p.classId) cl.Add(new List<StablePose>()); cl[p.classId].Add(p); }
+            cl.RemoveAll(c => c.Count == 0); Classes[kv.Key] = cl;
+        }
+        var hist = new SortedDictionary<int, int>(); foreach (var kv in Classes) { hist.TryGetValue(kv.Value.Count, out int c); hist[kv.Value.Count] = c + 1; }
+        var hs = new List<string>(); foreach (var kv in hist) hs.Add(kv.Key + " classes: " + kv.Value + " shapes");
         int noPose = 0; foreach (var e in Entries) if (!Poses.ContainsKey(e.index)) { noPose++; Debug.LogError("[ObjectBank] shape " + e.index + " has no settled rest pose in the cache"); }
-        Debug.Log("[ObjectBank] stable poses: " + (nPoses - nUnsettled) + " settled poses for " + Poses.Count + " shapes (" + nUnsettled + " unsettled candidates kept in the cache, " + noPose + " shapes without a settled pose) from " + path);
+        Debug.Log("[ObjectBank] stable poses: " + (nPoses - nUnsettled) + " settled poses for " + Poses.Count + " shapes (" + nUnsettled + " unsettled candidates kept in the cache, " + noPose + " shapes without a settled pose); pose classes per shape: " + string.Join(", ", hs) + "; from " + path);
+    }
+
+    // symmetry classes of rest poses (0a): the superellipsoid is symmetric under each axis reflection, so an up axis and its sign flips are one presentation;
+    // the two cross-section axes (local X, Z; the brief's "x-up and y-up") are interchangeable when |a1 - a2| < 2 % of max(a1, a2); and when additionally the
+    // cross-section is round (|e2 - 1| <= RoundE2Tol, e.g. the anchor cylinder) every lying orientation is one presentation up to a roll about the length axis.
+    public const float SymmetryA12Tol = 0.02f, RoundE2Tol = 0.05f;
+    public static Vector3 ClassKey(Vector3 bodyUp, Entry e)
+    {
+        float a = Mathf.Abs(bodyUp.x), b = Mathf.Abs(bodyUp.y), c = Mathf.Abs(bodyUp.z);
+        bool swap = Mathf.Abs(e.a1mm - e.a2mm) < SymmetryA12Tol * Mathf.Max(e.a1mm, e.a2mm);
+        if (swap && Mathf.Abs(e.e2 - 1f) <= RoundE2Tol) return new Vector3(Mathf.Sqrt(a * a + c * c), b, 0f).normalized;
+        if (swap) return new Vector3(Mathf.Max(a, c), b, Mathf.Min(a, c)).normalized;
+        return new Vector3(a, b, c).normalized;
+    }
+    static void AssignClasses(List<StablePose> poses, Entry e)
+    {   // settled poses in cache order; a pose joins the first class whose representative key is within CookMergeDeg; unsettled poses get class -1
+        var reps = new List<Vector3>();
+        foreach (var p in poses)
+        {
+            if (!p.settled) { p.classId = -1; continue; }
+            var k = ClassKey(p.bodyUp, e); int id = -1;
+            for (int i = 0; i < reps.Count; i++) if (Vector3.Angle(reps[i], k) < CookMergeDeg) { id = i; break; }
+            if (id < 0) { reps.Add(k); id = reps.Count - 1; }
+            p.classId = id;
+        }
     }
 
     static KeyValuePair<int, StablePose> ParsePoseLine(string line)
@@ -256,6 +338,7 @@ public class ObjectBank : MonoBehaviour
         float[] A(string key) { int i = line.IndexOf("\"" + key + "\":[") + key.Length + 4; int j = line.IndexOf(']', i); var parts = line.Substring(i, j - i).Split(','); var r = new float[parts.Length]; for (int k = 0; k < parts.Length; k++) r[k] = float.Parse(parts[k], CultureInfo.InvariantCulture); return r; }
         var q = A("q"); var u = A("bodyUp");
         var sp = new StablePose { rotation = new Quaternion(q[0], q[1], q[2], q[3]), bodyUp = new Vector3(u[0], u[1], u[2]), fromCandidate = (int)F("from"), settled = line.Contains("\"settled\":true"), settleStep = (int)F("settleStep"), tiltFromUprightDeg = F("tiltDeg"), restHalfHeightM = F("halfH") };
+        sp.classId = line.Contains("\"class\":") ? (int)F("class") : -1;
         return new KeyValuePair<int, StablePose>((int)F("index"), sp);
     }
 
@@ -271,7 +354,7 @@ public class ObjectBank : MonoBehaviour
         var body = new GameObject("cook_body"); var bmc = body.AddComponent<MeshCollider>(); bmc.convex = true; bmc.sharedMaterial = mat; var brb = body.AddComponent<Rigidbody>(); brb.mass = 0.5f; brb.interpolation = RigidbodyInterpolation.None; brb.sleepThreshold = 0f;
         brb.angularDamping = CookAngularDamping; brb.linearDamping = CookLinearDamping;   // cook only: PhysX has no rolling resistance, so a nudged round shape would roll forever; damping lets it come to rest on a face without changing which orientations are rest poses
         SceneManager.MoveGameObjectToScene(body, scene);
-        var sb = new StringBuilder(); sb.Append("{\"cook\":{\"steps\":" + CookSteps + ",\"dt\":" + CookDt.ToString(CultureInfo.InvariantCulture) + ",\"tiltDeg\":" + CookTiltDeg.ToString(CultureInfo.InvariantCulture) + ",\"settleWindow\":" + CookSettleWindow + ",\"angSpeedMax\":" + CookAngSpeedMax.ToString(CultureInfo.InvariantCulture) + ",\"driftMaxM\":" + CookDriftMaxM.ToString(CultureInfo.InvariantCulture) + ",\"rotMaxDeg\":" + CookRotMaxDeg.ToString(CultureInfo.InvariantCulture) + ",\"mergeDeg\":" + CookMergeDeg.ToString(CultureInfo.InvariantCulture) + ",\"angularDamping\":" + CookAngularDamping.ToString(CultureInfo.InvariantCulture) + ",\"linearDamping\":" + CookLinearDamping.ToString(CultureInfo.InvariantCulture) + ",\"bankSeed\":" + BankSeed + "},\n\"poses\":[\n");
+        var sb = new StringBuilder(); sb.Append("{\"cook\":{\"steps\":" + CookSteps + ",\"dt\":" + CookDt.ToString(CultureInfo.InvariantCulture) + ",\"tiltDeg\":" + CookTiltDeg.ToString(CultureInfo.InvariantCulture) + ",\"settleWindow\":" + CookSettleWindow + ",\"angSpeedMax\":" + CookAngSpeedMax.ToString(CultureInfo.InvariantCulture) + ",\"driftMaxM\":" + CookDriftMaxM.ToString(CultureInfo.InvariantCulture) + ",\"rotMaxDeg\":" + CookRotMaxDeg.ToString(CultureInfo.InvariantCulture) + ",\"classA12Tol\":" + SymmetryA12Tol.ToString(CultureInfo.InvariantCulture) + ",\"classRoundE2Tol\":" + RoundE2Tol.ToString(CultureInfo.InvariantCulture) + ",\"mergeDeg\":" + CookMergeDeg.ToString(CultureInfo.InvariantCulture) + ",\"angularDamping\":" + CookAngularDamping.ToString(CultureInfo.InvariantCulture) + ",\"linearDamping\":" + CookLinearDamping.ToString(CultureInfo.InvariantCulture) + ",\"bankSeed\":" + BankSeed + "},\n\"poses\":[\n");
         var counts = new List<string>(); int total = 0; bool first = true;
         Quaternion pert = Quaternion.AngleAxis(CookTiltDeg, new Vector3(1f, 0f, 1f).normalized);
         foreach (var e in Entries)
@@ -305,13 +388,14 @@ public class ObjectBank : MonoBehaviour
                 body.transform.rotation = rot; Physics.SyncTransforms(); float halfH = body.transform.position.y - bmc.bounds.min.y;
                 found.Add(new StablePose { rotation = rot, bodyUp = bodyUp, fromCandidate = c, settled = settled, settleStep = settleStep, tiltFromUprightDeg = Vector3.Angle(rot * Vector3.up, Vector3.up), restHalfHeightM = halfH, finalAngSpeed = finalAng, finalSpeed = finalSpeed, lastDrift = lastDrift, lastRotDeg = lastRot });
             }
+            AssignClasses(found, e); int nCls = 0; foreach (var p in found) nCls = Mathf.Max(nCls, p.classId + 1);
             foreach (var p in found)
             {
                 sb.Append(first ? "" : ",\n"); first = false; total++;
-                sb.Append(string.Format(CultureInfo.InvariantCulture, "{{\"index\":{0},\"q\":[{1:F6},{2:F6},{3:F6},{4:F6}],\"bodyUp\":[{5:F6},{6:F6},{7:F6}],\"from\":{8},\"settled\":{9},\"settleStep\":{10},\"tiltDeg\":{11:F3},\"halfH\":{12:F6},\"finalAngSpeed\":{13:F5},\"finalSpeed\":{14:F5},\"lastDrift\":{15:F6},\"lastRotDeg\":{16:F4}",
-                    e.index, p.rotation.x, p.rotation.y, p.rotation.z, p.rotation.w, p.bodyUp.x, p.bodyUp.y, p.bodyUp.z, p.fromCandidate, p.settled ? "true" : "false", p.settleStep, p.tiltFromUprightDeg, p.restHalfHeightM, p.finalAngSpeed, p.finalSpeed, p.lastDrift, p.lastRotDeg) + "}");   // the closing brace outside the format string: "{12:F6}}}" is mis-parsed by .NET composite formatting
+                sb.Append(string.Format(CultureInfo.InvariantCulture, "{{\"index\":{0},\"q\":[{1:F6},{2:F6},{3:F6},{4:F6}],\"bodyUp\":[{5:F6},{6:F6},{7:F6}],\"from\":{8},\"settled\":{9},\"settleStep\":{10},\"tiltDeg\":{11:F3},\"halfH\":{12:F6},\"finalAngSpeed\":{13:F5},\"finalSpeed\":{14:F5},\"lastDrift\":{15:F6},\"lastRotDeg\":{16:F4},\"class\":{17}",
+                    e.index, p.rotation.x, p.rotation.y, p.rotation.z, p.rotation.w, p.bodyUp.x, p.bodyUp.y, p.bodyUp.z, p.fromCandidate, p.settled ? "true" : "false", p.settleStep, p.tiltFromUprightDeg, p.restHalfHeightM, p.finalAngSpeed, p.finalSpeed, p.lastDrift, p.lastRotDeg, p.classId) + "}");   // the closing brace outside the format string: "{12:F6}}}" is mis-parsed by .NET composite formatting
             }
-            counts.Add(e.index + ":" + found.Count + (unsettled > 0 ? "(u" + unsettled + ")" : ""));
+            counts.Add(e.index + ":" + found.Count + "/" + nCls + "c" + (unsettled > 0 ? "(u" + unsettled + ")" : ""));
         }
         sb.Append("\n]}\n");
         Directory.CreateDirectory(Dir); File.WriteAllText(outPath, sb.ToString());

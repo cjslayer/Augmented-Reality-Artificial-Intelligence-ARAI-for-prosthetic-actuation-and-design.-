@@ -18,11 +18,12 @@ import argparse, csv, glob, json, math, os, shutil, subprocess, sys, time
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 RUN = os.path.join(REPO, "results", "013"); ART = os.path.join(RUN, "Prosthetic"); TRANS = os.path.join(RUN, "transitions.json")
 LEARN = r"C:\Users\chris\ml-agents\venv\Scripts\mlagents-learn.exe"
-YAML = {"A": "Config/run_013_phaseA.yaml", "B": "Config/run_013_phaseB.yaml", "C": "Config/run_013_phaseC.yaml"}
+YAML = {"A": "Config/run_013_phaseA.yaml", "B": "Config/run_013_phaseB.yaml", "C": "Config/run_013_phaseC.yaml", "D": "Config/run_013_phaseD.yaml"}
 LESSON_VALUES = {"hold/decisions": [5, 10, 20, 50], "pose/canonicalFraction": [1.0, 0.5, 0.0], "perturb/scale": [0.25, 0.5, 1.0]}
 PARAMS = ("morph/randomize", "object/mode", "pose/canonicalFraction", "perturb/scale", "hold/decisions")
 NEXT_STATUS = {"B": {"morph/randomize": 0, "object/mode": 0, "perturb/scale": 0, "hold/decisions": 0, "pose/canonicalFraction": 0},
-               "C": {"morph/randomize": 0, "object/mode": 0, "pose/canonicalFraction": 0, "hold/decisions": 0, "perturb/scale": 0}}
+               "C": {"morph/randomize": 0, "object/mode": 0, "pose/canonicalFraction": 0, "hold/decisions": 0, "perturb/scale": 0},
+               "D": {"morph/randomize": 0, "object/mode": 0, "pose/canonicalFraction": 0, "hold/decisions": 0, "perturb/scale": 0}}
 SWITCH_PARAM = {"B": ("hold/decisions", 3), "C": ("pose/canonicalFraction", 2)}
 
 
@@ -41,10 +42,13 @@ def phase_at(step, tr):
 def scalars():
     from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
     out = {}
-    for f in sorted(glob.glob(os.path.join(ART, "events.out.tfevents.*"))):
+    for f in sorted(glob.glob(os.path.join(ART, "events.out.tfevents.*"))):   # one file per launch, in launch order
         ea = EventAccumulator(f, size_guidance={"scalars": 0}); ea.Reload()
-        for tag in ea.Tags()["scalars"]:
-            for e in ea.Scalars(tag): out.setdefault(tag, {})[e.step] = (e.value, e.wall_time)   # a resumed segment overwrites the stopped one's steps
+        tags = ea.Tags()["scalars"]; first = min((e.step for t in tags for e in ea.Scalars(t)), default=None)
+        if first is not None:   # a resumed segment replaces everything the stopped segment logged from its resume point on (the abandoned tail after the checkpoint)
+            for t in out: out[t] = {st: v for st, v in out[t].items() if st < first}
+        for tag in tags:
+            for e in ea.Scalars(tag): out.setdefault(tag, {})[e.step] = (e.value, e.wall_time)
     return out
 
 
@@ -56,7 +60,8 @@ def lesson_series(S):
         ph = phase_at(s, tr); L = lambda p: int(S.get(f"Environment/Lesson Number/{p}", {}).get(s, (0, 0))[0])
         hold = LESSON_VALUES["hold/decisions"][min(L("hold/decisions"), 3)] if ph == "A" else 50
         frac = 1.0 if ph == "A" else (LESSON_VALUES["pose/canonicalFraction"][min(L("pose/canonicalFraction"), 2)] if ph == "B" else 0.0)
-        pert = 0.0 if ph in "AB" else LESSON_VALUES["perturb/scale"][min(L("perturb/scale"), 2)]
+        pert = 0.0 if ph in "AB" else (1.0 if ph == "D" else LESSON_VALUES["perturb/scale"][min(L("perturb/scale"), 2)])
+        if ph == "D": frac = 0.5
         rows.append((s, ph, hold, frac, pert, L("hold/decisions"), L("pose/canonicalFraction"), L("perturb/scale")))
     return rows
 
@@ -66,7 +71,7 @@ def window(S, tag, s0, s1):
 
 
 FIELDS = ["time", "step", "phase", "hold", "canonicalFraction", "perturb", "reward", "success", "successCanonical", "successLying", "gate", "lift", "gateCanonical", "gateLying", "liftCanonical", "liftLying",
-          "canonicalShare", "episodeLength", "entropy", "sps_window", "sps_500k", "nan"]
+          "canonicalShare", "palm", "episodeLength", "entropy", "sps_window", "sps_500k", "nan"]
 
 
 def monitor_rows(S, include_current=False):
@@ -85,7 +90,7 @@ def monitor_rows(S, include_current=False):
             w = lambda tag: window(S, tag, s - 50000, s)
             rows.append({"time": time.strftime("%H:%M", time.localtime(wall[s])), "step": s, "phase": ph, "hold": hold, "canonicalFraction": frac, "perturb": pert, "reward": w("Environment/Cumulative Reward"),
                          "success": w("Grasp/Success"), "successCanonical": w("Success/Canonical"), "successLying": w("Success/Lying"), "gate": w("Task/Transitioned"), "lift": w("Task/Lifted"),
-                         "gateCanonical": w("Gate/Canonical"), "gateLying": w("Gate/Lying"), "liftCanonical": w("Lift/Canonical"), "liftLying": w("Lift/Lying"), "canonicalShare": w("Pose/CanonicalShare"),
+                         "gateCanonical": w("Gate/Canonical"), "gateLying": w("Gate/Lying"), "liftCanonical": w("Lift/Canonical"), "liftLying": w("Lift/Lying"), "canonicalShare": w("Pose/CanonicalShare"), "palm": w("Grasp/PalmAtEnd"),
                          "episodeLength": w("Environment/Episode Length"), "entropy": w("Policy/Entropy"), "sps_window": spsw, "sps_500k": sps500, "nan": int(nan)})
     return rows
 
@@ -108,7 +113,7 @@ def switch_ready(S, to):
 def fmt_row(r):
     f = lambda x, n=3: "nan" if isinstance(x, float) and math.isnan(x) else (f"{x:.{n}f}" if isinstance(x, float) else str(x))
     return (f"{r['time']} step={r['step']} phase={r['phase']} K={r['hold']} canonFrac={r['canonicalFraction']} perturb={r['perturb']} reward={f(r['reward'])} success={f(r['success'])} "
-            f"S/canon={f(r['successCanonical'])} S/lying={f(r['successLying'])} gate={f(r['gate'])} lift={f(r['lift'])} canonShare={f(r['canonicalShare'], 2)} epLen={f(r['episodeLength'], 0)} "
+            f"S/canon={f(r['successCanonical'])} S/lying={f(r['successLying'])} gate={f(r['gate'])} lift={f(r['lift'])} palm={f(r['palm'])} canonShare={f(r['canonicalShare'], 2)} epLen={f(r['episodeLength'], 0)} "
             f"entropy={f(r['entropy'])} sps50k={f(r['sps_window'], 0)} sps500k={f(r['sps_500k'], 0)} nan={r['nan']}")
 
 
@@ -158,9 +163,13 @@ def ckpt_steps():
 
 
 def switch(to, do_launch=True):
-    S = scalars(); ok, ent, last = switch_ready(S, to)
-    if ent is None: sys.exit(f"switch to {to}: the lesson has not been entered")
-    if not ok: sys.exit(f"switch to {to}: entered at {ent}, only {last - ent} steps elapsed (< 250k)")
+    S = scalars()
+    if to == "D":   # amendment: no lesson condition; resume from the latest checkpoint at the stop
+        ok, ent, last = True, 0, max(S["Environment/Cumulative Reward"])
+    else:
+        ok, ent, last = switch_ready(S, to)
+        if ent is None: sys.exit(f"switch to {to}: the lesson has not been entered")
+        if not ok: sys.exit(f"switch to {to}: entered at {ent}, only {last - ent} steps elapsed (< 250k)")
     if not hard_stop(): sys.exit("hard stop failed; processes remain")
     after = [c for c in ckpt_steps() if c >= ent]
     if not after: sys.exit(f"no checkpoint after the lesson entry {ent}: cannot switch at lesson entry (stop condition)")
@@ -178,7 +187,7 @@ def switch(to, do_launch=True):
     for p, l in NEXT_STATUS[to].items(): st[p] = {"lesson_num": l}
     st.setdefault("metadata", {"stats_format_version": "0.3.0", "mlagents_version": "1.2.0.dev0", "torch_version": "2.8.0+cpu"})
     os.makedirs(os.path.dirname(sp), exist_ok=True); json.dump(st, open(sp, "w"), indent=4)
-    tr = transitions(); tr.append({"to": to, "entry_step": ent, "last_logged_step_at_stop": last, "resume_step": n, "checkpoint": os.path.basename(pt), "time": time.strftime("%Y-%m-%d %H:%M:%S"),
+    tr = transitions(); tr.append({"to": to, "entry_step": ent if to != "D" else None, "last_logged_step_at_stop": last, "resume_step": n, "checkpoint": os.path.basename(pt), "time": time.strftime("%Y-%m-%d %H:%M:%S"),
                                    "status_lessons": NEXT_STATUS[to], "checkpoint_sha256": __import__("hashlib").sha256(open(pt, "rb").read()).hexdigest()[:16]})
     json.dump(tr, open(TRANS, "w"), indent=1)
     print(f"switch to {to}: entry {ent}, stopped at logged step {last}, resume from {os.path.basename(pt)}; status lessons {NEXT_STATUS[to]}")

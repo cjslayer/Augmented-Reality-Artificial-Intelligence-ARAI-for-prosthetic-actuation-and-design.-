@@ -1,0 +1,4 @@
+throwaway_085829: n 9 success 0.000 [0.000, 0.299] reach_fail 1 lifted 0.333 palm 0.222 hash 52fd815210c76e10 (22 s)
+interim_train_canonical_9001_9128: n 128 success 0.023 [0.008, 0.067] reach_fail 24 lifted 0.125 palm 0.258 hash c130e44109fd0260 (101 s)
+interim_heldout_canonical_9129_9192: n 64 success 0.031 [0.009, 0.107] reach_fail 13 lifted 0.188 palm 0.297 hash b5b559f3f5d12f35 (63 s)
+exit 0

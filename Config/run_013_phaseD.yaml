@@ -1,0 +1,46 @@
+# Run 013 PHASE D (within-lineage resume of run id 013 from the latest phase-C checkpoint, brief amendment 2026-09-28): a FIXED 50/50 mix of
+# canonical and random-stable presentations (pose/canonicalFraction 0.5, one Bernoulli per episode), hold 50, perturbation 1.0, to test whether
+# one policy holds upright and lying grasps together after phase C forgot the upright grasp (canonical 0.026 vs 012 0.615 at 12.25M,
+# results/013/interim/INTERIM.md). No curriculum block at all: every parameter is fixed (the trainer's lesson ladders advance every ~100
+# episodes on shared thresholds, results/013_prep/CURRICULUM_NOTE.md). max_steps 20M unchanged so the linear LR schedule stays continuous.
+behaviors:
+  Prosthetic:
+    trainer_type: ppo
+    hyperparameters:
+      batch_size: 2048
+      buffer_size: 20480
+      learning_rate: 0.0003
+      beta: 0.005
+      epsilon: 0.2
+      lambd: 0.95
+      num_epoch: 3
+      learning_rate_schedule: linear
+    network_settings:
+      normalize: true
+      hidden_units: 128
+      num_layers: 2
+      vis_encode_type: simple
+    reward_signals:
+      extrinsic:
+        gamma: 0.99
+        strength: 1.0
+    keep_checkpoints: 81
+    checkpoint_interval: 250000
+    max_steps: 20000000
+    time_horizon: 128
+    summary_freq: 10000
+    threaded: true
+
+env_settings:
+  env_path: Builds/Run013/Prosthetic.exe
+  num_envs: 8
+
+engine_settings:
+  no_graphics: true
+
+environment_parameters:
+  morph/randomize: 1.0
+  object/mode: 1.0
+  pose/canonicalFraction: 0.5
+  hold/decisions: 50.0
+  perturb/scale: 1.0

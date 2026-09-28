@@ -1,0 +1,12 @@
+pairs 192 | shapes identical per row: True | theta identical per row: 192
+| subset | 013 @ 12.25M | 012 (same rows) | paired 013 − 012 [95 % CI] |
+|---|---|---|---|
+| all 192 | 0.026 [0.011, 0.060] (n=192) | 0.615 [0.544, 0.681] (n=192) | -0.589 [-0.663, -0.515] |
+| train shapes (1-64), 128 | 0.023 [0.008, 0.067] (n=128) | 0.633 [0.547, 0.711] (n=128) | -0.609 [-0.699, -0.519] |
+| held-out shapes (65-80), 64 | 0.031 [0.009, 0.107] (n=64) | 0.578 [0.456, 0.691] (n=64) | -0.547 [-0.676, -0.417] |
+| length < 130 mm | 0.048 [0.017, 0.133] (n=62) | 0.081 [0.035, 0.175] (n=62) | -0.032 [-0.121, +0.057] |
+| length 130-210 mm | 0.022 [0.006, 0.076] (n=92) | 0.837 [0.748, 0.899] (n=92) | -0.815 [-0.895, -0.736] |
+| length 210-280 mm | 0.000 [0.000, 0.092] (n=38) | 0.947 [0.827, 0.985] (n=38) | -0.947 [-1.018, -0.876] |
+013 ends {'success': 5, 'reach': 37, 'drop': 139, 'liftBudget': 11} | drop phases {'lift phase': 117, 'between pulses': 6, 'before first pulse': 12, 'during pulse': 3, 'after last pulse': 1} | gate 0.807 lifted 0.146 palm 0.271 thumb 0.625 contacts 4.31
+012 ends {'success': 118, 'reach': 48, 'drop': 26} | drop phases {'between pulses': 6, 'lift phase': 15, 'before first pulse': 5} | gate 0.750 lifted 0.677 palm 0.844 thumb 0.828 contacts 3.96
+anchor throwaway (seeds 6091-6100, canonical cylinder): [('6091', 'maxStep', '0'), ('6092', 'drop', '58'), ('6093', 'drop', '0'), ('6094', 'drop', '0'), ('6095', 'drop', '0'), ('6096', 'maxStep', '0'), ('6097', 'drop', '0'), ('6098', 'drop', '207'), ('6099', 'drop', '0'), ('6100', 'drop', '8')]

@@ -1129,3 +1129,41 @@ sampled head at mu 1.0):
 Deterministic minus sampled at mu 1.0 (same theta, 300 / 300 rows paired): +0.060, 95 % CI +0.025 to +0.095. The
 earlier n = 100 sampled-head figures (0.89 / 0.83 / 0.79 and 0.90 / 0.89 / 0.66 in two sessions) were the sampled head
 with the unseeded noise stream and multithreaded physics; the label now carries the deterministic-head numbers.
+
+## Curriculum mechanics: `min_lesson_length` counts episodes and shared thresholds cascade (2026-09-28, run 013)
+
+Read from the trainer source (`C:\Users\chris\ml-agents`, develop 3ecb446; no trainer file changed). The reward buffer **is** cleared at
+every lesson change, `ml-agents/mlagents/trainers/trainer_controller.py:215-220`:
+
+```python
+updated, param_must_reset = self.param_manager.update_lessons(
+    curr_step, max_step, reward_buff
+)
+if updated:
+    for trainer in self.trainers.values():
+        trainer.reward_buffer.clear()
+```
+
+and `min_lesson_length` is a number of episodes (entries in that buffer), `ml-agents/mlagents/trainers/settings.py:489-515`:
+
+```python
+# Is the min number of episodes reached
+if len(reward_buffer) < self.min_lesson_length:
+    return False, smoothing
+...
+measure = np.mean(reward_buffer)
+...
+if self.signal_smoothing:
+    measure = 0.25 * smoothing + 0.75 * measure
+    smoothing = measure
+if measure > self.threshold:
+    return True, smoothing
+```
+
+Episodes here last 40-90 decisions (trainer steps), so 100 episodes are only 4-9k steps, and the smoothed measure carries across lessons.
+A ladder whose lessons share a threshold the policy already meets therefore advances every ~100 episodes: run 012's perturbation ladder
+(0.25 at 2.68M, 0.5 at 2.74M, 1.0 at 2.77M) and run 013's hold ladder (Hold20 at 790k, Hold50 at 820k) and perturbation ladder (0.5 at 7.41M,
+1.0 at 7.44M, ~650 episodes). `require_reset` only resets the environments at the change (`environment_parameter_manager.py:184-185`,
+`trainer_controller.py:224-225`) and does not change this. Details: `results/013_prep/CURRICULUM_NOTE.md`, `results/013/interim/INTERIM.md`.
+
+**Guidance: ladders need min_lesson_length ≥ 2000 episodes or step scheduling; shared thresholds cascade.**

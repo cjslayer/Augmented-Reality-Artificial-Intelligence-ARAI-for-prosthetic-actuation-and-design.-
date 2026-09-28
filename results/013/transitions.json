@@ -1,0 +1,52 @@
+[
+ {
+  "to": "B",
+  "entry_step": 820000,
+  "last_logged_step_at_stop": 1080000,
+  "resume_step": 999996,
+  "checkpoint": "Prosthetic-999996.pt",
+  "time": "2026-09-28 00:54:32",
+  "status_lessons": {
+   "morph/randomize": 0,
+   "object/mode": 0,
+   "perturb/scale": 0,
+   "hold/decisions": 0,
+   "pose/canonicalFraction": 0
+  },
+  "checkpoint_sha256": "3943949f9c9176af"
+ },
+ {
+  "to": "C",
+  "entry_step": 2950000,
+  "last_logged_step_at_stop": 3210000,
+  "resume_step": 2999954,
+  "checkpoint": "Prosthetic-2999954.pt",
+  "time": "2026-09-28 02:27:54",
+  "status_lessons": {
+   "morph/randomize": 0,
+   "object/mode": 0,
+   "pose/canonicalFraction": 0,
+   "hold/decisions": 0,
+   "perturb/scale": 0
+  },
+  "checkpoint_sha256": "fd7aa7acaac3c7c8"
+ },
+ {
+  "to": "D",
+  "entry_step": null,
+  "last_logged_step_at_stop": 13500000,
+  "resume_step": 13499981,
+  "checkpoint": "Prosthetic-13499981.pt",
+  "time": "2026-09-28 09:45:49",
+  "status_lessons": {
+   "morph/randomize": 0,
+   "object/mode": 0,
+   "pose/canonicalFraction": 0,
+   "hold/decisions": 0,
+   "perturb/scale": 0
+  },
+  "checkpoint_sha256": "279651fbaf494ef4",
+  "note": "amendment: fixed 50/50 phase D, no lesson condition; resume = latest checkpoint at the stop",
+  "model_013C_onnx_sha256": "05b010c2d55c4e36"
+ }
+]

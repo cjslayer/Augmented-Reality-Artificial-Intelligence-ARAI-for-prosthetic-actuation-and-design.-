@@ -14,6 +14,8 @@ stages added for run 013:
   eval_heldout     held-out shapes 65-80, seeds 10001-10300, passIndex 0-1, canonical and randomStable (paired)
   eval_train       train shapes 1-64, seeds 10001-10300, passIndex 0-2, canonical and randomStable (paired)
   anchor_canonical anchor cylinder, canonical, seeds 7001-7300
+  interim_canonical  canonical forgetting check: train shapes on seeds 9001-9128 (2 per shape) and held-out on 9129-9192 (4 per shape), passIndex 0,
+                   i.e. the same (seed, shape) rows as the v2 012 canonical passes train_canonical_9001_9300_p0 (rows 1-128) / heldout_canonical_9001_9300_p0 (rows 129-192)
   frac_smoke       train shapes, seeds 6001-6100, stratified, pose mixed by --canonical-fraction (0b check)
   range_probe      20 probe theta (results/bo/partB/probe_thetas.json), held-out shapes, randomStable, seeds 10001-10100 (n = 100 each); --perturb for the level
 """
@@ -89,6 +91,9 @@ def stage(name):
     if name == "eval_train":
         for pose in ("canonical", "randomStable"):
             for p in range(3): run(f"train_{pose}_10001_10300_p{p}", cfg((10001, 10300), f"{OUT}/train_{pose}_10001_10300_p{p}.csv", pose=pose, obj_mode="", pass_index=p, stratify="train"))
+    if name == "interim_canonical":
+        run("interim_train_canonical_9001_9128", cfg((9001, 9128), f"{OUT}/interim_train_canonical_9001_9128.csv", obj_mode="", stratify="train"))
+        run("interim_heldout_canonical_9129_9192", cfg((9129, 9192), f"{OUT}/interim_heldout_canonical_9129_9192.csv", obj_mode="", stratify="heldout"))
     if name == "frac_smoke": run(f"frac_smoke_f{A.canonical_fraction}_6001_6100", cfg((6001, 6100), f"{OUT}/frac_smoke_f{A.canonical_fraction}_6001_6100.csv", obj_mode="", stratify="train"), allow_repeat=True)
     if name == "range_probe":
         th = json.load(open(os.path.join(REPO, "results/bo/partB/probe_thetas.json"))); lvl = f"s{A.perturb:.1f}"

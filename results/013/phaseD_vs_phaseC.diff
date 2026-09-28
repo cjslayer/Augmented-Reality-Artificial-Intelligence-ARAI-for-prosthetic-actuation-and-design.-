@@ -1,0 +1,44 @@
+--- Config/run_013_phaseC.yaml	2026-09-27 22:59:18.583650600 -0600
++++ Config/run_013_phaseD.yaml	2026-09-28 09:36:06.148451500 -0600
+@@ -1,8 +1,8 @@
+-# Run 013 PHASE C (within-lineage resume of run id 013 after Canon0 was entered and >= 250k steps elapsed in it): random stable
+-# presentation only (pose/canonicalFraction 0.0), hold fixed at 50, perturbation ladder 0.25 -> 0.5 -> 1.0 on the run-012 thresholds
+-# (0.9, min_lesson_length 100 episodes, as run 012; run 012's ladder cascaded because 100 episodes is ~7-9k steps, see phase B).
+-# Plateau stop (brief): after 12M, if phase-C success (canonicalFraction 0, perturb 1.0) has not improved by >= 0.02 over the trailing 3M,
+-# stop and evaluate the best checkpoint.
++# Run 013 PHASE D (within-lineage resume of run id 013 from the latest phase-C checkpoint, brief amendment 2026-09-28): a FIXED 50/50 mix of
++# canonical and random-stable presentations (pose/canonicalFraction 0.5, one Bernoulli per episode), hold 50, perturbation 1.0, to test whether
++# one policy holds upright and lying grasps together after phase C forgot the upright grasp (canonical 0.026 vs 012 0.615 at 12.25M,
++# results/013/interim/INTERIM.md). No curriculum block at all: every parameter is fixed (the trainer's lesson ladders advance every ~100
++# episodes on shared thresholds, results/013_prep/CURRICULUM_NOTE.md). max_steps 20M unchanged so the linear LR schedule stays continuous.
+ behaviors:
+   Prosthetic:
+     trainer_type: ppo
+@@ -41,25 +41,6 @@
+ environment_parameters:
+   morph/randomize: 1.0
+   object/mode: 1.0
+-  pose/canonicalFraction: 0.0
++  pose/canonicalFraction: 0.5
+   hold/decisions: 50.0
+-  perturb/scale:
+-    curriculum:
+-      - name: Perturb25
+-        completion_criteria:
+-          measure: reward
+-          behavior: Prosthetic
+-          signal_smoothing: true
+-          min_lesson_length: 100
+-          threshold: 0.9
+-        value: 0.25
+-      - name: Perturb50
+-        completion_criteria:
+-          measure: reward
+-          behavior: Prosthetic
+-          signal_smoothing: true
+-          min_lesson_length: 100
+-          threshold: 0.9
+-        value: 0.5
+-      - name: Perturb100
+-        value: 1.0
++  perturb/scale: 1.0

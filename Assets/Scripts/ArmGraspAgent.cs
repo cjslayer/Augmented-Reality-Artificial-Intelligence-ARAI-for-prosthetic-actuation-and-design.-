@@ -426,22 +426,31 @@ public class ArmGraspAgent : Agent
         Vector3 shoulder = m_Shoulder != null ? m_Shoulder.position : transform.position;
         float restY = restOnPlatform ? m_PlatformTop + m_CylHalfHeight + restClearance : spawnCenter.y;
         Vector3 chosen = new Vector3(spawnCenter.x, restY, spawnCenter.z);
-        Quaternion chosenRot = cylinderTransform.rotation;
-        Quaternion baseRot = Quaternion.Euler(cylinderTransform.eulerAngles.x, 0f, cylinderTransform.eulerAngles.z);
+        // deterministic object reset (run 013 prep, 2026-09-27): the base orientation comes from the pose mode (ObjectBank sets SpawnBaseRotation
+        // per episode: canonical = the scene's upright pose, randomStable = a settled rest pose of the shape drawn from the episode's stream), never
+        // from the object's current rotation, so nothing of the previous episode's end pose carries into this one; the yaw is drawn below.
+        Quaternion baseRot = SpawnBaseRotation;
+        Quaternion chosenRot = baseRot; LastSpawnYawDeg = -1f;
         for (int attempt = 0; attempt < Mathf.Max(1, spawnAttempts); attempt++)
         {
             Vector2 disk = Random.insideUnitCircle * radius;
             Vector3 candidate = new Vector3(spawnCenter.x + disk.x, restOnPlatform ? restY : spawnCenter.y + Random.Range(0f, spawnHeightRange), spawnCenter.z + disk.y);
             float reach = Vector3.Distance(shoulder, candidate);
             if (reach < reachRange.x || reach > reachRange.y) continue;
-            Quaternion rot = randomizeYaw ? Quaternion.Euler(0f, Random.Range(0f, 360f), 0f) * baseRot : baseRot;
+            float yaw = randomizeYaw ? Random.Range(0f, 360f) : 0f;
+            Quaternion rot = randomizeYaw ? Quaternion.Euler(0f, yaw, 0f) * baseRot : baseRot;
             if (OverlapsHand(candidate, rot)) continue;
-            chosen = candidate; chosenRot = rot;
+            chosen = candidate; chosenRot = rot; LastSpawnYawDeg = yaw;
             break;
         }
         cylinderTransform.SetPositionAndRotation(chosen, chosenRot);
+        if (m_CylRb != null) { m_CylRb.linearVelocity = Vector3.zero; m_CylRb.angularVelocity = Vector3.zero; m_CylRb.Sleep(); }   // kinematic until the gate; ReleaseObject wakes it with zero velocity
         Physics.SyncTransforms();
     }
+    /// <summary>Base orientation of this episode's spawn (before the yaw draw); set by ObjectBank.ApplyForEpisode from the pose mode. Default upright.</summary>
+    public Quaternion SpawnBaseRotation { get; set; } = Quaternion.identity;
+    /// <summary>Yaw (deg) drawn for this episode's spawn; -1 if no candidate passed the reach / overlap checks (the fallback pose has no yaw).</summary>
+    public float LastSpawnYawDeg { get; private set; } = -1f;
 
     private bool OverlapsHand(Vector3 position, Quaternion rotation)
     {

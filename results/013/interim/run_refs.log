@@ -1,0 +1,8 @@
+throwaway_111745: n 10 success 1.000 [0.722, 1.000] reach_fail 0 lifted 1.000 palm 1.000 hash c7228472e9877aa4 (16 s)
+interim_train_rs_9001_9128: n 127 success 0.008 [0.001, 0.043] reach_fail 115 lifted 0.016 palm 0.803 hash 2cacfb79f801dc6e (310 s)
+interim_heldout_rs_9129_9192: n 63 success 0.000 [-0.000, 0.057] reach_fail 60 lifted 0.016 palm 0.778 hash 608f5b8939f4588b (169 s)
+interim_train_canonical_9001_9128: n 128 success 0.023 [0.008, 0.067] reach_fail 20 lifted 0.109 palm 0.312 hash 9aac5595c2ad4ebc (90 s)
+interim_heldout_canonical_9129_9192: n 64 success 0.047 [0.016, 0.129] reach_fail 11 lifted 0.094 palm 0.281 hash 1d2a31b4fc7094c1 (53 s)
+interim_train_rs_9001_9128: n 128 success 0.594 [0.507, 0.675] reach_fail 8 lifted 0.664 palm 0.602 hash e71e3262a1ed60b4 (79 s)
+interim_heldout_rs_9129_9192: n 64 success 0.562 [0.441, 0.677] reach_fail 4 lifted 0.578 palm 0.641 hash 1d7c7757b6fc3e5f (43 s)
+exit 0

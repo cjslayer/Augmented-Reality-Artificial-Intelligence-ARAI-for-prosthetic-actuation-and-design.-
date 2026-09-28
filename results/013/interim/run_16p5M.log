@@ -1,0 +1,7 @@
+checkpoint Prosthetic-16499988.onnx at 11:52:22
+throwaway_115223: n 10 success 0.400 [0.168, 0.687] reach_fail 0 lifted 0.600 palm 0.500 hash 9dfcc24ff3976b14 (16 s)
+interim_train_canonical_9001_9128: n 128 success 0.531 [0.445, 0.616] reach_fail 8 lifted 0.625 palm 0.625 hash 51f817086905102d (69 s)
+interim_heldout_canonical_9129_9192: n 64 success 0.500 [0.381, 0.619] reach_fail 3 lifted 0.641 palm 0.500 hash 18dff05610c8f202 (38 s)
+interim_train_rs_9001_9128: n 128 success 0.547 [0.461, 0.630] reach_fail 5 lifted 0.625 palm 0.586 hash ffc720b3fe2681fc (70 s)
+interim_heldout_rs_9129_9192: n 64 success 0.516 [0.396, 0.634] reach_fail 2 lifted 0.672 palm 0.578 hash 7621c45398be2fef (38 s)
+exit 0

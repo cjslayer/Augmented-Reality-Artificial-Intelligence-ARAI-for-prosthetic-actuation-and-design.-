@@ -1,0 +1,42 @@
+[
+ {
+  "tag": "throwaway_142136",
+  "ok": true,
+  "csv": "results/013/eval/idle_check/throwaway_142136.csv",
+  "n": 10,
+  "success": 1.0,
+  "lo": 0.7224598312333834,
+  "hi": 1.0,
+  "reach_failures": 0,
+  "lifted": 1.0,
+  "palm": 1.0,
+  "contacts": 5.9,
+  "hold": 500,
+  "ends": {
+   "success": 10
+  },
+  "hash": "2676025693a9c0e2",
+  "wall_s": 16.11084246635437,
+  "time": "14:21:57",
+  "cfg": {
+   "mode": "eval",
+   "modelPath": "results/012/Prosthetic.onnx",
+   "seedFrom": 6091,
+   "seedTo": 6100,
+   "objectFriction": 1.0,
+   "evalPerturbScale": 1.0,
+   "evalHoldDecisions": 50,
+   "timeScale": 20,
+   "maxTrialSteps": 6000,
+   "headMode": "deterministic",
+   "passIndex": 0,
+   "jobWorkers": 1,
+   "legacyNoReseed": false,
+   "csv": "results/013/eval/idle_check/throwaway_142136.csv",
+   "objectMode": "anchorOnly",
+   "objectIndex": -1,
+   "objectStratify": "",
+   "objectPose": "canonical"
+  }
+ }
+]

@@ -1,0 +1,201 @@
+[INFO] Connected to Unity environment with package version 4.1.0 and communication version 1.5.0
+[INFO] Connected to Unity environment with package version 4.1.0 and communication version 1.5.0
+[INFO] Connected to Unity environment with package version 4.1.0 and communication version 1.5.0
+[INFO] Connected to Unity environment with package version 4.1.0 and communication version 1.5.0
+[INFO] Connected to Unity environment with package version 4.1.0 and communication version 1.5.0
+[INFO] Connected to Unity environment with package version 4.1.0 and communication version 1.5.0
+[INFO] Connected new brain: Prosthetic?team=0
+[INFO] Connected new brain: Prosthetic?team=0
+[INFO] Connected new brain: Prosthetic?team=0
+[INFO] Connected to Unity environment with package version 4.1.0 and communication version 1.5.0
+[INFO] Connected new brain: Prosthetic?team=0
+[INFO] Connected to Unity environment with package version 4.1.0 and communication version 1.5.0
+[INFO] Connected new brain: Prosthetic?team=0
+[INFO] Connected new brain: Prosthetic?team=0
+[INFO] Connected new brain: Prosthetic?team=0
+[INFO] Connected new brain: Prosthetic?team=0
+
+            ┐  ╖
+        ╓╖╬│╡  ││╬╖╖
+    ╓╖╬│││││┘  ╬│││││╬╖
+ ╖╬│││││╬╜        ╙╬│││││╖╖                               ╗╗╗
+ ╬╬╬╬╖││╦╖        ╖╬││╗╣╣╣╬      ╟╣╣╬    ╟╣╣╣             ╜╜╜  ╟╣╣
+ ╬╬╬╬╬╬╬╬╖│╬╖╖╓╬╪│╓╣╣╣╣╣╣╣╬      ╟╣╣╬    ╟╣╣╣ ╒╣╣╖╗╣╣╣╗   ╣╣╣ ╣╣╣╣╣╣ ╟╣╣╖   ╣╣╣
+ ╬╬╬╬┐  ╙╬╬╬╬│╓╣╣╣╝╜  ╫╣╣╣╬      ╟╣╣╬    ╟╣╣╣ ╟╣╣╣╙ ╙╣╣╣  ╣╣╣ ╙╟╣╣╜╙  ╫╣╣  ╟╣╣
+ ╬╬╬╬┐     ╙╬╬╣╣      ╫╣╣╣╬      ╟╣╣╬    ╟╣╣╣ ╟╣╣╬   ╣╣╣  ╣╣╣  ╟╣╣     ╣╣╣┌╣╣╜
+ ╬╬╬╜       ╬╬╣╣      ╙╝╣╣╬      ╙╣╣╣╗╖╓╗╣╣╣╜ ╟╣╣╬   ╣╣╣  ╣╣╣  ╟╣╣╦╓    ╣╣╣╣╣
+ ╙   ╓╦╖    ╬╬╣╣   ╓╗╗╖            ╙╝╣╣╣╣╝╜   ╘╝╝╜   ╝╝╝  ╝╝╝   ╙╣╣╣    ╟╣╣╣
+   ╩╬╬╬╬╬╬╦╦╬╬╣╣╗╣╣╣╣╣╣╣╝                                             ╫╣╣╣╣
+      ╙╬╬╬╬╬╬╬╣╣╣╣╣╣╝╜
+          ╙╬╬╬╣╣╣╜
+             ╙
+        
+ Version information:
+  ml-agents: 1.2.0.dev0,
+  ml-agents-envs: 1.2.0.dev0,
+  Communicator API: 1.5.0,
+  PyTorch: 2.8.0+cpu
+[INFO] Hyperparameters for behavior name Prosthetic: 
+	trainer_type:	ppo
+	hyperparameters:	
+	  batch_size:	2048
+	  buffer_size:	20480
+	  learning_rate:	0.0003
+	  beta:	0.005
+	  epsilon:	0.2
+	  lambd:	0.95
+	  num_epoch:	3
+	  shared_critic:	False
+	  learning_rate_schedule:	linear
+	  beta_schedule:	linear
+	  epsilon_schedule:	linear
+	checkpoint_interval:	250000
+	network_settings:	
+	  normalize:	True
+	  hidden_units:	128
+	  num_layers:	2
+	  vis_encode_type:	simple
+	  memory:	None
+	  goal_conditioning_type:	hyper
+	  deterministic:	False
+	reward_signals:	
+	  extrinsic:	
+	    gamma:	0.99
+	    strength:	1.0
+	    network_settings:	
+	      normalize:	False
+	      hidden_units:	128
+	      num_layers:	2
+	      vis_encode_type:	simple
+	      memory:	None
+	      goal_conditioning_type:	hyper
+	      deterministic:	False
+	init_path:	None
+	keep_checkpoints:	81
+	even_checkpoints:	False
+	max_steps:	20000000
+	time_horizon:	128
+	summary_freq:	10000
+	threaded:	True
+	self_play:	None
+	behavioral_cloning:	None
+[INFO] Parameter 'morph/randomize' is in lesson 'morph/randomize' and has value 'Float: value=1.0'.
+[INFO] Parameter 'object/mode' is in lesson 'object/mode' and has value 'Float: value=1.0'.
+[INFO] Parameter 'pose/canonicalFraction' is in lesson 'pose/canonicalFraction' and has value 'Float: value=1.0'.
+[INFO] Parameter 'perturb/scale' is in lesson 'perturb/scale' and has value 'Float: value=0.0'.
+[INFO] Parameter 'hold/decisions' is in lesson 'Hold5' and has value 'Float: value=5.0'.
+[INFO] Prosthetic. Step: 10000. Time Elapsed: 23.386 s. Mean Reward: -3.502. Std of Reward: 1.974. Training.
+[INFO] Prosthetic. Step: 20000. Time Elapsed: 41.554 s. Mean Reward: -4.211. Std of Reward: 1.154. Training.
+[INFO] Prosthetic. Step: 30000. Time Elapsed: 68.893 s. Mean Reward: -2.442. Std of Reward: 1.512. Training.
+[INFO] Prosthetic. Step: 40000. Time Elapsed: 87.478 s. Mean Reward: -2.606. Std of Reward: 1.016. Training.
+[INFO] Prosthetic. Step: 50000. Time Elapsed: 113.661 s. Mean Reward: -1.171. Std of Reward: 1.126. Training.
+[INFO] Prosthetic. Step: 60000. Time Elapsed: 132.427 s. Mean Reward: -1.264. Std of Reward: 0.900. Training.
+[INFO] Prosthetic. Step: 70000. Time Elapsed: 159.181 s. Mean Reward: -0.914. Std of Reward: 0.924. Training.
+[INFO] Prosthetic. Step: 80000. Time Elapsed: 177.984 s. Mean Reward: -0.870. Std of Reward: 0.903. Training.
+[INFO] Prosthetic. Step: 90000. Time Elapsed: 206.677 s. Mean Reward: -0.820. Std of Reward: 1.000. Training.
+[INFO] Prosthetic. Step: 100000. Time Elapsed: 225.492 s. Mean Reward: -0.761. Std of Reward: 0.931. Training.
+[INFO] Prosthetic. Step: 110000. Time Elapsed: 252.831 s. Mean Reward: -0.555. Std of Reward: 0.995. Training.
+[INFO] Prosthetic. Step: 120000. Time Elapsed: 271.421 s. Mean Reward: -0.471. Std of Reward: 0.808. Training.
+[INFO] Prosthetic. Step: 130000. Time Elapsed: 299.432 s. Mean Reward: -0.254. Std of Reward: 0.800. Training.
+[INFO] Prosthetic. Step: 140000. Time Elapsed: 318.455 s. Mean Reward: -0.194. Std of Reward: 0.639. Training.
+[INFO] Prosthetic. Step: 150000. Time Elapsed: 345.506 s. Mean Reward: -0.122. Std of Reward: 0.634. Training.
+[INFO] Prosthetic. Step: 160000. Time Elapsed: 364.450 s. Mean Reward: -0.074. Std of Reward: 0.583. Training.
+[INFO] Prosthetic. Step: 170000. Time Elapsed: 392.615 s. Mean Reward: -0.111. Std of Reward: 0.649. Training.
+[INFO] Prosthetic. Step: 180000. Time Elapsed: 411.489 s. Mean Reward: 0.057. Std of Reward: 0.552. Training.
+[INFO] Prosthetic. Step: 190000. Time Elapsed: 439.306 s. Mean Reward: -0.085. Std of Reward: 0.596. Training.
+[INFO] Prosthetic. Step: 200000. Time Elapsed: 457.817 s. Mean Reward: -0.107. Std of Reward: 0.670. Training.
+[INFO] Prosthetic. Step: 210000. Time Elapsed: 487.356 s. Mean Reward: -0.066. Std of Reward: 0.550. Training.
+[INFO] Prosthetic. Step: 220000. Time Elapsed: 506.185 s. Mean Reward: -0.043. Std of Reward: 0.583. Training.
+[INFO] Prosthetic. Step: 230000. Time Elapsed: 533.843 s. Mean Reward: -0.116. Std of Reward: 0.623. Training.
+[INFO] Prosthetic. Step: 240000. Time Elapsed: 553.161 s. Mean Reward: 0.063. Std of Reward: 0.515. Training.
+[INFO] Prosthetic. Step: 250000. Time Elapsed: 582.150 s. Mean Reward: 0.144. Std of Reward: 0.467. Training.
+[INFO] Exported results\013\Prosthetic\Prosthetic-249932.onnx
+[INFO] Prosthetic. Step: 260000. Time Elapsed: 601.227 s. Mean Reward: 0.205. Std of Reward: 0.508. Training.
+[INFO] Prosthetic. Step: 270000. Time Elapsed: 630.140 s. Mean Reward: 0.146. Std of Reward: 0.499. Training.
+[INFO] Prosthetic. Step: 280000. Time Elapsed: 649.693 s. Mean Reward: 0.251. Std of Reward: 0.464. Training.
+[INFO] Prosthetic. Step: 290000. Time Elapsed: 678.627 s. Mean Reward: 0.212. Std of Reward: 0.446. Training.
+[INFO] Prosthetic. Step: 300000. Time Elapsed: 698.231 s. Mean Reward: 0.310. Std of Reward: 0.355. Training.
+[INFO] Prosthetic. Step: 310000. Time Elapsed: 727.565 s. Mean Reward: 0.358. Std of Reward: 0.407. Training.
+[INFO] Prosthetic. Step: 320000. Time Elapsed: 746.916 s. Mean Reward: 0.335. Std of Reward: 0.396. Training.
+[INFO] Prosthetic. Step: 330000. Time Elapsed: 776.593 s. Mean Reward: 0.350. Std of Reward: 0.382. Training.
+[INFO] Prosthetic. Step: 340000. Time Elapsed: 795.380 s. Mean Reward: 0.357. Std of Reward: 0.444. Training.
+[INFO] Prosthetic. Step: 350000. Time Elapsed: 826.216 s. Mean Reward: 0.420. Std of Reward: 0.284. Training.
+[INFO] Prosthetic. Step: 360000. Time Elapsed: 844.403 s. Mean Reward: 0.400. Std of Reward: 0.388. Training.
+[INFO] Prosthetic. Step: 370000. Time Elapsed: 876.108 s. Mean Reward: 0.377. Std of Reward: 0.327. Training.
+[INFO] Prosthetic. Step: 380000. Time Elapsed: 893.486 s. Mean Reward: 0.372. Std of Reward: 0.344. Training.
+[INFO] Prosthetic. Step: 390000. Time Elapsed: 913.427 s. Mean Reward: 0.429. Std of Reward: 0.237. Training.
+[INFO] Prosthetic. Step: 400000. Time Elapsed: 942.986 s. Mean Reward: 0.395. Std of Reward: 0.328. Training.
+[INFO] Prosthetic. Step: 410000. Time Elapsed: 962.720 s. Mean Reward: 0.442. Std of Reward: 0.329. Training.
+[INFO] Prosthetic. Step: 420000. Time Elapsed: 992.377 s. Mean Reward: 0.385. Std of Reward: 0.403. Training.
+[INFO] Prosthetic. Step: 430000. Time Elapsed: 1011.838 s. Mean Reward: 0.438. Std of Reward: 0.347. Training.
+[INFO] Prosthetic. Step: 440000. Time Elapsed: 1041.774 s. Mean Reward: 0.449. Std of Reward: 0.287. Training.
+[INFO] Prosthetic. Step: 450000. Time Elapsed: 1061.776 s. Mean Reward: 0.446. Std of Reward: 0.366. Training.
+[INFO] Prosthetic. Step: 460000. Time Elapsed: 1091.904 s. Mean Reward: 0.439. Std of Reward: 0.371. Training.
+[INFO] Prosthetic. Step: 470000. Time Elapsed: 1111.472 s. Mean Reward: 0.457. Std of Reward: 0.343. Training.
+[INFO] Prosthetic. Step: 480000. Time Elapsed: 1141.511 s. Mean Reward: 0.469. Std of Reward: 0.364. Training.
+[INFO] Prosthetic. Step: 490000. Time Elapsed: 1161.008 s. Mean Reward: 0.387. Std of Reward: 0.481. Training.
+[INFO] Prosthetic. Step: 500000. Time Elapsed: 1191.699 s. Mean Reward: 0.508. Std of Reward: 0.330. Training.
+[INFO] Exported results\013\Prosthetic\Prosthetic-499943.onnx
+[INFO] Prosthetic. Step: 510000. Time Elapsed: 1211.899 s. Mean Reward: 0.482. Std of Reward: 0.357. Training.
+[INFO] Prosthetic. Step: 520000. Time Elapsed: 1241.740 s. Mean Reward: 0.454. Std of Reward: 0.367. Training.
+[INFO] Prosthetic. Step: 530000. Time Elapsed: 1261.164 s. Mean Reward: 0.458. Std of Reward: 0.363. Training.
+[INFO] Prosthetic. Step: 540000. Time Elapsed: 1292.133 s. Mean Reward: 0.481. Std of Reward: 0.409. Training.
+[INFO] Prosthetic. Step: 550000. Time Elapsed: 1311.903 s. Mean Reward: 0.471. Std of Reward: 0.472. Training.
+[INFO] Prosthetic. Step: 560000. Time Elapsed: 1341.586 s. Mean Reward: 0.508. Std of Reward: 0.354. Training.
+[INFO] Prosthetic. Step: 570000. Time Elapsed: 1361.552 s. Mean Reward: 0.529. Std of Reward: 0.351. Training.
+[INFO] Prosthetic. Step: 580000. Time Elapsed: 1391.849 s. Mean Reward: 0.509. Std of Reward: 0.404. Training.
+[INFO] Prosthetic. Step: 590000. Time Elapsed: 1411.747 s. Mean Reward: 0.553. Std of Reward: 0.363. Training.
+[INFO] Prosthetic. Step: 600000. Time Elapsed: 1442.431 s. Mean Reward: 0.568. Std of Reward: 0.308. Training.
+[INFO] Prosthetic. Step: 610000. Time Elapsed: 1462.351 s. Mean Reward: 0.552. Std of Reward: 0.390. Training.
+[INFO] Prosthetic. Step: 620000. Time Elapsed: 1492.721 s. Mean Reward: 0.586. Std of Reward: 0.411. Training.
+[INFO] Prosthetic. Step: 630000. Time Elapsed: 1512.894 s. Mean Reward: 0.607. Std of Reward: 0.385. Training.
+[INFO] Prosthetic. Step: 640000. Time Elapsed: 1543.509 s. Mean Reward: 0.565. Std of Reward: 0.417. Training.
+[INFO] Prosthetic. Step: 650000. Time Elapsed: 1563.015 s. Mean Reward: 0.608. Std of Reward: 0.480. Training.
+[INFO] Prosthetic. Step: 660000. Time Elapsed: 1593.565 s. Mean Reward: 0.605. Std of Reward: 0.496. Training.
+[INFO] Prosthetic. Step: 670000. Time Elapsed: 1613.584 s. Mean Reward: 0.638. Std of Reward: 0.495. Training.
+[INFO] Prosthetic. Step: 680000. Time Elapsed: 1644.827 s. Mean Reward: 0.667. Std of Reward: 0.455. Training.
+[INFO] Prosthetic. Step: 690000. Time Elapsed: 1665.072 s. Mean Reward: 0.664. Std of Reward: 0.496. Training.
+[INFO] Prosthetic. Step: 700000. Time Elapsed: 1695.538 s. Mean Reward: 0.680. Std of Reward: 0.548. Training.
+[INFO] Prosthetic. Step: 710000. Time Elapsed: 1716.094 s. Mean Reward: 0.747. Std of Reward: 0.580. Training.
+[INFO] Prosthetic. Step: 720000. Time Elapsed: 1746.675 s. Mean Reward: 0.785. Std of Reward: 0.635. Training.
+[INFO] Parameter 'hold/decisions' is in lesson 'Hold10' and has value 'Float: value=10.0'.
+[INFO] Prosthetic. Step: 730000. Time Elapsed: 1766.629 s. Mean Reward: 0.782. Std of Reward: 0.718. Training.
+[INFO] Prosthetic. Step: 740000. Time Elapsed: 1797.236 s. Mean Reward: 0.720. Std of Reward: 0.642. Training.
+[INFO] Prosthetic. Step: 750000. Time Elapsed: 1816.821 s. Mean Reward: 0.766. Std of Reward: 0.619. Training.
+[INFO] Exported results\013\Prosthetic\Prosthetic-749911.onnx
+[INFO] Prosthetic. Step: 760000. Time Elapsed: 1848.040 s. Mean Reward: 0.835. Std of Reward: 0.684. Training.
+[INFO] Prosthetic. Step: 770000. Time Elapsed: 1868.918 s. Mean Reward: 0.882. Std of Reward: 0.671. Training.
+[INFO] Prosthetic. Step: 780000. Time Elapsed: 1888.442 s. Mean Reward: 0.746. Std of Reward: 0.676. Training.
+[INFO] Parameter 'hold/decisions' is in lesson 'Hold20' and has value 'Float: value=20.0'.
+[INFO] Prosthetic. Step: 790000. Time Elapsed: 1919.644 s. Mean Reward: 0.933. Std of Reward: 0.664. Training.
+[INFO] Prosthetic. Step: 800000. Time Elapsed: 1940.248 s. Mean Reward: 0.823. Std of Reward: 0.610. Training.
+[INFO] Prosthetic. Step: 810000. Time Elapsed: 1970.858 s. Mean Reward: 0.812. Std of Reward: 0.638. Training.
+[INFO] Parameter 'hold/decisions' is in lesson 'Hold50' and has value 'Float: value=50.0'.
+[INFO] Prosthetic. Step: 820000. Time Elapsed: 1990.631 s. Mean Reward: 0.667. Std of Reward: 0.564. Training.
+[INFO] Prosthetic. Step: 830000. Time Elapsed: 2020.702 s. Mean Reward: 0.669. Std of Reward: 0.469. Training.
+[INFO] Prosthetic. Step: 840000. Time Elapsed: 2040.706 s. Mean Reward: 0.708. Std of Reward: 0.429. Training.
+[INFO] Prosthetic. Step: 850000. Time Elapsed: 2071.107 s. Mean Reward: 0.628. Std of Reward: 0.542. Training.
+[INFO] Prosthetic. Step: 860000. Time Elapsed: 2090.617 s. Mean Reward: 0.705. Std of Reward: 0.542. Training.
+[INFO] Prosthetic. Step: 870000. Time Elapsed: 2120.443 s. Mean Reward: 0.656. Std of Reward: 0.531. Training.
+[INFO] Prosthetic. Step: 880000. Time Elapsed: 2139.776 s. Mean Reward: 0.615. Std of Reward: 0.523. Training.
+[INFO] Prosthetic. Step: 890000. Time Elapsed: 2169.449 s. Mean Reward: 0.732. Std of Reward: 0.615. Training.
+[INFO] Prosthetic. Step: 900000. Time Elapsed: 2189.170 s. Mean Reward: 0.767. Std of Reward: 0.585. Training.
+[INFO] Prosthetic. Step: 910000. Time Elapsed: 2218.729 s. Mean Reward: 0.735. Std of Reward: 0.555. Training.
+[INFO] Prosthetic. Step: 920000. Time Elapsed: 2238.323 s. Mean Reward: 0.749. Std of Reward: 0.505. Training.
+[INFO] Prosthetic. Step: 930000. Time Elapsed: 2267.884 s. Mean Reward: 0.751. Std of Reward: 0.564. Training.
+[INFO] Prosthetic. Step: 940000. Time Elapsed: 2287.258 s. Mean Reward: 0.755. Std of Reward: 0.608. Training.
+[INFO] Prosthetic. Step: 950000. Time Elapsed: 2317.550 s. Mean Reward: 0.796. Std of Reward: 0.565. Training.
+[INFO] Prosthetic. Step: 960000. Time Elapsed: 2337.800 s. Mean Reward: 0.828. Std of Reward: 0.559. Training.
+[INFO] Prosthetic. Step: 970000. Time Elapsed: 2368.336 s. Mean Reward: 0.835. Std of Reward: 0.567. Training.
+[INFO] Prosthetic. Step: 980000. Time Elapsed: 2388.926 s. Mean Reward: 0.746. Std of Reward: 0.581. Training.
+[INFO] Prosthetic. Step: 990000. Time Elapsed: 2419.019 s. Mean Reward: 0.810. Std of Reward: 0.574. Training.
+[INFO] Prosthetic. Step: 1000000. Time Elapsed: 2439.106 s. Mean Reward: 0.748. Std of Reward: 0.600. Training.
+[INFO] Exported results\013\Prosthetic\Prosthetic-999996.onnx
+[INFO] Prosthetic. Step: 1010000. Time Elapsed: 2469.839 s. Mean Reward: 0.800. Std of Reward: 0.544. Training.
+[INFO] Prosthetic. Step: 1020000. Time Elapsed: 2489.878 s. Mean Reward: 0.809. Std of Reward: 0.606. Training.
+[INFO] Prosthetic. Step: 1030000. Time Elapsed: 2520.292 s. Mean Reward: 0.844. Std of Reward: 0.593. Training.
+[INFO] Prosthetic. Step: 1040000. Time Elapsed: 2540.092 s. Mean Reward: 0.902. Std of Reward: 0.556. Training.
+[INFO] Prosthetic. Step: 1050000. Time Elapsed: 2570.576 s. Mean Reward: 0.782. Std of Reward: 0.570. Training.
+[INFO] Prosthetic. Step: 1060000. Time Elapsed: 2589.525 s. Mean Reward: 0.852. Std of Reward: 0.638. Training.
+[INFO] Prosthetic. Step: 1070000. Time Elapsed: 2619.565 s. Mean Reward: 0.800. Std of Reward: 0.596. Training.
+[INFO] Prosthetic. Step: 1080000. Time Elapsed: 2639.150 s. Mean Reward: 0.804. Std of Reward: 0.691. Training.

@@ -1,0 +1,5 @@
+trainer / players still running: refusing (idle-machine rule)
+=== 14:17:10 pulse-vs-grasp passes (perturb 0, randomStable, held-out, seeds 10001-10300, passIndex 0)
+013C_heldout_randomStable_10001_10300_p0_perturb0: n 300 success 0.550 [0.493, 0.605] reach_fail 9 lifted 0.610 palm 0.600 hash aefa390852060afa (131 s)
+013D_heldout_randomStable_10001_10300_p0_perturb0: n 300 success 0.530 [0.473, 0.586] reach_fail 9 lifted 0.627 palm 0.580 hash 4e51b0a922ccbc72 (125 s)
+=== 14:21:34 ALL PART3 + PULSE DONE

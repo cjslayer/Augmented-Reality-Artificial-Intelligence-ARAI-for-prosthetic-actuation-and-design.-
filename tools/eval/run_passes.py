@@ -16,7 +16,9 @@ stages added for run 013:
   anchor_canonical anchor cylinder, canonical, seeds 7001-7300
   interim_canonical  canonical forgetting check: train shapes on seeds 9001-9128 (2 per shape) and held-out on 9129-9192 (4 per shape), passIndex 0,
                    i.e. the same (seed, shape) rows as the v2 012 canonical passes train_canonical_9001_9300_p0 (rows 1-128) / heldout_canonical_9001_9300_p0 (rows 129-192)
+  interim_rs       the same 192 rows in randomStable
   frac_smoke       train shapes, seeds 6001-6100, stratified, pose mixed by --canonical-fraction (0b check)
+  range_probe_canonical  the same probe in the canonical presentation
   range_probe      20 probe theta (results/bo/partB/probe_thetas.json), held-out shapes, randomStable, seeds 10001-10100 (n = 100 each); --perturb for the level
 """
 import argparse, copy, json, os, sys, time
@@ -94,10 +96,14 @@ def stage(name):
     if name == "interim_canonical":
         run("interim_train_canonical_9001_9128", cfg((9001, 9128), f"{OUT}/interim_train_canonical_9001_9128.csv", obj_mode="", stratify="train"))
         run("interim_heldout_canonical_9129_9192", cfg((9129, 9192), f"{OUT}/interim_heldout_canonical_9129_9192.csv", obj_mode="", stratify="heldout"))
+    if name == "interim_rs":   # the same 192 (seed, shape) rows as interim_canonical, random-stable presentation (class-based draw, 7b3f8ca cache)
+        run("interim_train_rs_9001_9128", cfg((9001, 9128), f"{OUT}/interim_train_rs_9001_9128.csv", pose="randomStable", obj_mode="", stratify="train"))
+        run("interim_heldout_rs_9129_9192", cfg((9129, 9192), f"{OUT}/interim_heldout_rs_9129_9192.csv", pose="randomStable", obj_mode="", stratify="heldout"))
     if name == "frac_smoke": run(f"frac_smoke_f{A.canonical_fraction}_6001_6100", cfg((6001, 6100), f"{OUT}/frac_smoke_f{A.canonical_fraction}_6001_6100.csv", obj_mode="", stratify="train"), allow_repeat=True)
-    if name == "range_probe":
+    if name in ("range_probe", "range_probe_canonical"):
+        pose, tagp = ("randomStable", "rs") if name == "range_probe" else ("canonical", "can")
         th = json.load(open(os.path.join(REPO, "results/bo/partB/probe_thetas.json"))); lvl = f"s{A.perturb:.1f}"
-        for i, t in enumerate(th): run(f"probe_t{i:02d}_{lvl}_heldout_rs_10001_10100", cfg((10001, 10100), f"{OUT}/probe_t{i:02d}_{lvl}_heldout_rs_10001_10100.csv", pose="randomStable", obj_mode="", stratify="heldout", theta=t, perturb=A.perturb))
+        for i, t in enumerate(th): run(f"probe_t{i:02d}_{lvl}_heldout_{tagp}_10001_10100", cfg((10001, 10100), f"{OUT}/probe_t{i:02d}_{lvl}_heldout_{tagp}_10001_10100.csv", pose=pose, obj_mode="", stratify="heldout", theta=t, perturb=A.perturb))
 
 
 if __name__ == "__main__":

@@ -1,0 +1,65 @@
+# Run 013 PHASE C (within-lineage resume of run id 013 after Canon0 was entered and >= 250k steps elapsed in it): random stable
+# presentation only (pose/canonicalFraction 0.0), hold fixed at 50, perturbation ladder 0.25 -> 0.5 -> 1.0 on the run-012 thresholds
+# (0.9, min_lesson_length 100 episodes, as run 012; run 012's ladder cascaded because 100 episodes is ~7-9k steps, see phase B).
+# Plateau stop (brief): after 12M, if phase-C success (canonicalFraction 0, perturb 1.0) has not improved by >= 0.02 over the trailing 3M,
+# stop and evaluate the best checkpoint.
+behaviors:
+  Prosthetic:
+    trainer_type: ppo
+    hyperparameters:
+      batch_size: 2048
+      buffer_size: 20480
+      learning_rate: 0.0003
+      beta: 0.005
+      epsilon: 0.2
+      lambd: 0.95
+      num_epoch: 3
+      learning_rate_schedule: linear
+    network_settings:
+      normalize: true
+      hidden_units: 128
+      num_layers: 2
+      vis_encode_type: simple
+    reward_signals:
+      extrinsic:
+        gamma: 0.99
+        strength: 1.0
+    keep_checkpoints: 81
+    checkpoint_interval: 250000
+    max_steps: 20000000
+    time_horizon: 128
+    summary_freq: 10000
+    threaded: true
+
+env_settings:
+  env_path: Builds/Run013/Prosthetic.exe
+  num_envs: 8
+
+engine_settings:
+  no_graphics: true
+
+environment_parameters:
+  morph/randomize: 1.0
+  object/mode: 1.0
+  pose/canonicalFraction: 0.0
+  hold/decisions: 50.0
+  perturb/scale:
+    curriculum:
+      - name: Perturb25
+        completion_criteria:
+          measure: reward
+          behavior: Prosthetic
+          signal_smoothing: true
+          min_lesson_length: 100
+          threshold: 0.9
+        value: 0.25
+      - name: Perturb50
+        completion_criteria:
+          measure: reward
+          behavior: Prosthetic
+          signal_smoothing: true
+          min_lesson_length: 100
+          threshold: 0.9
+        value: 0.5
+      - name: Perturb100
+        value: 1.0

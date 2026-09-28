@@ -157,7 +157,7 @@ def ckpt_steps():
     return sorted(int(os.path.basename(f)[len("Prosthetic-"):-3]) for f in glob.glob(os.path.join(ART, "Prosthetic-*.pt")))
 
 
-def switch(to):
+def switch(to, do_launch=True):
     S = scalars(); ok, ent, last = switch_ready(S, to)
     if ent is None: sys.exit(f"switch to {to}: the lesson has not been entered")
     if not ok: sys.exit(f"switch to {to}: entered at {ent}, only {last - ent} steps elapsed (< 250k)")
@@ -182,7 +182,7 @@ def switch(to):
                                    "status_lessons": NEXT_STATUS[to], "checkpoint_sha256": __import__("hashlib").sha256(open(pt, "rb").read()).hexdigest()[:16]})
     json.dump(tr, open(TRANS, "w"), indent=1)
     print(f"switch to {to}: entry {ent}, stopped at logged step {last}, resume from {os.path.basename(pt)}; status lessons {NEXT_STATUS[to]}")
-    launch(to)
+    if do_launch: launch(to)
 
 
 def watch(interval=60):
@@ -211,9 +211,11 @@ def watch(interval=60):
 
 
 if __name__ == "__main__":
-    ap = argparse.ArgumentParser(); ap.add_argument("cmd"); ap.add_argument("--phase"); ap.add_argument("--to"); ap.add_argument("--watch", action="store_true"); a = ap.parse_args()
+    ap = argparse.ArgumentParser(); ap.add_argument("cmd"); ap.add_argument("--phase"); ap.add_argument("--to"); ap.add_argument("--watch", action="store_true"); ap.add_argument("--run-id", default="013"); ap.add_argument("--no-launch", action="store_true"); a = ap.parse_args()
+    if a.run_id != "013":   # monitor another run folder (smoke / probe); launch and switch always act on run id 013
+        RUN = os.path.join(REPO, "results", a.run_id); ART = os.path.join(RUN, "Prosthetic"); TRANS = os.path.join(RUN, "transitions.json")
     if a.cmd == "launch": launch(a.phase)
-    elif a.cmd == "switch": switch(a.to)
+    elif a.cmd == "switch": switch(a.to, do_launch=not a.no_launch)
     elif a.cmd == "stop": hard_stop()
     elif a.cmd == "procs": [print(p) for p in procs()]
     elif a.cmd == "monitor":

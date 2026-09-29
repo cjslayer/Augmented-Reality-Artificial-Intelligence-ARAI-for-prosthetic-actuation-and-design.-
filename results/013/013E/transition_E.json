@@ -1,0 +1,25 @@
+[
+ {
+  "to": "E",
+  "entry_step": null,
+  "last_logged_step_at_stop": 20000063,
+  "resume_step": 20000063,
+  "checkpoint": "Prosthetic-20000063.pt",
+  "time": "2026-09-29 13:38:37",
+  "status_lessons": "unchanged (graceful exit at 20000063 wrote lessons 0 for the five phase-D parameters; the two new fixed parameters are absent and default to lesson 0 in EnvironmentParameterManager.__init__)",
+  "checkpoint_sha256": "d98044e9104c1845",
+  "checkpoint_pt_note": "checkpoint.pt (written at the graceful exit) is not byte-identical to Prosthetic-20000063.pt but equal in all 342 tensors/values; left untouched (protected file)",
+  "yaml": "Config/run_013_phaseE.yaml",
+  "max_steps": 24000000,
+  "lr_seam": "linear schedule lr0*(1-step/max_steps): restarts at lr0/6 = 5.0e-5 at 20.0M, 0 at 24M"
+ },
+ {
+  "to": "end",
+  "final_checkpoint": "Prosthetic-24000002",
+  "onnx_sha256": "8a3097a9243fb900",
+  "pt_sha256": "d3ab63e1671a6898",
+  "graceful_exit": true,
+  "wall_s": 10099,
+  "note": "results/013/013E/Prosthetic.onnx = 013E; the trainer's copy to results/013/Prosthetic.onnx was reverted to the 013D bytes (96ac32e6)"
+ }
+]

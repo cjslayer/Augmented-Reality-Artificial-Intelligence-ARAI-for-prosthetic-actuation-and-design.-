@@ -1,0 +1,50 @@
+# Run 013 PHASE E ("013E", within-lineage resume of run id 013 from the 20M checkpoint Prosthetic-20000063 = 013D): fixes two measured gaps of 013D.
+# (1) The demo cylinder (bank index 0) was never drawn in training: object/anchorShare 0.10 draws it in 10 % of episodes, else uniform over 1-64.
+# (2) Lying objects fail by the lift-budget timeout (469 of 616 gated-never-lifted rest-pose episodes, 76 %, results/013/013E/LIFT_BUDGET.md):
+# task/liftBudgetSteps 300 (was the 200 of ArmGraspAgent.liftBudgetSteps; task budget re-derives to 300 + 500 + 100 = 900 at K = 50,
+# ArmGraspAgent.cs OnEpisodeBegin). Everything else fixed as phase D: canonicalFraction 0.5, hold 50, perturbation 1.0, no curriculum.
+# max_steps 24M: the linear learning-rate schedule lr = lr0 * (1 - step / max_steps) was 0 at 20M under max_steps 20M and restarts at
+# lr0 * (1 - 20/24) = lr0 / 6 = 5.0e-5 at the resume, decaying to 0 at 24M (the recorded seam).
+behaviors:
+  Prosthetic:
+    trainer_type: ppo
+    hyperparameters:
+      batch_size: 2048
+      buffer_size: 20480
+      learning_rate: 0.0003
+      beta: 0.005
+      epsilon: 0.2
+      lambd: 0.95
+      num_epoch: 3
+      learning_rate_schedule: linear
+    network_settings:
+      normalize: true
+      hidden_units: 128
+      num_layers: 2
+      vis_encode_type: simple
+    reward_signals:
+      extrinsic:
+        gamma: 0.99
+        strength: 1.0
+    keep_checkpoints: 81
+    checkpoint_interval: 250000
+    max_steps: 24000000
+    time_horizon: 128
+    summary_freq: 10000
+    threaded: true
+
+env_settings:
+  env_path: Builds/Run013/Prosthetic.exe
+  num_envs: 8
+
+engine_settings:
+  no_graphics: true
+
+environment_parameters:
+  morph/randomize: 1.0
+  object/mode: 1.0
+  object/anchorShare: 0.1
+  pose/canonicalFraction: 0.5
+  hold/decisions: 50.0
+  perturb/scale: 1.0
+  task/liftBudgetSteps: 300.0

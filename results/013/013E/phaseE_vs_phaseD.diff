@@ -1,0 +1,36 @@
+--- Config/run_013_phaseD.yaml	2026-09-28 09:36:06.148451500 -0600
++++ Config/run_013_phaseE.yaml	2026-09-29 13:36:26.264079500 -0600
+@@ -1,8 +1,10 @@
+-# Run 013 PHASE D (within-lineage resume of run id 013 from the latest phase-C checkpoint, brief amendment 2026-09-28): a FIXED 50/50 mix of
+-# canonical and random-stable presentations (pose/canonicalFraction 0.5, one Bernoulli per episode), hold 50, perturbation 1.0, to test whether
+-# one policy holds upright and lying grasps together after phase C forgot the upright grasp (canonical 0.026 vs 012 0.615 at 12.25M,
+-# results/013/interim/INTERIM.md). No curriculum block at all: every parameter is fixed (the trainer's lesson ladders advance every ~100
+-# episodes on shared thresholds, results/013_prep/CURRICULUM_NOTE.md). max_steps 20M unchanged so the linear LR schedule stays continuous.
++# Run 013 PHASE E ("013E", within-lineage resume of run id 013 from the 20M checkpoint Prosthetic-20000063 = 013D): fixes two measured gaps of 013D.
++# (1) The demo cylinder (bank index 0) was never drawn in training: object/anchorShare 0.10 draws it in 10 % of episodes, else uniform over 1-64.
++# (2) Lying objects fail by the lift-budget timeout (469 of 616 gated-never-lifted rest-pose episodes, 76 %, results/013/013E/LIFT_BUDGET.md):
++# task/liftBudgetSteps 300 (was the 200 of ArmGraspAgent.liftBudgetSteps; task budget re-derives to 300 + 500 + 100 = 900 at K = 50,
++# ArmGraspAgent.cs OnEpisodeBegin). Everything else fixed as phase D: canonicalFraction 0.5, hold 50, perturbation 1.0, no curriculum.
++# max_steps 24M: the linear learning-rate schedule lr = lr0 * (1 - step / max_steps) was 0 at 20M under max_steps 20M and restarts at
++# lr0 * (1 - 20/24) = lr0 / 6 = 5.0e-5 at the resume, decaying to 0 at 24M (the recorded seam).
+ behaviors:
+   Prosthetic:
+     trainer_type: ppo
+@@ -26,7 +28,7 @@
+         strength: 1.0
+     keep_checkpoints: 81
+     checkpoint_interval: 250000
+-    max_steps: 20000000
++    max_steps: 24000000
+     time_horizon: 128
+     summary_freq: 10000
+     threaded: true
+@@ -41,6 +43,8 @@
+ environment_parameters:
+   morph/randomize: 1.0
+   object/mode: 1.0
++  object/anchorShare: 0.1
+   pose/canonicalFraction: 0.5
+   hold/decisions: 50.0
+   perturb/scale: 1.0
++  task/liftBudgetSteps: 300.0

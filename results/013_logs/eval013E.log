@@ -1,0 +1,21 @@
+throwaway_163147: n 10 success 0.800 [0.490, 0.943] reach_fail 0 lifted 0.800 palm 0.800 hash 87ba467318b0268c (16 s)
+heldout_canonical_10001_10300_p0: n 300 success 0.730 [0.677, 0.777] reach_fail 11 lifted 0.803 palm 0.647 hash 2410b973783bc1e1 (125 s)
+heldout_canonical_10001_10300_p1: n 300 success 0.780 [0.730, 0.823] reach_fail 5 lifted 0.830 palm 0.697 hash f0099fc86352a2b6 (110 s)
+heldout_randomStable_10001_10300_p0: n 300 success 0.560 [0.503, 0.615] reach_fail 9 lifted 0.653 palm 0.617 hash b6c5ed486d53cf44 (125 s)
+heldout_randomStable_10001_10300_p1: n 300 success 0.573 [0.517, 0.628] reach_fail 11 lifted 0.680 palm 0.583 hash 2c3c2c5af26d50ee (131 s)
+anchor_canonical_7001_7300: n 300 success 0.883 [0.842, 0.915] reach_fail 2 lifted 0.893 palm 0.893 hash 9f171357ec54afa9 (105 s)
+masked_can_h05_heldout_9301_9380: n 80 success 0.000 [-0.000, 0.046] reach_fail 3 lifted 0.013 palm 0.100 hash 96827fb10a355798 (31 s)
+masked_can_h11_heldout_9301_9380: n 80 success 0.000 [-0.000, 0.046] reach_fail 6 lifted 0.000 palm 0.163 hash 0bab16b0ba257602 (42 s)
+masked_can_h14_heldout_9301_9380: n 80 success 0.037 [0.013, 0.105] reach_fail 2 lifted 0.037 palm 0.037 hash a938f33296b72ff8 (26 s)
+masked_can_h01_heldout_9301_9380 runner race (CSV complete); registering
+masked_can_h01_heldout_9301_9380: n 80 success 0.825 [0.727, 0.893] reach_fail 0 lifted 0.950 palm 0.738 hash 2e09ea242597faa3 (-1 s)
+masked_can_h02_heldout_9301_9380: n 80 success 0.963 [0.895, 0.987] reach_fail 0 lifted 0.988 palm 0.762 hash 0fd0f148f56ace05 (37 s)
+masked_can_h03_heldout_9301_9380: n 80 success 0.925 [0.846, 0.965] reach_fail 0 lifted 1.000 palm 0.825 hash 0c6a313583ad8b95 (37 s)
+masked_can_h05_heldout_9301_9380: n 80 success 0.000 [-0.000, 0.046] reach_fail 0 lifted 0.013 palm 0.100 hash feac477f3b480c4b (21 s)
+masked_can_h11_heldout_9301_9380 runner race (CSV complete); registering
+masked_can_h11_heldout_9301_9380: n 80 success 0.000 [-0.000, 0.046] reach_fail 5 lifted 0.013 palm 0.075 hash 429ffba0cef154aa (-1 s)
+masked_can_h14_heldout_9301_9380: n 80 success 0.013 [0.002, 0.067] reach_fail 4 lifted 0.013 palm 0.013 hash 4566b7b14ae51e06 (31 s)
+masked_can_h01_heldout_9301_9380: n 80 success 0.750 [0.645, 0.832] reach_fail 1 lifted 0.912 palm 0.750 hash bb253100db3d9689 (37 s)
+masked_can_h02_heldout_9301_9380: n 80 success 0.838 [0.742, 0.903] reach_fail 1 lifted 0.938 palm 0.725 hash 3dba217ef1eedbf0 (37 s)
+masked_can_h03_heldout_9301_9380: n 80 success 0.887 [0.800, 0.940] reach_fail 2 lifted 0.963 palm 0.738 hash 3b37adbcc47c23bd (37 s)
+EVAL013E_DONE

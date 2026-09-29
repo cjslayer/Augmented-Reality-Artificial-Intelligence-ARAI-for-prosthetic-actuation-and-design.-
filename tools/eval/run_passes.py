@@ -100,6 +100,8 @@ def stage(name):
         run("interim_train_rs_9001_9128", cfg((9001, 9128), f"{OUT}/interim_train_rs_9001_9128.csv", pose="randomStable", obj_mode="", stratify="train"))
         run("interim_heldout_rs_9129_9192", cfg((9129, 9192), f"{OUT}/interim_heldout_rs_9129_9192.csv", pose="randomStable", obj_mode="", stratify="heldout"))
     if name == "frac_smoke": run(f"frac_smoke_f{A.canonical_fraction}_6001_6100", cfg((6001, 6100), f"{OUT}/frac_smoke_f{A.canonical_fraction}_6001_6100.csv", obj_mode="", stratify="train"), allow_repeat=True)
+    if name == "masked_stratum":   # run 013E brief 1g: thumb-masked probe hands 5 / 11 / 14 and easy hands 1 / 2 / 3, canonical, held-out shapes 65-80 x 5 episodes each (seeds 9301-9380, passIndex 0)
+        for h in (5, 11, 14, 1, 2, 3): run(f"masked_can_h{h:02d}_heldout_9301_9380", cfg((9301, 9380), f"{OUT}/masked_can_h{h:02d}_heldout_9301_9380.csv", obj_mode="", stratify="heldout", theta=Z.probe_theta(h)))
     if name in ("range_probe", "range_probe_canonical"):
         pose, tagp = ("randomStable", "rs") if name == "range_probe" else ("canonical", "can")
         th = json.load(open(os.path.join(REPO, "results/bo/partB/probe_thetas.json"))); lvl = f"s{A.perturb:.1f}"

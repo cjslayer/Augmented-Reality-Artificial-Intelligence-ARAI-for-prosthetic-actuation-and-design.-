@@ -8,6 +8,9 @@
 //   object/mode  0 anchorOnly (default, the scene's own mesh) | 1 trainUniform (indices 1-64, one draw) | 2 heldoutUniform (65-80, one draw) | 3 fixedIndex
 //   object/index the bank index for fixedIndex
 //   object/seed  the generator seed the caller expects (BANK_SEED.txt); a mismatch is logged once
+//   object/anchorShare  trainUniform only: probability of drawing the anchor (index 0) instead of a train shape (default 0 = no extra draw)
+//   (Editor harness only, Temp/gates.json key objectIndexStride, default 1 = unchanged): fixedIndex train indices 1-64 are remapped to
+//   1 + ((i - 1) * s + s - 1) mod 64, so stride 2 maps a stratified 1..64 sweep onto the even train shapes 2, 4, ..., 64 (BO objective, run 013E brief 2b)
 //   object/pose  0 canonical (default: the shape's canonical rest orientation = the scene object's rotation at load, length axis up)
 //                | 1 randomStable (one of the shape's settled rest poses from stable_poses.json, drawn from the episode's stream)
 // Exactly one UnityEngine.Random draw is consumed for the pose in BOTH pose modes (canonical ignores it), so canonical and randomStable
@@ -201,9 +204,19 @@ public class ObjectBank : MonoBehaviour
             if (!Loaded) { if (!seedWarned) { seedWarned = true; Debug.LogError("[ObjectBank] bank not loaded; staying on the anchor"); } }
             else switch (CurrentMode)
             {
-                case DrawMode.trainUniform: idx = TrainFrom + Random.Range(0, TrainTo - TrainFrom + 1); break;
+                case DrawMode.trainUniform:
+                    {   // run 013E: object/anchorShare (default 0 = unchanged: no extra draw) puts the anchor (index 0, the scene cylinder) into the draw with that
+                        // probability; the Bernoulli is drawn from the episode's stream only when the share is > 0, so share 0 keeps the random stream byte for byte
+                        float share = Mathf.Clamp01(ep.GetWithDefault("object/anchorShare", 0f));
+                        if (share > 0f && Random.value < share) idx = 0;
+                        else idx = TrainFrom + Random.Range(0, TrainTo - TrainFrom + 1);
+                        break;
+                    }
                 case DrawMode.heldoutUniform: idx = HeldoutFrom + Random.Range(0, HeldoutTo - HeldoutFrom + 1); break;
-                default: idx = Mathf.Clamp(Mathf.RoundToInt(ep.GetWithDefault("object/index", 0f)), 0, Entries.Count - 1); break;
+                default:
+                    idx = Mathf.Clamp(Mathf.RoundToInt(ep.GetWithDefault("object/index", 0f)), 0, Entries.Count - 1);
+                    if (s_HarnessStride > 1 && idx >= TrainFrom && idx <= TrainTo) { int n = TrainTo - TrainFrom + 1; idx = TrainFrom + ((idx - TrainFrom) * s_HarnessStride + s_HarnessStride - 1) % n; }   // harness objectIndexStride (Editor only)
+                    break;
             }
         }
         ApplyShape(idx);
@@ -259,13 +272,13 @@ public class ObjectBank : MonoBehaviour
     }
 
     // ---------------------------------------------------------------- Editor harness: canonical fraction from the harness config (no harness code change)
-    static float s_HarnessFraction = -1f;
-    [System.Serializable] class HarnessPoseCfg { public float poseCanonicalFraction = -1f; }
+    static float s_HarnessFraction = -1f; static int s_HarnessStride = 1;
+    [System.Serializable] class HarnessPoseCfg { public float poseCanonicalFraction = -1f; public int objectIndexStride = 1; }
 #if UNITY_EDITOR
     static void ReadHarnessFraction()
     {
-        s_HarnessFraction = -1f;
-        try { if (File.Exists("Temp/gates.json")) { var c = JsonUtility.FromJson<HarnessPoseCfg>(File.ReadAllText("Temp/gates.json")); if (c != null && c.poseCanonicalFraction >= 0f) { s_HarnessFraction = Mathf.Clamp01(c.poseCanonicalFraction); Debug.Log("[ObjectBank] harness poseCanonicalFraction " + s_HarnessFraction); } } }
+        s_HarnessFraction = -1f; s_HarnessStride = 1;
+        try { if (File.Exists("Temp/gates.json")) { var c = JsonUtility.FromJson<HarnessPoseCfg>(File.ReadAllText("Temp/gates.json")); if (c != null && c.poseCanonicalFraction >= 0f) { s_HarnessFraction = Mathf.Clamp01(c.poseCanonicalFraction); Debug.Log("[ObjectBank] harness poseCanonicalFraction " + s_HarnessFraction); } if (c != null && c.objectIndexStride > 1) { s_HarnessStride = c.objectIndexStride; Debug.Log("[ObjectBank] harness objectIndexStride " + s_HarnessStride); } } }
         catch (System.Exception ex) { Debug.LogWarning("[ObjectBank] harness config not readable: " + ex.Message); }
     }
 #endif

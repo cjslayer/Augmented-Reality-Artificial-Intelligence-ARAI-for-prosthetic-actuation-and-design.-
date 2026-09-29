@@ -1,7 +1,7 @@
 """Run 013 training control: launch a phase, monitor from TensorBoard, switch phases by the documented within-lineage resume.
 
   python -m tools.eval.train_run013 launch --phase A            fresh run id 013 (refuses if results/013 exists)
-  python -m tools.eval.train_run013 launch --phase B|C          within-lineage --resume of run id 013 (after `switch`)
+  python -m tools.eval.train_run013 launch --phase B|C|D|E          within-lineage --resume of run id 013 (after `switch`)
   python -m tools.eval.train_run013 monitor [--watch]           one row per 500k-step boundary -> results/013/monitor.csv; --watch prints new
                                                                 rows, lesson changes, stop-condition flags and SWITCH READY lines as they appear
   python -m tools.eval.train_run013 switch --to B|C             hard stop + status file + checkpoint.pt, then `launch --phase B|C`
@@ -18,7 +18,7 @@ import argparse, csv, glob, json, math, os, shutil, subprocess, sys, time
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 RUN = os.path.join(REPO, "results", "013"); ART = os.path.join(RUN, "Prosthetic"); TRANS = os.path.join(RUN, "transitions.json")
 LEARN = r"C:\Users\chris\ml-agents\venv\Scripts\mlagents-learn.exe"
-YAML = {"A": "Config/run_013_phaseA.yaml", "B": "Config/run_013_phaseB.yaml", "C": "Config/run_013_phaseC.yaml", "D": "Config/run_013_phaseD.yaml"}
+YAML = {"A": "Config/run_013_phaseA.yaml", "B": "Config/run_013_phaseB.yaml", "C": "Config/run_013_phaseC.yaml", "D": "Config/run_013_phaseD.yaml", "E": "Config/run_013_phaseE.yaml"}
 LESSON_VALUES = {"hold/decisions": [5, 10, 20, 50], "pose/canonicalFraction": [1.0, 0.5, 0.0], "perturb/scale": [0.25, 0.5, 1.0]}
 PARAMS = ("morph/randomize", "object/mode", "pose/canonicalFraction", "perturb/scale", "hold/decisions")
 NEXT_STATUS = {"B": {"morph/randomize": 0, "object/mode": 0, "perturb/scale": 0, "hold/decisions": 0, "pose/canonicalFraction": 0},
@@ -27,8 +27,13 @@ NEXT_STATUS = {"B": {"morph/randomize": 0, "object/mode": 0, "perturb/scale": 0,
 SWITCH_PARAM = {"B": ("hold/decisions", 3), "C": ("pose/canonicalFraction", 2)}
 
 
+TRANS_E = os.path.join(RUN, "013E", "transition_E.json")   # run 013E: the D -> E record is a new file (results/013 existing files are protected)
+MONITOR_OUT = os.path.join(RUN, "monitor.csv")
+
+
 def transitions():
-    return json.load(open(TRANS)) if os.path.exists(TRANS) else []
+    tr = json.load(open(TRANS)) if os.path.exists(TRANS) else []
+    return tr + (json.load(open(TRANS_E)) if os.path.exists(TRANS_E) else [])
 
 
 def phase_at(step, tr):
@@ -60,8 +65,8 @@ def lesson_series(S):
         ph = phase_at(s, tr); L = lambda p: int(S.get(f"Environment/Lesson Number/{p}", {}).get(s, (0, 0))[0])
         hold = LESSON_VALUES["hold/decisions"][min(L("hold/decisions"), 3)] if ph == "A" else 50
         frac = 1.0 if ph == "A" else (LESSON_VALUES["pose/canonicalFraction"][min(L("pose/canonicalFraction"), 2)] if ph == "B" else 0.0)
-        pert = 0.0 if ph in "AB" else (1.0 if ph == "D" else LESSON_VALUES["perturb/scale"][min(L("perturb/scale"), 2)])
-        if ph == "D": frac = 0.5
+        pert = 0.0 if ph in "AB" else (1.0 if ph in "DE" else LESSON_VALUES["perturb/scale"][min(L("perturb/scale"), 2)])
+        if ph in "DE": frac = 0.5   # D and E (run 013E): fixed 50/50, perturbation 1.0
         rows.append((s, ph, hold, frac, pert, L("hold/decisions"), L("pose/canonicalFraction"), L("perturb/scale")))
     return rows
 
@@ -118,7 +123,7 @@ def fmt_row(r):
 
 
 def write_monitor(rows):
-    with open(os.path.join(RUN, "monitor.csv"), "w", newline="") as fh:
+    with open(MONITOR_OUT, "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=FIELDS); w.writeheader(); [w.writerow(r) for r in rows]
 
 
@@ -220,7 +225,8 @@ def watch(interval=60):
 
 
 if __name__ == "__main__":
-    ap = argparse.ArgumentParser(); ap.add_argument("cmd"); ap.add_argument("--phase"); ap.add_argument("--to"); ap.add_argument("--watch", action="store_true"); ap.add_argument("--run-id", default="013"); ap.add_argument("--no-launch", action="store_true"); a = ap.parse_args()
+    ap = argparse.ArgumentParser(); ap.add_argument("cmd"); ap.add_argument("--phase"); ap.add_argument("--to"); ap.add_argument("--watch", action="store_true"); ap.add_argument("--run-id", default="013"); ap.add_argument("--no-launch", action="store_true"); ap.add_argument("--monitor-out"); a = ap.parse_args()
+    if a.monitor_out: MONITOR_OUT = os.path.join(REPO, a.monitor_out)
     if a.run_id != "013":   # monitor another run folder (smoke / probe); launch and switch always act on run id 013
         RUN = os.path.join(REPO, "results", a.run_id); ART = os.path.join(RUN, "Prosthetic"); TRANS = os.path.join(RUN, "transitions.json")
     if a.cmd == "launch": launch(a.phase)

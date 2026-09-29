@@ -91,6 +91,7 @@ public class ArmGraspAgent : Agent
     public float liftClearance = 0.03f;
     public float phaseReward = 0.1f;
     public int liftBudgetSteps = 200;
+    int m_LiftBudgetEp = 200;   // this episode's lift budget (task/liftBudgetSteps, else liftBudgetSteps), set in OnEpisodeBegin
     [Tooltip("Task budget (physics steps after the contact transition) = liftBudgetSteps + the hold requirement (K x DecisionPeriod) + this margin. Derived per episode from the current hold/decisions lesson (350 at K = 5, 800 at K = 50); the run-011 stop at 2.62M came from a fixed 350 that could not contain a K = 50 hold.")]
     public int taskBudgetMarginSteps = 100;
     /// <summary>This episode's task budget (physics steps after the transition), derived from the hold requirement.</summary>
@@ -416,7 +417,8 @@ public class ArmGraspAgent : Agent
         LastCoverageGapDeg = 360f; LastAntipodality = 0f; LastVerticalSpread = 0f; LastPalmTouching = false; LastDistinctFingers = 0; LastThumbTouching = false; LastHoldCriterionMet = false;
         m_EpisodeActive = true;
         HoldDecisions = Mathf.Max(1, Mathf.RoundToInt(Academy.Instance.EnvironmentParameters.GetWithDefault("hold/decisions", Academy.Instance.EnvironmentParameters.GetWithDefault("hold_decisions", requiredHoldDecisions))));   // run 011 curriculum key hold/decisions (run-010 key hold_decisions kept)
-        TaskBudgetSteps = liftBudgetSteps + HoldStepsNeeded() + taskBudgetMarginSteps;   // every K-dependent episode length follows the lesson
+        m_LiftBudgetEp = Mathf.Max(1, Mathf.RoundToInt(Academy.Instance.EnvironmentParameters.GetWithDefault("task/liftBudgetSteps", liftBudgetSteps)));   // run 013E: env param task/liftBudgetSteps; absent = the field (200, or the harness's value), i.e. unchanged
+        TaskBudgetSteps = m_LiftBudgetEp + HoldStepsNeeded() + taskBudgetMarginSteps;   // every K-dependent episode length follows the lesson
     }
 
     private void SpawnCylinder()
@@ -652,7 +654,7 @@ public class ArmGraspAgent : Agent
             bool lifted = IsLifted();
             if (lifted && m_StepsToLift < 0) m_StepsToLift = StepCount;
             if (IsDropped()) { FailEpisode("drop"); return; }
-            if (!lifted && m_StepsToLift < 0 && sinceTransition >= liftBudgetSteps) { FailEpisode("liftBudget"); return; }
+            if (!lifted && m_StepsToLift < 0 && sinceTransition >= m_LiftBudgetEp) { FailEpisode("liftBudget"); return; }
             if (sinceTransition >= TaskBudgetSteps) { FailEpisode("taskBudget"); return; }
             if (lifted)
             {

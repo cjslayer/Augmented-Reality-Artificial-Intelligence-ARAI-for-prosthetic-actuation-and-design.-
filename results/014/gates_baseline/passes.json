@@ -1,0 +1,119 @@
+[
+ {
+  "tag": "g1",
+  "ok": true,
+  "csv": "results/014/gates_baseline/g1.csv",
+  "wall_s": 16.2,
+  "extra": {},
+  "error": "",
+  "time": "2026-09-30 11:36:46"
+ },
+ {
+  "tag": "g1x",
+  "ok": true,
+  "csv": "results/014/gates_baseline/g1x.csv",
+  "wall_s": 16.2,
+  "extra": {},
+  "error": "",
+  "time": "2026-09-30 11:37:07"
+ },
+ {
+  "tag": "g2",
+  "ok": true,
+  "csv": "results/014/gates_baseline/g2.csv",
+  "wall_s": 16.2,
+  "extra": {},
+  "error": "",
+  "time": "2026-09-30 11:37:27"
+ },
+ {
+  "tag": "g2x",
+  "ok": true,
+  "csv": "results/014/gates_baseline/g2x.csv",
+  "wall_s": 16.2,
+  "extra": {},
+  "error": "",
+  "time": "2026-09-30 11:37:48"
+ },
+ {
+  "tag": "g3m",
+  "ok": true,
+  "csv": "results/014/gates_baseline/g3m.csv",
+  "wall_s": 16.1,
+  "extra": {},
+  "error": "",
+  "time": "2026-09-30 11:38:08"
+ },
+ {
+  "tag": "g3mx",
+  "ok": true,
+  "csv": "results/014/gates_baseline/g3mx.csv",
+  "wall_s": 11.2,
+  "extra": {},
+  "error": "",
+  "time": "2026-09-30 11:38:24"
+ },
+ {
+  "tag": "g3s",
+  "ok": true,
+  "csv": "results/014/gates_baseline/g3s.csv",
+  "wall_s": 16.2,
+  "extra": {},
+  "error": "",
+  "time": "2026-09-30 11:38:44"
+ },
+ {
+  "tag": "g3x",
+  "ok": true,
+  "csv": "results/014/gates_baseline/g3x.csv",
+  "wall_s": 16.2,
+  "extra": {},
+  "error": "",
+  "time": "2026-09-30 11:39:05"
+ },
+ {
+  "tag": "g4",
+  "ok": true,
+  "csv": "results/014/gates_baseline/g4.csv",
+  "wall_s": 31.2,
+  "extra": {},
+  "error": "",
+  "time": "2026-09-30 11:39:40"
+ },
+ {
+  "tag": "g6_10",
+  "ok": true,
+  "csv": "results/014/gates_baseline/g6_10.csv",
+  "wall_s": 11.2,
+  "extra": {},
+  "error": "",
+  "time": "2026-09-30 11:39:56"
+ },
+ {
+  "tag": "g6_20",
+  "ok": true,
+  "csv": "results/014/gates_baseline/g6_20.csv",
+  "wall_s": 11.2,
+  "extra": {},
+  "error": "",
+  "time": "2026-09-30 11:40:11"
+ },
+ {
+  "tag": "g6_40",
+  "ok": true,
+  "csv": "results/014/gates_baseline/g6_40.csv",
+  "wall_s": 11.2,
+  "extra": {},
+  "error": "",
+  "time": "2026-09-30 11:40:27"
+ },
+ {
+  "tag": "g6_80",
+  "ok": true,
+  "csv": "results/014/gates_baseline/g6_80.csv",
+  "wall_s": 11.2,
+  "extra": {},
+  "error": "",
+  "time": "2026-09-30 11:40:43"
+ }
+]

@@ -141,3 +141,14 @@ presentation, paired on (seed, shape) and every harness draw except θ.
    thumb-driven grasp than about the hand. Keeping it on (as here) is the sensible default for this substrate.
 4. **Should the Editor be relaunched on a schedule?** It slows down after 2.5-3 h of passes, and the only reference drift away from
    0.859 came in that state. A relaunch every about 100 evaluations should be standard for long campaigns.
+
+## Erratum check (added 2026-09-30)
+
+Run-014 design recon (`docs/design/014_topology.md`, R6) found that `MorphologyManager.ApplyForEpisode` applies the `morph/I_*`
+overrides after the rig rebuild (MorphologyManager.cs:162 rebuild, :169-172 override), so on the trainer / environment-parameter path
+an inertia override never reaches the link masses in that episode. **This campaign was not affected**: every J(θ) ran through the
+Editor harness with `thetaFixed`, and the harness compensates. `ArticulatedGatesLate` (ArticulatedGates.cs:778-783, execution order
++100) multiplies the rebuilt link masses by `thetaInertia` before the episode's first physics step. `morph/I_*` still sets the inertia
+used for the damping b = 2ζ√(kI) and for the token inertia feature (ArticulatedGates.cs:768). The inertia dimensions were therefore
+live in Part C, and no number in this report changes. The ordering is fixed for the run-014 slot layout only, where the harness's late
+mass scaling is switched off to avoid scaling twice.

@@ -1,0 +1,28 @@
+{
+ "mode": "lift",
+ "scales": [
+  0.25,
+  0.5,
+  0.75,
+  1.0,
+  1.25,
+  1.5
+ ],
+ "grips": [
+  "pinch"
+ ],
+ "seeds": 3,
+ "settleSteps": 300,
+ "liftBudget": 600,
+ "holdSteps": 520,
+ "holdDecisions": 50,
+ "liftSpeedDeg": 20,
+ "timeScale": 20,
+ "maxTrialSteps": 4000,
+ "masses": [
+  0.6
+ ],
+ "placeUp": 0.08,
+ "liftExtra": 0.05,
+ "_source": "spike-6 config c_g3s.json (session 82b7bbc6 scratchpad); csv set by the runner"
+}

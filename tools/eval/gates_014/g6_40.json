@@ -1,0 +1,28 @@
+{
+ "mode": "push",
+ "masses": [
+  0.6
+ ],
+ "scales": [
+  0
+ ],
+ "grips": [
+  "envelope"
+ ],
+ "seeds": 1,
+ "settleSteps": 150,
+ "liftBudget": 400,
+ "holdSteps": 520,
+ "holdDecisions": 50,
+ "liftExtra": 0.05,
+ "liftSpeedDeg": 20,
+ "palmGap": 0.0005,
+ "placeUp": 0.08,
+ "timeScale": 20,
+ "maxTrialSteps": 4000,
+ "debugEvery": 0,
+ "dumpAt": 0,
+ "pushForce": 40,
+ "contactController": false,
+ "_source": "spike-6 config c_g6_s6_40.json (session 82b7bbc6 scratchpad); csv set by the runner"
+}

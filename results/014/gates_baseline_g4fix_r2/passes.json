@@ -1,0 +1,11 @@
+[
+ {
+  "tag": "g4",
+  "ok": true,
+  "csv": "results/014/gates_baseline_g4fix_r2/g4.csv",
+  "wall_s": 31.2,
+  "extra": {},
+  "error": "",
+  "time": "2026-09-30 15:38:18"
+ }
+]

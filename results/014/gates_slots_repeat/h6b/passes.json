@@ -1,0 +1,16 @@
+[
+ {
+  "tag": "g3s",
+  "ok": true,
+  "csv": "results/014/gates_slots_repeat/h6b/g3s.csv",
+  "wall_s": 21.2,
+  "extra": {
+   "topology": "slots",
+   "digits": 6,
+   "digits6b": true,
+   "penTrace": true
+  },
+  "error": "",
+  "time": "2026-09-30 15:35:29"
+ }
+]

@@ -1,0 +1,22 @@
+trial,mode,grip,mass,scale,seed,success,endReason,steps,gateStep,transitionStep,liftStart,stepsToLift,holdSteps,pulses,maxPulseN,weightN,contactsEnd,palm,forearm,bottomAboveTop,maxPenMm,maxJointSpeedDeg,nan,gripTorqueMean,retPhase,retHold,retBonus,retDrop,digitCount,thumbCount,slots,note
+1,stability,walk,0.6,0,0,1,walk,2000,-1,-1,-1,-1,0,0,0,0,0,0,0,0,1.20,12792,0,0,0,0,0,0,7,2,1111111,omegaMean=523.1 zetaMean=0.60 lenMean=0.92 active=17 maxAbsAngle=134
+2,stability,walk,0.6,0,1,1,walk,2000,-1,-1,-1,-1,0,0,0,0,0,0,0,0,0.91,26853,0,0,0,0,0,0,7,2,1111111,omegaMean=470.8 zetaMean=0.69 lenMean=0.99 active=18 maxAbsAngle=100
+3,stability,walk,0.6,0,2,1,walk,2000,-1,-1,-1,-1,0,0,0,0,0,0,0,0,0.38,6168,0,0,0,0,0,0,7,2,1111111,omegaMean=468.3 zetaMean=0.70 lenMean=0.94 active=16 maxAbsAngle=100
+4,stability,walk,0.6,0,3,1,walk,2000,-1,-1,-1,-1,0,0,0,0,0,0,0,0,0.10,14053,0,0,0,0,0,0,7,2,1111111,omegaMean=383.8 zetaMean=0.60 lenMean=1.06 active=15 maxAbsAngle=151
+5,stability,walk,0.6,0,4,1,walk,2000,-1,-1,-1,-1,0,0,0,0,0,0,0,0,0.00,53298,0,0,0,0,0,0,7,2,1111111,omegaMean=497.1 zetaMean=0.56 lenMean=0.92 active=18 maxAbsAngle=147
+6,stability,walk,0.6,0,5,1,drop,1355,-1,-1,-1,-1,0,0,0,0,0,0,0,0,8.40,16811,0,0,0,0,0,0,7,2,1111111,omegaMean=481.6 zetaMean=0.73 lenMean=0.98 active=18 maxAbsAngle=155 endedEarlyByAgent
+7,stability,walk,0.6,0,6,1,walk,2000,-1,-1,-1,-1,0,0,0,0,0,0,0,0,4.47,68363,0,0,0,0,0,0,7,2,1111111,omegaMean=481.6 zetaMean=0.73 lenMean=0.98 active=18 maxAbsAngle=117
+8,stability,walk,0.6,0,7,1,walk,2000,-1,-1,-1,-1,0,0,0,0,0,0,0,0,0.00,11842,0,0,0,0,0,0,7,2,1111111,omegaMean=481.6 zetaMean=0.62 lenMean=0.95 active=17 maxAbsAngle=102
+9,stability,walk,0.6,0,8,1,walk,2000,-1,-1,-1,-1,0,0,0,0,0,0,0,0,1.19,22497,0,0,0,0,0,0,7,2,1111111,omegaMean=463.1 zetaMean=0.64 lenMean=0.99 active=18 maxAbsAngle=102
+10,stability,walk,0.6,0,9,1,walk,2000,-1,-1,-1,-1,0,0,0,0,0,0,0,0,9.30,15243,0,0,0,0,0,0,7,2,1111111,omegaMean=463.4 zetaMean=0.68 lenMean=1.04 active=11 maxAbsAngle=110
+11,stability,walk,0.6,0,10,1,walk,2000,-1,-1,-1,-1,0,0,0,0,0,0,0,0,1.92,22815,0,0,0,0,0,0,7,2,1111111,omegaMean=493.4 zetaMean=0.60 lenMean=0.98 active=15 maxAbsAngle=100
+12,stability,walk,0.6,0,11,1,walk,2000,-1,-1,-1,-1,0,0,0,0,0,0,0,0,0.00,58850,0,0,0,0,0,0,7,2,1111111,omegaMean=550.9 zetaMean=0.64 lenMean=1.06 active=16 maxAbsAngle=164
+13,stability,walk,0.6,0,12,1,walk,2000,-1,-1,-1,-1,0,0,0,0,0,0,0,0,6.54,11909,0,0,0,0,0,0,7,2,1111111,omegaMean=486.0 zetaMean=0.67 lenMean=0.99 active=14 maxAbsAngle=336
+14,stability,walk,0.6,0,13,1,walk,2000,-1,-1,-1,-1,0,0,0,0,0,0,0,0,18.07,60776,0,0,0,0,0,0,7,2,1111111,omegaMean=342.9 zetaMean=0.66 lenMean=1.08 active=18 maxAbsAngle=130
+15,stability,walk,0.6,0,14,1,drop,194,-1,-1,-1,-1,0,0,0,0,0,0,0,0,12.67,54875,0,0,0,0,0,0,7,2,1111111,omegaMean=622.9 zetaMean=0.65 lenMean=0.97 active=16 maxAbsAngle=90 endedEarlyByAgent
+16,stability,walk,0.6,0,15,1,walk,2000,-1,-1,-1,-1,0,0,0,0,0,0,0,0,0.12,91956,0,0,0,0,0,0,7,2,1111111,omegaMean=622.9 zetaMean=0.65 lenMean=0.97 active=16 maxAbsAngle=155
+17,stability,walk,0.6,0,16,1,walk,2000,-1,-1,-1,-1,0,0,0,0,0,0,0,0,1.71,11156,0,0,0,0,0,0,7,2,1111111,omegaMean=545.9 zetaMean=0.71 lenMean=0.93 active=13 maxAbsAngle=140
+18,stability,walk,0.6,0,17,1,walk,2000,-1,-1,-1,-1,0,0,0,0,0,0,0,0,3.87,20350,0,0,0,0,0,0,7,2,1111111,omegaMean=444.0 zetaMean=0.72 lenMean=1.02 active=17 maxAbsAngle=100
+19,stability,walk,0.6,0,18,1,walk,2000,-1,-1,-1,-1,0,0,0,0,0,0,0,0,0.00,40205,0,0,0,0,0,0,7,2,1111111,omegaMean=533.9 zetaMean=0.71 lenMean=0.95 active=17 maxAbsAngle=100
+20,stability,walk,0.6,0,19,1,walk,2000,-1,-1,-1,-1,0,0,0,0,0,0,0,0,4.16,57921,0,0,0,0,0,0,7,2,1111111,omegaMean=435.6 zetaMean=0.75 lenMean=0.97 active=15 maxAbsAngle=225
+DONE

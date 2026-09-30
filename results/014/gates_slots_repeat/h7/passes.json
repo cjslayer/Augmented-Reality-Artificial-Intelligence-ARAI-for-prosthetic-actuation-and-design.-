@@ -1,0 +1,28 @@
+[
+ {
+  "tag": "g3mx",
+  "ok": true,
+  "csv": "results/014/gates_slots_repeat/h7/g3mx.csv",
+  "wall_s": 16.2,
+  "extra": {
+   "topology": "slots",
+   "digits": 7,
+   "penTrace": true
+  },
+  "error": "",
+  "time": "2026-09-30 15:35:50"
+ },
+ {
+  "tag": "g3s",
+  "ok": true,
+  "csv": "results/014/gates_slots_repeat/h7/g3s.csv",
+  "wall_s": 21.2,
+  "extra": {
+   "topology": "slots",
+   "digits": 7,
+   "penTrace": true
+  },
+  "error": "",
+  "time": "2026-09-30 15:36:15"
+ }
+]

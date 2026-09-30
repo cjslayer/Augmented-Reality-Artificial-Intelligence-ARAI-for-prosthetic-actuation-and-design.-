@@ -784,6 +784,12 @@ the fingertips into the object at the force limits; the controller's preloaded g
 Fist check: all fingers reach -70 to -90 deg, no finger-finger crossing; the thumb placed over the flexed middle finger
 presses into it 6-8 mm under 0.27 N m (contact under load, not a crossing).
 
+**Note added 2026-09-30 (run 014 Part 3, new lines only).** The G3 ranking above ("pinch strictly below the envelope on both axes") is a spike-5
+(PGS) result and **does not hold under TGS**: rerun with the spike-5 configs on 2026-09-30 (`results/014/gates_baseline`, `tools/eval/gates_014/g3*.json`),
+the pinch grip passes 3/3 at 0.2 / 0.6 / 1.0 / 1.5 kg and 3/3 at every perturbation scale 0.25-4.0, as the power grasp does (G1 3/3 up to 2.5 kg). Up
+to 2.5 kg and perturbation scale 4.0 the two grips cannot be ranked. From run 014 on, G3 is a pass / fail feasibility gate (can the pinch hold), not a
+ranking against the power grasp.
+
 **Separation.** ArmGraspAgent.cs zero diff. MorphologyManager.cs: only the extra-link mass in the subtree inertia.
 Harness: trace-to-file logging, arm drive state in the trace, `agent.MaxStep` raised to 20000 for scripted holds,
 placement 80 mm.

@@ -84,8 +84,8 @@ public class HandSpec
     };
     public Thumb thumb = new Thumb();
     public Palm palm = new Palm();
-    [Tooltip("Run 014 slot layout: the extra ulnar finger (slot 5), extrapolated past the pinky from the radial-to-ulnar trend of the table (MCP along 99/104/100/91 -> 82 mm, across -31.5 - 21 = -52.5 mm, rest abduction +8/0/-6/-14 -> -22 deg, tilt 2/3/8/13 -> 18 deg); phalanges and radii copied from the pinky. Built only when the digit exists; the palm then widens by extraFingerPalmWidening on the ulnar side (docs/design/014_topology.md).")]
-    public Finger extraFinger = new Finger { name = "extra", proximal = 0.0319f, middle = 0.0171f, distal = 0.0149f, mcp = new Vector3(0.082f, 0f, -0.0525f), restAbductionDeg = -22f, flexionPlaneTiltDeg = 18f, radiusProximal = 0.008f, radiusMiddle = 0.007f, radiusDistal = 0.0065f };
+    [Tooltip("Run 014 slot layout: the extra ulnar finger (slot 5), extrapolated past the pinky from the radial-to-ulnar trend of the table (MCP along held at the pinky's 91 mm: the extrapolated 82 mm put the MCP 22 mm inside the rectangular palm box and the flexing finger drove into the palm, up to 21 mm, run 014 Part 3, results/014/pen; across -31.5 - 21 = -52.5 mm, rest abduction +8/0/-6/-14 -> -22 deg, tilt 2/3/8/13 -> 18 deg); phalanges and radii copied from the pinky. Built only when the digit exists; the palm then widens by extraFingerPalmWidening on the ulnar side (docs/design/014_topology.md).")]
+    public Finger extraFinger = new Finger { name = "extra", proximal = 0.0319f, middle = 0.0171f, distal = 0.0149f, mcp = new Vector3(0.091f, 0f, -0.0525f), restAbductionDeg = -22f, flexionPlaneTiltDeg = 18f, radiusProximal = 0.008f, radiusMiddle = 0.007f, radiusDistal = 0.0065f };
     [Tooltip("Palm widening (m) on the ulnar side when the extra finger exists (one MCP spacing).")]
     public float extraFingerPalmWidening = 0.021f;
     [Tooltip("Palmar soft-tissue depth over each phalanx (m): bone axis to palmar skin ~10 mm; the capsule centre is offset toward the palm by (this - radius).")]

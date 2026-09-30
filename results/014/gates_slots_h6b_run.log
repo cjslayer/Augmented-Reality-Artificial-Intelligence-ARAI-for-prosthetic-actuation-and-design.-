@@ -1,0 +1,13 @@
+g1 ok 16 s | envelope m0.2 s0: 3/3 ends success win 1.28 mm ep 1.91 mm c 8/8/9; envelope m0.6 s0: 3/3 ends success win 1.23 mm ep 1.91 mm c 9/8/8; envelope m1.5 s0: 3/3 ends success win 1.31 mm ep 1.91 mm c 7/9/9
+g1x ok 16 s | envelope m2 s0: 3/3 ends success win 1.29 mm ep 1.83 mm c 9/10/9; envelope m2.5 s0: 3/3 ends success win 1.19 mm ep 1.91 mm c 7/9/10
+g2 ok 21 s | envelope m0.6 s0.25: 3/3 ends success win 1.25 mm ep 1.85 mm c 9/8/10; envelope m0.6 s0.5: 3/3 ends success win 1.23 mm ep 1.85 mm c 10/9/9; envelope m0.6 s0.75: 3/3 ends success win 1.24 mm ep 1.85 mm c 9/9/10; envelope m0.6 s1: 3/3 ends success win 1.29 mm ep 1.85 mm c 10/10/10; envelope m0.6 s1.25: 3/3 ends success win 1.28 mm ep 1.85 mm c 10/9/9; envelope m0.6 s1.5: 3/3 ends success win 1.34 mm ep 1.85 mm c 9/9/10
+g2x ok 16 s | envelope m0.6 s2: 3/3 ends success win 0.98 mm ep 1.94 mm c 9/9/9; envelope m0.6 s2.5: 3/3 ends success win 1.03 mm ep 1.94 mm c 9/9/9; envelope m0.6 s3: 3/3 ends success win 0.99 mm ep 1.94 mm c 9/9/9; envelope m0.6 s4: 3/3 ends success win 2.78 mm ep 2.78 mm c 9/9/8
+g3m ok 16 s | pinch m0.2 s0: 3/3 ends success win 1.05 mm ep 1.81 mm c 5/5/5; pinch m0.6 s0: 3/3 ends success win 1.08 mm ep 1.81 mm c 5/5/5; pinch m1.5 s0: 3/3 ends success win 1.11 mm ep 1.81 mm c 5/5/5
+g3mx ok 11 s | pinch m1 s0: 3/3 ends success win 1.05 mm ep 1.83 mm c 5/5/5
+g3s ok 21 s | pinch m0.6 s0.25: 3/3 ends success win 0.85 mm ep 1.92 mm c 4/4/4; pinch m0.6 s0.5: 3/3 ends success win 0.96 mm ep 1.92 mm c 4/4/4; pinch m0.6 s0.75: 3/3 ends success win 0.97 mm ep 1.92 mm c 4/4/4; pinch m0.6 s1: 3/3 ends success win 1.04 mm ep 1.92 mm c 3/4/4; pinch m0.6 s1.25: 3/3 ends success win 1.04 mm ep 1.92 mm c 4/4/4; pinch m0.6 s1.5: 3/3 ends success win 1.08 mm ep 1.92 mm c 3/3/4
+g3x ok 16 s | pinch m0.6 s2: 3/3 ends success win 0.99 mm ep 1.94 mm c 4/4/3; pinch m0.6 s2.5: 3/3 ends success win 1.06 mm ep 1.94 mm c 3/3/4; pinch m0.6 s3: 3/3 ends success win 3.40 mm ep 3.02 mm c 4/4/6; pinch m0.6 s4: 3/3 ends success win 2.33 mm ep 2.33 mm c 3/6/3
+g4 ok 37 s | walk m0.6 s0: 20/20 ends drop,walk win nan mm ep 17.68 mm c 0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0/0
+g6_10 ok 11 s | envelope m0.6 s0: 0/1 ends drop win 3.98 mm ep 17.09 mm c 0
+g6_20 ok 11 s | envelope m0.6 s0: 0/1 ends drop win 3.62 mm ep 17.06 mm c 0
+g6_40 ok 11 s | envelope m0.6 s0: 0/1 ends drop win 4.70 mm ep 17.06 mm c 0
+g6_80 ok 11 s | envelope m0.6 s0: 0/1 ends drop win 4.52 mm ep 17.06 mm c 0

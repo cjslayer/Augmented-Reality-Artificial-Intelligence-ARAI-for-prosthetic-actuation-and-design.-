@@ -1,0 +1,17 @@
+[
+ {
+  "tag": "g1",
+  "ok": true,
+  "csv": "results/014/pen/h7_solver32/g1.csv",
+  "wall_s": 16.1,
+  "extra": {
+   "topology": "slots",
+   "digits": 7,
+   "penTrace": true,
+   "solverIterations": 32,
+   "solverVelocityIterations": 8
+  },
+  "error": "",
+  "time": "2026-09-30 15:07:20"
+ }
+]

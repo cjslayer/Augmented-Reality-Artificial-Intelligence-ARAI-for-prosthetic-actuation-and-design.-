@@ -1,0 +1,16 @@
+[
+ {
+  "tag": "g1",
+  "ok": true,
+  "csv": "results/014/pen/h6a_V1_along91/g1.csv",
+  "wall_s": 16.2,
+  "extra": {
+   "topology": "slots",
+   "digits": 6,
+   "penTrace": true,
+   "xfMcpAlong": 0.091
+  },
+  "error": "",
+  "time": "2026-09-30 15:09:03"
+ }
+]

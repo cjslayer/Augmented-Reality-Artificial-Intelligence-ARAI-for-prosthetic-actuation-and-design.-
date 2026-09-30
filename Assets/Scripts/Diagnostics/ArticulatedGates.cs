@@ -112,6 +112,16 @@ public class ArticulatedGates : MonoBehaviour
         public int objectSeed = 0;
         public string objectStratify = "";
         public string objectPose = "";
+        // run 014 (docs/design/014_topology.md): topology "slots" selects the slot layout for this Play session (HandLayout.Resolve reads this key);
+        // digits 3-7 (0 = leave the layout default: the five-digit hand) with digits6b (the 6-digit hand with a second thumb instead of the extra finger)
+        // pins the hand's digit composition through morph/digits; liftBudgetSteps > 0 sets task/liftBudgetSteps for eval (0 = the harness's 200, unchanged).
+        // Slot-format fixed theta: thetaLength 7 (digit ids), thetaK / thetaZeta / thetaInertia 21 (morphology index), thetaMask 19 chars (finger group),
+        // thetaExist 7 chars in design-doc slot order (slot 0 primary thumb ... slot 6 second thumb). The legacy 5 / 16 / 14 format is unchanged.
+        public string topology = "";
+        public int digits = 0;
+        public bool digits6b = false;
+        public int liftBudgetSteps = 0;
+        public string thetaExist = "";
     }
     public static ArticulatedGates Instance;
     Config cfg; ArmGraspAgent agent; ArticulatedHand hand; MorphologyManager mm; BehaviorParameters bp;
@@ -138,8 +148,8 @@ public class ArticulatedGates : MonoBehaviour
     }
     // calibrate
     readonly List<float> resp = new List<float>(); float tipDot0; Vector3 tipRel0;
-    float[] walkTarget = new float[ArmGraspAgent.GroupCount]; float[] armAct = new float[3];
-    readonly float[] peakTorque = new float[ArmGraspAgent.GroupCount + 2];
+    float[] walkTarget = new float[HandLayout.MaxFingerGroups]; float[] armAct = new float[3];
+    readonly float[] peakTorque = new float[HandLayout.MaxFingerGroups + 2];
     string ctrlSummaryAtClose = "";   // |drive torque| peak per finger group (+ wrist flex, pron) over the trial
 
     static readonly float[] k_Envelope = { -75f, -85f, -60f, -75f, -85f, -60f, -75f, -85f, -60f, -75f, -85f, -60f, 45f, 60f };
@@ -179,14 +189,18 @@ public class ArticulatedGates : MonoBehaviour
         if (cfg.jobWorkers > 0) { jobWorkers0 = Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobWorkerCount; Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobWorkerCount = cfg.jobWorkers; Debug.Log("[Gates] job workers " + jobWorkers0 + " -> " + Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobWorkerCount + " (max " + Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobWorkerMaximumCount + ")"); }
         if (cfg.ignoreSelfCollision && agent.Hand != null) { agent.Hand.ignoreAllSelfCollision = true; Debug.LogWarning("[Gates] diagnostic: self-collision ignored for this run"); }
         if (cfg.mode == "push") { agent.dropDistance = 10f; agent.dropTiltDeg = 180f; agent.taskBudgetMarginSteps = 5000; agent.liftBudgetSteps = 5000; }   // push: the agent must not end the episode
-        if (cfg.mode != "stability") { mm.randomizeByDefault = false; for (int f = 0; f < MorphologyManager.FingerCount; f++) mm.lengthScale[f] = 1f; for (int g = 0; g < MorphologyManager.FingerGroupCount; g++) mm.mask[g] = true; }
+        if (cfg.mode != "stability") { mm.randomizeByDefault = false; for (int f = 0; f < mm.lengthScale.Length; f++) mm.lengthScale[f] = 1f; for (int g = 0; g < mm.mask.Length; g++) mm.mask[g] = true; }   // run 014: every digit / group entry (legacy: the same first 5 / 14)
         else mm.randomizeByDefault = true;
+        if (cfg.digits > 0) { if (!HandLayout.Slots) Debug.LogError("[Gates] digits " + cfg.digits + " requested but the layout is " + HandLayout.Selected + " (set topology: slots)"); SetEnvParam("morph/digits", cfg.digits); SetEnvParam("morph/digits6b", cfg.digits6b ? 1f : 0f); Debug.Log("[Gates] digit composition: " + cfg.digits + (cfg.digits6b ? " (second thumb)" : "")); }
+        Debug.Log("[Gates] layout " + HandLayout.Describe());
         if (cfg.stiffnessScale > 0f && cfg.mode != "stability") { for (int g = 0; g < MorphologyManager.GroupCount; g++) { mm.stiffness[g] = mm.ReferenceStiffness(g) * cfg.stiffnessScale; mm.damping[g] = 2f * mm.referenceZeta * Mathf.Sqrt(mm.stiffness[g] * mm.inertia[g]); } Debug.LogWarning("[Gates] diagnostic: reference stiffness x " + cfg.stiffnessScale + " (indexBase k=" + mm.stiffness[0].ToString("F2") + ")"); }
         cyl = GameObject.FindGameObjectWithTag("Cylinder").transform; cylCol = cyl.GetComponent<Collider>(); cylRb = cyl.GetComponent<Rigidbody>();
         foreach (var grip in cfg.grips) foreach (var m in cfg.masses) foreach (var sc in cfg.scales) for (int sd = 0; sd < Mathf.Max(1, cfg.seeds); sd++) trials.Add(new Trial { mass = m, scale = sc, grip = grip, seed = sd });
         if (cfg.mode == "stability") { trials.Clear(); for (int i = 0; i < cfg.draws; i++) trials.Add(new Trial { mass = 0.6f, scale = 0f, grip = "walk", seed = i }); }
         if (cfg.mode == "audit") { trials.Clear(); trials.Add(new Trial { mass = 0.6f, scale = 0f, grip = "audit", seed = 0 }); }
         if (cfg.mode == "eval") { trials.Clear(); for (int sd = cfg.seedFrom; sd <= cfg.seedTo; sd++) trials.Add(new Trial { mass = 0f, scale = cfg.evalPerturbScale, grip = "policy", seed = sd }); EvalSetup(); }
+        if (cfg.mode == "eval" && cfg.liftBudgetSteps > 0) { SetEnvParam("task/liftBudgetSteps", cfg.liftBudgetSteps); Debug.Log("[Gates] eval: lift budget " + cfg.liftBudgetSteps + " steps (task/liftBudgetSteps)"); }
+        if (cfg.mode == "layout") { trials.Clear(); trials.Add(new Trial { mass = 0.6f, scale = 0f, grip = "layout", seed = 0 }); }
         if (cfg.massMin > 0f && cfg.massMax > 0f) { SetEnvParam("mass/min", cfg.massMin); SetEnvParam("mass/max", cfg.massMax); Debug.Log("[Gates] mass range " + cfg.massMin + "-" + cfg.massMax + " kg (environment parameters)"); }
         if (ObjectColumns)
         {   // object bank plumbing: mode code to the environment parameters (ObjectBank reads them in ApplyForEpisode); stratified assignment sets object/index per episode in the hook
@@ -198,7 +212,7 @@ public class ArticulatedGates : MonoBehaviour
         }
         if (cfg.thetaFixed && cfg.mode != "eval") ArmGraspAgent.BeforeEpisodeBegin = ApplyFixedTheta;   // eval installs its own hook (which calls ApplyFixedTheta) at the end of the warm-up
         Time.timeScale = cfg.timeScale;
-        if (cfg.mode != "eval") sb.AppendLine("trial,mode,grip,mass,scale,seed,success,endReason,steps,gateStep,transitionStep,liftStart,stepsToLift,holdSteps,pulses,maxPulseN,weightN,contactsEnd,palm,forearm,bottomAboveTop,maxPenMm,maxJointSpeedDeg,nan,gripTorqueMean,retPhase,retHold,retBonus,retDrop,note");
+        if (cfg.mode != "eval" && cfg.mode != "layout") sb.AppendLine("trial,mode,grip,mass,scale,seed,success,endReason,steps,gateStep,transitionStep,liftStart,stepsToLift,holdSteps,pulses,maxPulseN,weightN,contactsEnd,palm,forearm,bottomAboveTop,maxPenMm,maxJointSpeedDeg,nan,gripTorqueMean,retPhase,retHold,retBonus,retDrop," + (HandLayout.Slots ? "digitCount,thumbCount,slots," : "") + "note");
         Flush();
         Debug.Log("[Gates] mode=" + cfg.mode + " trials=" + trials.Count + " dt=" + Time.fixedDeltaTime);
     }
@@ -221,6 +235,8 @@ public class ArticulatedGates : MonoBehaviour
     // theta of the episode whose row is pending: captured in the hook (top of OnEpisodeBegin, before the next episode's draws), because
     // EvalRow runs after the next episode has already re-sampled MorphologyManager (the old live read logged the NEXT episode's theta)
     string snapMask = ""; float[] snapLen = new float[5]; float snapK, snapZeta, snapInertia, snapSpan; int snapActive;
+    int snapDigits, snapThumbs; string snapSlots = ""; readonly float[] snapLenSlot = new float[HandLayout.MaxDigits];   // run 014 (slot layout only)
+    string SlotCells() => HandLayout.Slots ? "," + snapDigits + "," + snapThumbs + "," + snapSlots + "," + string.Join(",", System.Array.ConvertAll(snapLenSlot, v => v.ToString("F3"))) : "";
     // object bank (run 013 prep): the object of the episode whose row is pending, captured in the hook before ObjectBank swaps for the next episode
     ObjectBank.Entry snapObj; bool ObjectColumns => !string.IsNullOrEmpty(cfg.objectMode) || !string.IsNullOrEmpty(cfg.objectStratify) || !string.IsNullOrEmpty(cfg.objectPose);
     float snapPreTilt = float.NaN, snapSpawnTilt = float.NaN, snapYaw = -1f; int snapPoseMode = -1, snapPoseIndex = -1; bool snapCarry;
@@ -254,6 +270,7 @@ public class ArticulatedGates : MonoBehaviour
         for (int f = 0; f < 5; f++) snapLen[f] = mm.lengthScale[f];
         snapZeta = 0f; snapInertia = 0f; for (int g = 0; g < MorphologyManager.FingerGroupCount; g++) { snapZeta += mm.DampingRatio(g) / MorphologyManager.FingerGroupCount; snapInertia += mm.inertiaScale[g] / MorphologyManager.FingerGroupCount; }
         snapK = mm.MeanStiffness(0, MorphologyManager.FingerGroupCount); snapActive = mm.ActiveCount; snapSpan = agent.HandSpanRatio;
+        if (HandLayout.Slots) { snapDigits = mm.DigitCount; snapThumbs = mm.ThumbCount; snapSlots = HandLayout.SlotString(mm.exists); for (int k = 0; k < HandLayout.MaxDigits; k++) { int d = HandLayout.SlotDigit[k]; snapLenSlot[k] = mm.exists[d] ? mm.lengthScale[d] : 0f; } }
     }   // physics steps per 10 ms under the dt override (1 at the training dt)
     void EvalSetup()
     {
@@ -280,12 +297,13 @@ public class ArticulatedGates : MonoBehaviour
             UnityEditor.AssetDatabase.ImportAsset(assetPath, UnityEditor.ImportAssetOptions.ForceSynchronousImport);
             var asset = UnityEditor.AssetDatabase.LoadAssetAtPath<Unity.InferenceEngine.ModelAsset>(assetPath);
             if (asset == null) { Debug.LogError("[Gates] eval: model import failed " + assetPath); return; }
+            if (!LayoutGuard.ModelMatches(asset, out string why)) { Debug.LogError("[Gates] eval: REFUSED " + cfg.modelPath + ": " + why); sb.Length = 0; sb.AppendLine("REFUSED " + why.Replace(',', ';')); Flush(); UnityEditor.EditorApplication.isPlaying = false; return; }   // run 014 shape guard
             bp.DeterministicInference = cfg.headMode == "deterministic";   // read when the policy is created below (harness switch only; the scene keeps its serialized value)
             agent.SetModel(bp.BehaviorName, asset, Unity.MLAgents.Policies.InferenceDevice.Default); bp.BehaviorType = BehaviorType.InferenceOnly;
             evalReady = true; Debug.Log("[Gates] eval: model " + cfg.modelPath + " seeds " + cfg.seedFrom + "-" + cfg.seedTo + " mu=" + agent.objectFriction + " perturb=" + cfg.evalPerturbScale + " K=" + cfg.evalHoldDecisions + " head=" + cfg.headMode + " passIndex=" + cfg.passIndex + " deterministicInference=" + bp.DeterministicInference + " legacyNoReseed=" + cfg.legacyNoReseed);
         }
         catch (System.Exception e) { Debug.LogError("[Gates] eval: " + e.Message); }
-        sb.Length = 0; sb.AppendLine("episode,seed,success,endReason,steps,transitionStep,stepsToLift,holdSteps,holdNeeded,pulses,maxPulseN,contacts,distinctFingers,thumb,palm,forearm,mass,perturbScale,mu,maxPenMm,gripTorqueMean,retShaping,retPhase,retHold,retBonus,retDrop,lenMean,lenIndex,lenMiddle,lenRing,lenPinky,lenThumb,kFingerMean,zetaMean,inertiaScaleMean,activeGroups,mask,handSpanRatio,dtMs,pulseStep1,pulseStep2,pulseStep3,lastPulseStep,pulseActiveAtDrop,head_mode,maxStepTimeout,academyStepAtBegin,phaseAtBegin,warmupSteps" + (ObjectColumns ? ",objIndex,objSplit,objA1mm,objA2mm,objA3mm,objE1,objE2,objVolCm3,preResetTiltDeg,poseMode,poseIndex,spawnYaw,spawnTiltDeg,spawnCarryover" : "")); Flush();
+        sb.Length = 0; sb.AppendLine("episode,seed,success,endReason,steps,transitionStep,stepsToLift,holdSteps,holdNeeded,pulses,maxPulseN,contacts,distinctFingers,thumb,palm,forearm,mass,perturbScale,mu,maxPenMm,gripTorqueMean,retShaping,retPhase,retHold,retBonus,retDrop,lenMean,lenIndex,lenMiddle,lenRing,lenPinky,lenThumb,kFingerMean,zetaMean,inertiaScaleMean,activeGroups,mask,handSpanRatio,dtMs,pulseStep1,pulseStep2,pulseStep3,lastPulseStep,pulseActiveAtDrop,head_mode,maxStepTimeout,academyStepAtBegin,phaseAtBegin,warmupSteps" + (ObjectColumns ? ",objIndex,objSplit,objA1mm,objA2mm,objA3mm,objE1,objE2,objVolCm3,preResetTiltDeg,poseMode,poseIndex,spawnYaw,spawnTiltDeg,spawnCarryover" : "") + (HandLayout.Slots ? ",digitCount,thumbCount,slots,lenS0,lenS1,lenS2,lenS3,lenS4,lenS5,lenS6" : "")); Flush();
     }
     static int LastPulseBefore(ArmGraspAgent.EpisodeRecord r) { int best = -1; foreach (int s in new[] { r.pulseStart1, r.pulseStart2, r.pulseStart3 }) if (s >= 0 && s <= r.holdSteps && s > best) best = s; return best; }   // hold step of the last pulse that had started by the final step
     void OnDestroy2() { }
@@ -294,7 +312,7 @@ public class ArticulatedGates : MonoBehaviour
         var r = agent.LastEpisode; int idx = evalIndex - 1; if (idx < 0 || idx >= trials.Count) return;   // the hook has already advanced to the next episode's seed
         bool timeout = r.endReason == "maxStep" && r.steps == 0; if (timeout) r.steps = agent.MaxStep;   // ML-Agents' MaxStep interruption resets StepCount before OnEpisodeBegin logs the record: a real 5000-step episode without a grasp, not an aborted one
         string mask = snapMask; float lenMean = 0f; for (int f = 0; f < 5; f++) lenMean += snapLen[f] / 5f; float zMean = snapZeta, iMean = snapInertia;   // theta of THIS episode (snapshot taken in the hook)
-        sb.AppendLine(string.Join(",", new string[] { (idx + 1).ToString(), trials[idx].seed.ToString(), r.success ? "1" : "0", r.endReason, r.steps.ToString(), r.transitionStep.ToString(), r.stepsToLift.ToString(), r.holdSteps.ToString(), (cfg.evalHoldDecisions * agent.DecisionPeriodCached).ToString(), r.pulsesApplied.ToString(), r.maxPulseForce.ToString("F2"), r.contacts.ToString(), r.distinctFingers.ToString(), r.thumb ? "1" : "0", r.palm ? "1" : "0", r.forearm ? "1" : "0", r.mass.ToString("F3"), r.perturbScale.ToString("F2"), agent.objectFriction.ToString("F2"), (r.maxPenetration * 1000f).ToString("F2"), r.gripForceMean.ToString("F3"), r.retShaping.ToString("F4"), r.retPhase.ToString("F2"), r.retHold.ToString("F3"), r.retBonus.ToString("F2"), r.retDrop.ToString("F2"), lenMean.ToString("F3"), snapLen[0].ToString("F3"), snapLen[1].ToString("F3"), snapLen[2].ToString("F3"), snapLen[3].ToString("F3"), snapLen[4].ToString("F3"), snapK.ToString("F3"), zMean.ToString("F3"), iMean.ToString("F3"), snapActive.ToString(), mask, snapSpan.ToString("F3"), (Time.fixedDeltaTime * 1000f).ToString("F1"), r.pulseStart1.ToString(), r.pulseStart2.ToString(), r.pulseStart3.ToString(), LastPulseBefore(r).ToString(), r.pulseActiveAtEnd ? "1" : "0", cfg.headMode, timeout ? "1" : "0", rowAcademyStep.ToString(), rowPhase.ToString(), warmupAcademySteps.ToString() }) + ObjectCells());
+        sb.AppendLine(string.Join(",", new string[] { (idx + 1).ToString(), trials[idx].seed.ToString(), r.success ? "1" : "0", r.endReason, r.steps.ToString(), r.transitionStep.ToString(), r.stepsToLift.ToString(), r.holdSteps.ToString(), (cfg.evalHoldDecisions * agent.DecisionPeriodCached).ToString(), r.pulsesApplied.ToString(), r.maxPulseForce.ToString("F2"), r.contacts.ToString(), r.distinctFingers.ToString(), r.thumb ? "1" : "0", r.palm ? "1" : "0", r.forearm ? "1" : "0", r.mass.ToString("F3"), r.perturbScale.ToString("F2"), agent.objectFriction.ToString("F2"), (r.maxPenetration * 1000f).ToString("F2"), r.gripForceMean.ToString("F3"), r.retShaping.ToString("F4"), r.retPhase.ToString("F2"), r.retHold.ToString("F3"), r.retBonus.ToString("F2"), r.retDrop.ToString("F2"), lenMean.ToString("F3"), snapLen[0].ToString("F3"), snapLen[1].ToString("F3"), snapLen[2].ToString("F3"), snapLen[3].ToString("F3"), snapLen[4].ToString("F3"), snapK.ToString("F3"), zMean.ToString("F3"), iMean.ToString("F3"), snapActive.ToString(), mask, snapSpan.ToString("F3"), (Time.fixedDeltaTime * 1000f).ToString("F1"), r.pulseStart1.ToString(), r.pulseStart2.ToString(), r.pulseStart3.ToString(), LastPulseBefore(r).ToString(), r.pulseActiveAtEnd ? "1" : "0", cfg.headMode, timeout ? "1" : "0", rowAcademyStep.ToString(), rowPhase.ToString(), warmupAcademySteps.ToString() }) + ObjectCells() + SlotCells());
         Flush();
     }
 
@@ -317,9 +335,9 @@ public class ArticulatedGates : MonoBehaviour
         stepsInTrial++; phaseStep++;
         hand = agent.Hand; palm = hand.PalmLink;
         var h = hand.Health(); if (!h.finite) nanSeen = true; if (h.maxJointSpeedDeg > maxSpeed) maxSpeed = h.maxJointSpeedDeg;
-        for (int g = 0; g < ArmGraspAgent.GroupCount; g++) peakTorque[g] = Mathf.Max(peakTorque[g], Mathf.Abs(hand.GroupDriveForce(g)));
-        if (hand.Palm != null) { var df = hand.Palm.driveForce; for (int i = 0; i < 2 && i < df.dofCount; i++) peakTorque[ArmGraspAgent.GroupCount + i] = Mathf.Max(peakTorque[ArmGraspAgent.GroupCount + i], Mathf.Abs(df[i])); }
-        for (int g = 0; g < ArmGraspAgent.GroupCount; g++) maxAbsAngle = Mathf.Max(maxAbsAngle, Mathf.Abs(agent.GetGroupAngle(g)));
+        for (int g = 0; g < HandLayout.MaxFingerGroups; g++) peakTorque[g] = Mathf.Max(peakTorque[g], Mathf.Abs(hand.GroupDriveForce(g)));
+        if (hand.Palm != null) { var df = hand.Palm.driveForce; for (int i = 0; i < 2 && i < df.dofCount; i++) peakTorque[HandLayout.MaxFingerGroups + i] = Mathf.Max(peakTorque[HandLayout.MaxFingerGroups + i], Mathf.Abs(df[i])); }
+        for (int g = 0; g < HandLayout.MaxFingerGroups; g++) if (hand.Present(g)) maxAbsAngle = Mathf.Max(maxAbsAngle, Mathf.Abs(agent.GetGroupAngle(g)));
         if (agent.MaxPenetration > maxPen) maxPen = agent.MaxPenetration;
         if ((cfg.mode == "lift" && phase == "hold") || (cfg.mode == "push" && (phase == "squeeze" || phase == "pushIn" || phase == "pushOut"))) penSamples.Add(CurrentPenetration());
         if (agent.LastHoldCriterionMet && gateStep < 0) gateStep = agent.StepCount;
@@ -342,6 +360,7 @@ public class ArticulatedGates : MonoBehaviour
             case "lift": Lift(t); break;
             case "stability": Stability(); break;
             case "push": Push(t); break;
+            case "layout": if (phaseStep >= 3) { DumpLayout(); Finish(); } break;
         }
     }
 
@@ -355,7 +374,8 @@ public class ArticulatedGates : MonoBehaviour
         agent.DiagnosticSetMass(t.mass); agent.DiagnosticSetPerturbScale(t.scale); agent.perturbScaleOverride = t.scale;
         stepsInTrial = 0; phaseStep = 0; maxPen = 0f; maxSpeed = 0f; maxAbsAngle = 0f; nanSeen = false; liftStartStep = -1; holdStart = -1; gateStep = -1; transitionStep = -1; resp.Clear(); slipDumped = false; ControllerReset(); ctrlSummaryAtClose = ""; penSamples.Clear(); trialWallStart = Time.realtimeSinceStartup; if (requiredSegments0 >= 0) { agent.requiredContactSegments = requiredSegments0; requiredSegments0 = -1; }
         for (int g = 0; g < peakTorque.Length; g++) peakTorque[g] = 0f;
-        if (cfg.mode == "stability") { phase = "walk"; for (int g = 0; g < ArmGraspAgent.GroupCount; g++) walkTarget[g] = 0f; return; }
+        if (cfg.mode == "stability") { phase = "walk"; for (int g = 0; g < HandLayout.MaxFingerGroups; g++) walkTarget[g] = 0f; return; }
+        if (cfg.mode == "layout") { phase = "layout"; return; }
         if (cfg.mode == "audit") { phase = "audit"; cyl.SetPositionAndRotation(cyl.position + Vector3.up * 2f, Quaternion.identity); Physics.SyncTransforms(); return; }   // object out of the way
         edgeHoldMax = -1; edgeDone = false; shapingAgentAtT = shapingTelescopedAtT = float.NaN; cycled = false; cycleAtStep = -1;
         if (cfg.preposeSteps > 0 && (cfg.wristFlexDeg != 0f || cfg.wristPronDeg != 0f))
@@ -396,9 +416,9 @@ public class ArticulatedGates : MonoBehaviour
 
     bool OverlapsHand(Vector3 pos, Quaternion rot)
     {
-        for (int g = 0; g < ArmGraspAgent.GroupCount; g++)
+        for (int g = 0; g < HandLayout.MaxFingerGroups; g++)
         {   // the thumb rests in front of the palm (palmar abduction): it is not an obstacle for placement, the object displaces it and it then lies on the object
-            var b = hand.Groups[g]; if (b == null || (cfg.contactController && g >= 12)) continue;
+            var b = hand.Groups[g]; if (b == null || (cfg.contactController && HandLayout.IsThumbGroup(g))) continue;
             var c = b.GetComponent<Collider>(); if (c != null && Physics.ComputePenetration(c, c.transform.position, c.transform.rotation, cylCol, pos, rot, out _, out _)) return true;
         }
         var pc = palm.GetComponent<Collider>(); if (pc != null && Physics.ComputePenetration(pc, pc.transform.position, pc.transform.rotation, cylCol, pos, rot, out _, out _)) return true;
@@ -489,23 +509,24 @@ public class ArticulatedGates : MonoBehaviour
             var tip = hand.Groups[2].transform; float tipDot = Vector3.Dot(tip.position - palm.position, palm.right);
             string note = "omegaRef=" + mm.NaturalFrequency(0).ToString("F1") + " zetaRef=" + mm.DampingRatio(0).ToString("F2") + " k=" + mm.stiffness[0].ToString("F3") + "Nm/rad b=" + mm.damping[0].ToString("F4") + " Inominal=" + mm.NominalInertia[0].ToString("E2") + " linkMass=" + hand.Groups[0].mass.ToString("F3") + " dt=" + Time.fixedDeltaTime + " rise10-90=" + ((i90 - i10) * Time.fixedDeltaTime * 1000f).ToString("F0") + "ms (theory ~" + (2.16f / mm.NaturalFrequency(0) * 1000f).ToString("F0") + "ms per-rad at the nominal inertia; " + (2.16f / (mm.NaturalFrequency(0) * Mathf.Sqrt(57.3f)) * 1000f).ToString("F0") + "ms if per-deg) overshoot=" + ((peak - 1f) * 100f).ToString("F1") + "% angle@100=" + resp[resp.Count - 1].ToString("F1") + " tipTowardPalmNormal " + tipDot0.ToString("F3") + "->" + tipDot.ToString("F3") + " (flexion -30 should increase it) driveForce=" + hand.GroupDriveForce(0).ToString("F3") + "Nm";
             Debug.Log("[Gates] calibrate: " + note);
-            sb.AppendLine((trial + 1) + ",calibrate,step,0,0,0,1,calib," + stepsInTrial + ",-1,-1,-1,-1,0,0,0,0,0,0,0,0," + (maxPen * 1000f).ToString("F2") + "," + maxSpeed.ToString("F0") + "," + (nanSeen ? 1 : 0) + ",0,0,0,0,0," + note.Replace(",", ";"));
+            sb.AppendLine((trial + 1) + ",calibrate,step,0,0,0,1,calib," + stepsInTrial + ",-1,-1,-1,-1,0,0,0,0,0,0,0,0," + (maxPen * 1000f).ToString("F2") + "," + maxSpeed.ToString("F0") + "," + (nanSeen ? 1 : 0) + ",0,0,0,0,0," + ScriptedSlots(false) + note.Replace(",", ";"));
             Flush(); agent.EndEpisode();
         }
     }
 
     // ---- close-until-contact + preload controller (test driver only; drives the agent's diagnostic setpoint setter) ----
-    readonly bool[] ctrlContact = new bool[ArmGraspAgent.GroupCount]; readonly float[] ctrlStop = new float[ArmGraspAgent.GroupCount], ctrlTarget = new float[ArmGraspAgent.GroupCount];
-    readonly int[] ctrlDoneStep = new int[ArmGraspAgent.GroupCount]; bool ctrlReported; int requiredSegments0 = -1;
-    float CapDeg(int g) => g == 12 ? cfg.capThumbBaseDeg : g == 13 ? cfg.capThumbEndDeg : g % 3 == 0 ? cfg.capBaseDeg : g % 3 == 1 ? cfg.capMiddleDeg : cfg.capEndDeg;
-    static bool PinchActive(int g) => g <= 2 || g >= 12;   // index + thumb
-    void ControllerReset() { for (int g = 0; g < ArmGraspAgent.GroupCount; g++) { ctrlContact[g] = false; ctrlStop[g] = 0f; ctrlTarget[g] = 0f; ctrlDoneStep[g] = -1; } ctrlReported = false; }
+    readonly bool[] ctrlContact = new bool[HandLayout.MaxFingerGroups]; readonly float[] ctrlStop = new float[HandLayout.MaxFingerGroups], ctrlTarget = new float[HandLayout.MaxFingerGroups];
+    readonly int[] ctrlDoneStep = new int[HandLayout.MaxFingerGroups]; bool ctrlReported; int requiredSegments0 = -1;
+    float CapDeg(int g) { switch (HandLayout.GroupClass(g)) { case 3: return cfg.capThumbBaseDeg; case 4: return cfg.capThumbEndDeg; case 0: return cfg.capBaseDeg; case 1: return cfg.capMiddleDeg; default: return cfg.capEndDeg; } }   // legacy: 12 / 13 thumb, else g % 3
+    static bool PinchActive(int g) => HandLayout.GroupDigit[g] == 0 || HandLayout.GroupDigit[g] == 4;   // index + primary thumb (legacy: g <= 2 || g >= 12)
+    void ControllerReset() { for (int g = 0; g < HandLayout.MaxFingerGroups; g++) { ctrlContact[g] = false; ctrlStop[g] = 0f; ctrlTarget[g] = 0f; ctrlDoneStep[g] = hand != null && !hand.Present(g) ? 0 : -1; } ctrlReported = false; }   // absent groups count as done
     void ControllerStep(bool pinch)
     {
         float dt = Time.fixedDeltaTime;
-        for (int g = 0; g < ArmGraspAgent.GroupCount; g++)
+        for (int g = 0; g < HandLayout.MaxFingerGroups; g++)
         {
-            bool thumb = g >= 12; float sign = thumb ? 1f : -1f;   // flexion sign of the drive angle
+            if (!hand.Present(g)) { ctrlDoneStep[g] = 0; continue; }
+            bool thumb = HandLayout.IsThumbGroup(g); float sign = thumb ? 1f : -1f;   // flexion sign of the drive angle (legacy: g >= 12)
             if ((pinch && !PinchActive(g)) || (!cfg.thumbActive && thumb)) { agent.SetGroupSetpoint(g, 0f); ctrlTarget[g] = 0f; ctrlDoneStep[g] = 0; continue; }
             if (!ctrlContact[g] && phase == "close")
             {
@@ -523,14 +544,14 @@ public class ArticulatedGates : MonoBehaviour
             agent.SetGroupSetpoint(g, ctrlTarget[g]);
         }
     }
-    bool ControllerDone() { for (int g = 0; g < ArmGraspAgent.GroupCount; g++) if (ctrlDoneStep[g] < 0 || phaseStep < ctrlDoneStep[g]) return false; return true; }
+    bool ControllerDone() { for (int g = 0; g < HandLayout.MaxFingerGroups; g++) if (hand.Present(g) && (ctrlDoneStep[g] < 0 || phaseStep < ctrlDoneStep[g])) return false; return true; }
     string ControllerSummary()
     {
         var s = new StringBuilder("controller:");
-        for (int g = 0; g < ArmGraspAgent.GroupCount; g++) s.Append(' ').Append(ArticulatedHand.GroupTags[g]).Append(ctrlContact[g] ? " stop=" + ctrlStop[g].ToString("F1") + " preload->" : " nocontact cap->").Append(ctrlTarget[g].ToString("F1")).Append(" angle=").Append(agent.GetGroupAngle(g).ToString("F1")).Append(" touch=").Append(agent.IsGroupTouching(g) ? 1 : 0).Append(';');
+        for (int g = 0; g < HandLayout.MaxFingerGroups; g++) if (hand.Present(g)) s.Append(' ').Append(HandLayout.GroupNames[g]).Append(ctrlContact[g] ? " stop=" + ctrlStop[g].ToString("F1") + " preload->" : " nocontact cap->").Append(ctrlTarget[g].ToString("F1")).Append(" angle=").Append(agent.GetGroupAngle(g).ToString("F1")).Append(" touch=").Append(agent.IsGroupTouching(g) ? 1 : 0).Append(';');
         s.Append(" palm=").Append(agent.LastPalmTouching ? "yes" : "no").Append(" contacts=").Append(agent.CurrentContacts);
         s.Append(" | objInPalm(mm)=").Append((PalmFrame(cyl.position - palm.position) * 1000f).ToString("F0")).Append(" r=").Append((objRadius * 1000f).ToString("F0")).Append(" linkEnds(mm):");
-        for (int g = 0; g < ArmGraspAgent.GroupCount; g++) s.Append(' ').Append(ArticulatedHand.GroupTags[g]).Append('=').Append((PalmFrame(LinkEnd(g) - palm.position) * 1000f).ToString("F0"));
+        for (int g = 0; g < HandLayout.MaxFingerGroups; g++) if (hand.Present(g)) s.Append(' ').Append(HandLayout.GroupNames[g]).Append('=').Append((PalmFrame(LinkEnd(g) - palm.position) * 1000f).ToString("F0"));
         var pbx = palm.GetComponent<BoxCollider>(); s.Append(" palmFace(out mm)=").Append(((Vector3.Dot(palm.TransformPoint(pbx.center) - palm.position, palm.right) + 0.5f * pbx.size.x) * 1000f).ToString("F0"));
         return s.ToString();
     }
@@ -545,18 +566,19 @@ public class ArticulatedGates : MonoBehaviour
             return;
         }
         if (cfg.wristFlexDeg != 0f || cfg.wristPronDeg != 0f) { agent.SetArmSetpoint(3, cfg.wristFlexDeg); agent.SetArmSetpoint(4, cfg.wristPronDeg); }
-        if (cfg.noClose) { for (int g = 0; g < ArmGraspAgent.GroupCount; g++) agent.SetGroupSetpoint(g, 0f); }
-        else if (cycled) { for (int g = 0; g < ArmGraspAgent.GroupCount; g++) agent.SetGroupSetpoint(g, 0f); }
+        if (cfg.noClose) { for (int g = 0; g < HandLayout.MaxFingerGroups; g++) if (hand.Present(g)) agent.SetGroupSetpoint(g, 0f); }
+        else if (cycled) { for (int g = 0; g < HandLayout.MaxFingerGroups; g++) if (hand.Present(g)) agent.SetGroupSetpoint(g, 0f); }
         else if (cfg.contactController) ControllerStep(t.grip == "pinch");
         else
         {
-            float[] targets = t.grip == "pinch" ? (cfg.pinchTargets != null && cfg.pinchTargets.Length == ArmGraspAgent.GroupCount ? cfg.pinchTargets : k_Pinch)
-                                                : (cfg.envelopeTargets != null && cfg.envelopeTargets.Length == ArmGraspAgent.GroupCount ? cfg.envelopeTargets : k_Envelope);
+            float[] targets = t.grip == "pinch" ? (cfg.pinchTargets != null && cfg.pinchTargets.Length >= ArmGraspAgent.GroupCount ? cfg.pinchTargets : k_Pinch)
+                                                : (cfg.envelopeTargets != null && cfg.envelopeTargets.Length >= ArmGraspAgent.GroupCount ? cfg.envelopeTargets : k_Envelope);
             // closing targets ramp at the agent's setpoint rate (via the diagnostic setter: same drives the policy would move)
-            for (int g = 0; g < ArmGraspAgent.GroupCount; g++)
+            for (int g = 0; g < HandLayout.MaxFingerGroups; g++)
             {
+                if (!hand.Present(g)) continue;
                 float cur = agent.GetGroupState(g).z; float step = agent.setpointRateDegPerSec * Time.fixedDeltaTime;
-                agent.SetGroupSetpoint(g, Mathf.MoveTowards(cur, targets[g], step));
+                agent.SetGroupSetpoint(g, Mathf.MoveTowards(cur, ClassTarget(targets, g), step));
             }
         }
         if (cfg.contactController && cfg.blockAgentGate && phase == "close" && requiredSegments0 < 0) { requiredSegments0 = agent.requiredContactSegments; agent.requiredContactSegments = 99; }   // the agent's own gate must not release the object before the preload is in
@@ -573,17 +595,17 @@ public class ArticulatedGates : MonoBehaviour
             case "lift":
                 {
                     float bottom = cylCol.bounds.min.y - agent.PlatformTop;
-                    if (cfg.noLift) { acts[ArmGraspAgent.GroupCount] = 0f; if (phaseStep > cfg.holdSteps + 20) { Debug.Log("[Gates] noLift window elapsed; ending"); agent.EndEpisode(); } break; }
+                    if (cfg.noLift) { acts[agent.ArmActionOffset] = 0f; if (phaseStep > cfg.holdSteps + 20) { Debug.Log("[Gates] noLift window elapsed; ending"); agent.EndEpisode(); } break; }
                     if (cfg.edgeBottom > 0f && !edgeDone)
                     {   // partial lift: stop at edgeBottom and watch the agent's hold counter over the window
-                        if (bottom >= cfg.edgeBottom) { acts[ArmGraspAgent.GroupCount] = 0f; phase = "edgehold"; phaseStep = 0; Debug.Log("[Gates] edge: bottom=" + bottom.ToString("F3") + " (clearance " + agent.liftClearance + ")"); }
+                        if (bottom >= cfg.edgeBottom) { acts[agent.ArmActionOffset] = 0f; phase = "edgehold"; phaseStep = 0; Debug.Log("[Gates] edge: bottom=" + bottom.ToString("F3") + " (clearance " + agent.liftClearance + ")"); }
                         else if (phaseStep > cfg.liftBudget) { Debug.Log("[Gates] lift budget exhausted: bottom=" + bottom.ToString("F3")); agent.EndEpisode(); }
-                        else acts[ArmGraspAgent.GroupCount] = liftSign * cfg.liftSpeedDeg / agent.armRotationSpeed;
+                        else acts[agent.ArmActionOffset] = liftSign * cfg.liftSpeedDeg / agent.armRotationSpeed;
                         break;
                     }
-                    if (bottom >= agent.liftClearance + cfg.liftExtra) { acts[ArmGraspAgent.GroupCount] = 0f; phase = "hold"; phaseStep = 0; holdStart = agent.StepCount; Debug.Log("[Gates] lifted: bottom=" + bottom.ToString("F3") + " at step " + agent.StepCount + " contacts=" + agent.CurrentContacts + " palm=" + agent.LastPalmTouching); if (cfg.freezeAtHold) { Time.timeScale = 0f; phase = "frozen"; } }
+                    if (bottom >= agent.liftClearance + cfg.liftExtra) { acts[agent.ArmActionOffset] = 0f; phase = "hold"; phaseStep = 0; holdStart = agent.StepCount; Debug.Log("[Gates] lifted: bottom=" + bottom.ToString("F3") + " at step " + agent.StepCount + " contacts=" + agent.CurrentContacts + " palm=" + agent.LastPalmTouching); if (cfg.freezeAtHold) { Time.timeScale = 0f; phase = "frozen"; } }
                     else if (phaseStep > cfg.liftBudget) { Debug.Log("[Gates] lift budget exhausted: bottom=" + bottom.ToString("F3")); agent.EndEpisode(); }
-                    else acts[ArmGraspAgent.GroupCount] = liftSign * cfg.liftSpeedDeg / agent.armRotationSpeed;
+                    else acts[agent.ArmActionOffset] = liftSign * cfg.liftSpeedDeg / agent.armRotationSpeed;
                     break;
                 }
             case "edgehold":
@@ -601,7 +623,7 @@ public class ArticulatedGates : MonoBehaviour
     void LogContacts(string tag)
     {   // contact geometry in the palm frame: along = palm.up (fingers), out = palm.right (palm normal), across = palm.forward
         var sc = new StringBuilder("[Gates] " + tag + ": objInPalm=" + PalmFrame(cyl.position - palm.position).ToString("F3") + " n=" + hand.Contacts.Count);
-        foreach (var c in hand.Contacts) sc.Append(' ').Append(c.isPalm ? "palm" : c.isForearm ? "forearm" : ArticulatedHand.GroupTags[c.group]).Append(" p=").Append(PalmFrame(c.point - palm.position).ToString("F3")).Append(" n=").Append(PalmFrame(c.normal).ToString("F2")).Append(" sep=").Append((c.separation * 1000f).ToString("F1")).Append("mm imp=").Append(c.impulse.ToString("F3"));
+        foreach (var c in hand.Contacts) sc.Append(' ').Append(c.isPalm ? "palm" : c.isForearm ? "forearm" : HandLayout.GroupNames[c.group]).Append(" p=").Append(PalmFrame(c.point - palm.position).ToString("F3")).Append(" n=").Append(PalmFrame(c.normal).ToString("F2")).Append(" sep=").Append((c.separation * 1000f).ToString("F1")).Append("mm imp=").Append(c.impulse.ToString("F3"));
         Debug.Log(sc.ToString());
     }
     void DbgLog(string s) { Debug.Log(s); try { File.AppendAllText(cfg.csv + ".trace.txt", s + "\n"); } catch (System.Exception) { } }   // the Editor console drops long traces
@@ -616,15 +638,15 @@ public class ArticulatedGates : MonoBehaviour
     {
         // random walk of finger and wrist targets every 25 steps, arm velocities random every 50 steps; object stays kinematic on the pedestal
         if (phaseStep % 25 == 1)
-            for (int g = 0; g < ArmGraspAgent.GroupCount; g++) { walkTarget[g] += Random.Range(-40f, 40f); walkTarget[g] = Mathf.Clamp(walkTarget[g], -100f, 60f); agent.SetGroupSetpoint(g, walkTarget[g]); }
+            for (int g = 0; g < HandLayout.MaxFingerGroups; g++) { if (!hand.Present(g)) continue; walkTarget[g] += Random.Range(-40f, 40f); walkTarget[g] = Mathf.Clamp(walkTarget[g], -100f, 60f); agent.SetGroupSetpoint(g, walkTarget[g]); }   // absent groups draw nothing (legacy: all 14 present)
         if (phaseStep % 50 == 1) { agent.SetArmSetpoint(3, Random.Range(-60f, 60f)); agent.SetArmSetpoint(4, Random.Range(-60f, 60f)); for (int a = 0; a < 3; a++) armAct[a] = Random.Range(-0.33f, 0.33f); }
-        for (int a = 0; a < 3; a++) agent.heuristicActions[ArmGraspAgent.GroupCount + a] = armAct[a];
+        for (int a = 0; a < 3; a++) agent.heuristicActions[agent.ArmActionOffset + a] = armAct[a];
         if (phaseStep >= cfg.stepsPerTrial)
         {
-            for (int a = 0; a < 3; a++) agent.heuristicActions[ArmGraspAgent.GroupCount + a] = 0f;
+            for (int a = 0; a < 3; a++) agent.heuristicActions[agent.ArmActionOffset + a] = 0f;
             string note = "omegaMean=" + Mean(mm.NaturalFrequency, MorphologyManager.GroupCount).ToString("F1") + " zetaMean=" + Mean(mm.DampingRatio, MorphologyManager.GroupCount).ToString("F2") + " lenMean=" + Mean(f => mm.lengthScale[f], 5).ToString("F2") + " active=" + mm.ActiveCount + " maxAbsAngle=" + maxAbsAngle.ToString("F0");
             Debug.Log("[Gates] stability draw " + (trial + 1) + ": nan=" + nanSeen + " maxJointSpeed=" + maxSpeed.ToString("F0") + " deg/s maxPen=" + (maxPen * 1000f).ToString("F1") + " mm " + note);
-            sb.AppendLine((trial + 1) + ",stability,walk,0.6,0," + trial + "," + (nanSeen ? 0 : 1) + ",walk," + stepsInTrial + ",-1,-1,-1,-1,0,0,0,0," + agent.CurrentContacts + ",0,0,0," + (maxPen * 1000f).ToString("F2") + "," + maxSpeed.ToString("F0") + "," + (nanSeen ? 1 : 0) + ",0,0,0,0,0," + note.Replace(",", ";"));
+            sb.AppendLine((trial + 1) + ",stability,walk,0.6,0," + trial + "," + (nanSeen ? 0 : 1) + ",walk," + stepsInTrial + ",-1,-1,-1,-1,0,0,0,0," + agent.CurrentContacts + ",0,0,0," + (maxPen * 1000f).ToString("F2") + "," + maxSpeed.ToString("F0") + "," + (nanSeen ? 1 : 0) + ",0,0,0,0,0," + ScriptedSlots(false) + note.Replace(",", ";"));
             Flush(); agent.EndEpisode();
         }
     }
@@ -632,8 +654,8 @@ public class ArticulatedGates : MonoBehaviour
 
     void Push(Trial t)
     {
-        var env = cfg.envelopeTargets != null && cfg.envelopeTargets.Length == ArmGraspAgent.GroupCount ? cfg.envelopeTargets : k_Envelope;
-        for (int g = 0; g < ArmGraspAgent.GroupCount; g++) agent.SetGroupSetpoint(g, env[g] * 1.3f);   // beyond the closing targets: drives at the force limit against the object
+        var env = cfg.envelopeTargets != null && cfg.envelopeTargets.Length >= ArmGraspAgent.GroupCount ? cfg.envelopeTargets : k_Envelope;
+        for (int g = 0; g < HandLayout.MaxFingerGroups; g++) if (hand.Present(g)) agent.SetGroupSetpoint(g, ClassTarget(env, g) * 1.3f);   // beyond the closing targets: drives at the force limit against the object
         switch (phase)
         {
             case "close":
@@ -662,7 +684,7 @@ public class ArticulatedGates : MonoBehaviour
         float wall = Time.realtimeSinceStartup - trialWallStart;
         string exploit = " shapingAgent=" + shapingAgentAtT.ToString("F4") + " telescoped=" + shapingTelescopedAtT.ToString("F4") + (cfg.edgeBottom > 0f ? " edgeHoldMax=" + edgeHoldMax : "") + (cfg.cycleHoldSteps > 0 ? " cycleAt=" + cycleAtStep : "") + " forearmEnd=" + (r.forearm ? 1 : 0) + " gateStep=" + gateStep;
         if (string.IsNullOrEmpty(note)) note = exploit + " " + PenStats() + " wall=" + wall.ToString("F1") + "s stepsPerSec=" + (wall > 0f ? (stepsInTrial / wall).ToString("F0") : "-") + " " + TorqueTable() + " " + ctrlSummaryAtClose;
-        sb.AppendLine(string.Join(",", new string[] { (trial + 1).ToString(), cfg.mode, t.grip, t.mass.ToString("F3"), t.scale.ToString("F2"), t.seed.ToString(), success ? "1" : "0", r.endReason, r.steps.ToString(), gateStep.ToString(), r.transitionStep.ToString(), liftStartStep.ToString(), r.stepsToLift.ToString(), r.holdSteps.ToString(), r.pulsesApplied.ToString(), r.maxPulseForce.ToString("F2"), weight.ToString("F2"), r.contacts.ToString(), r.palm ? "1" : "0", r.forearm ? "1" : "0", r.bottomAboveTop.ToString("F4"), (r.maxPenetration * 1000f).ToString("F2"), r.maxJointSpeed.ToString("F0"), nanSeen ? "1" : "0", r.gripForceMean.ToString("F3"), r.retPhase.ToString("F2"), r.retHold.ToString("F3"), r.retBonus.ToString("F2"), r.retDrop.ToString("F2"), note }));
+        sb.AppendLine(string.Join(",", new string[] { (trial + 1).ToString(), cfg.mode, t.grip, t.mass.ToString("F3"), t.scale.ToString("F2"), t.seed.ToString(), success ? "1" : "0", r.endReason, r.steps.ToString(), gateStep.ToString(), r.transitionStep.ToString(), liftStartStep.ToString(), r.stepsToLift.ToString(), r.holdSteps.ToString(), r.pulsesApplied.ToString(), r.maxPulseForce.ToString("F2"), weight.ToString("F2"), r.contacts.ToString(), r.palm ? "1" : "0", r.forearm ? "1" : "0", r.bottomAboveTop.ToString("F4"), (r.maxPenetration * 1000f).ToString("F2"), r.maxJointSpeed.ToString("F0"), nanSeen ? "1" : "0", r.gripForceMean.ToString("F3"), r.retPhase.ToString("F2"), r.retHold.ToString("F3"), r.retBonus.ToString("F2"), r.retDrop.ToString("F2") + ScriptedSlots(true), note }));
         Flush();
         Debug.Log("[Gates] trial " + (trial + 1) + "/" + trials.Count + " " + cfg.mode + " grip=" + t.grip + " m=" + t.mass + " scale=" + t.scale + " -> " + r.endReason + " hold=" + r.holdSteps + " pulses=" + r.pulsesApplied + " maxF=" + r.maxPulseForce.ToString("F1") + "N contacts=" + r.contacts + " palm=" + r.palm + " maxPen=" + (r.maxPenetration * 1000f).ToString("F1") + "mm maxV=" + r.maxJointSpeed.ToString("F0"));
         phase = "idle";
@@ -672,12 +694,13 @@ public class ArticulatedGates : MonoBehaviour
     string TorqueTable()
     {
         var s = new StringBuilder("torque:");
-        for (int g = 0; g < ArmGraspAgent.GroupCount; g++)
+        for (int g = 0; g < HandLayout.MaxFingerGroups; g++)
         {
+            if (!hand.Present(g)) continue;
             var b = hand.Groups[g]; if (b == null) continue; var d = b.xDrive;
-            s.Append(' ').Append(ArticulatedHand.GroupTags[g]).Append(" k=").Append(d.stiffness.ToString("F3")).Append(" lim=").Append(d.forceLimit.ToString("F2")).Append(" peak=").Append(peakTorque[g].ToString("F3")).Append(';');
+            s.Append(' ').Append(HandLayout.GroupNames[g]).Append(" k=").Append(d.stiffness.ToString("F3")).Append(" lim=").Append(d.forceLimit.ToString("F2")).Append(" peak=").Append(peakTorque[g].ToString("F3")).Append(';');
         }
-        if (hand.Palm != null) { s.Append(" wristFlex k=").Append(hand.Palm.xDrive.stiffness.ToString("F2")).Append(" lim=").Append(hand.Palm.xDrive.forceLimit.ToString("F1")).Append(" peak=").Append(peakTorque[ArmGraspAgent.GroupCount].ToString("F3")).Append("; wristPron k=").Append(hand.Palm.yDrive.stiffness.ToString("F2")).Append(" lim=").Append(hand.Palm.yDrive.forceLimit.ToString("F1")).Append(" peak=").Append(peakTorque[ArmGraspAgent.GroupCount + 1].ToString("F3")).Append(';'); }
+        if (hand.Palm != null) { s.Append(" wristFlex k=").Append(hand.Palm.xDrive.stiffness.ToString("F2")).Append(" lim=").Append(hand.Palm.xDrive.forceLimit.ToString("F1")).Append(" peak=").Append(peakTorque[HandLayout.MaxFingerGroups].ToString("F3")).Append("; wristPron k=").Append(hand.Palm.yDrive.stiffness.ToString("F2")).Append(" lim=").Append(hand.Palm.yDrive.forceLimit.ToString("F1")).Append(" peak=").Append(peakTorque[HandLayout.MaxFingerGroups + 1].ToString("F3")).Append(';'); }
         return s.ToString();
     }
 
@@ -687,7 +710,7 @@ public class ArticulatedGates : MonoBehaviour
         for (int g = 0; g < ArgCount; g++)
         {
             var b = hand.Groups[g]; if (b == null) continue; var d = b.xDrive;
-            sbd.Append(ArticulatedHand.GroupTags[g]).Append(": angle=").Append(hand.GroupAngle(g).ToString("F1")).Append(" target=").Append(d.target.ToString("F1")).Append(" vel=").Append(hand.GroupVelocity(g).ToString("F1"))
+            sbd.Append(HandLayout.GroupNames[g]).Append(": angle=").Append(hand.GroupAngle(g).ToString("F1")).Append(" target=").Append(d.target.ToString("F1")).Append(" vel=").Append(hand.GroupVelocity(g).ToString("F1"))
                .Append(" drive=").Append(hand.GroupDriveForce(g).ToString("F3")).Append("Nm k=").Append(d.stiffness.ToString("F0")).Append(" c=").Append(d.damping.ToString("F1")).Append(" lim=").Append(d.lowerLimit).Append("/").Append(d.upperLimit).Append(" fmax=").Append(d.forceLimit).Append(" type=").Append(d.driveType)
                .Append(" touch=").Append(agent.IsGroupTouching(g) ? 1 : 0).Append(" mass=").Append(b.mass.ToString("F3")).Append(" dof=").Append(b.dofCount).Append(" pos=").Append(b.transform.position.ToString("F3")).Append('\n');
         }
@@ -719,7 +742,7 @@ public class ArticulatedGates : MonoBehaviour
         }
         return (worst * 1000f).ToString("F2") + "mm(" + pair + ";overlappingPairs=" + touching + "/" + pairs + ";over2mm:" + (over2.Length > 0 ? over2.ToString() : " none") + ")";
     }
-    const int ArgCount = ArmGraspAgent.GroupCount;
+    const int ArgCount = HandLayout.MaxFingerGroups;   // run 014: every group slot (absent ones skipped by the null check)
 
     void RenderCloseups()
     {
@@ -764,9 +787,12 @@ public class ArticulatedGates : MonoBehaviour
     {   // at the top of OnEpisodeBegin (before ApplyForEpisode): I = NominalInertia of the current rig (exact from the second application on, hence the pre-apply reset in the warm-up) x scale, b = 2 zeta sqrt(k I)
         if (cfg == null || !cfg.thetaFixed || mm == null) return;
         mm.randomizeByDefault = false; SetEnvParam("morph/randomize", 0f);
-        for (int f = 0; f < MorphologyManager.FingerCount; f++) SetEnvParam("morph/len_" + MorphologyManager.FingerNames[f], cfg.thetaLength[f]);
-        for (int g = 0; g < MorphologyManager.GroupCount; g++) { float k = cfg.thetaK[g], I = mm.NominalInertia[g] * cfg.thetaInertia[g]; SetEnvParam("morph/k_" + MorphologyManager.GroupNames[g], k); SetEnvParam("morph/I_" + MorphologyManager.GroupNames[g], I); SetEnvParam("morph/b_" + MorphologyManager.GroupNames[g], 2f * cfg.thetaZeta[g] * Mathf.Sqrt(Mathf.Max(k * I, 0f))); }
-        for (int g = 0; g < MorphologyManager.FingerGroupCount; g++) SetEnvParam("morph/mask_" + MorphologyManager.GroupNames[g], cfg.thetaMask[g] == '1' ? 1f : 0f);
+        bool slotTheta = cfg.thetaK.Length >= MorphologyManager.MaxMorphGroups;   // run 014 slot format (7 / 21 / 21 / 21 / 19 + thetaExist); else the legacy 5 / 16 / 16 / 16 / 14
+        int nLen = slotTheta ? MorphologyManager.MaxDigits : MorphologyManager.FingerCount, nM = slotTheta ? MorphologyManager.MaxMorphGroups : MorphologyManager.GroupCount, nMask = slotTheta ? MorphologyManager.MaxFingerGroups : MorphologyManager.FingerGroupCount;
+        for (int f = 0; f < nLen; f++) SetEnvParam("morph/len_" + HandLayout.DigitNames[f], cfg.thetaLength[f]);
+        for (int g = 0; g < nM; g++) { float k = cfg.thetaK[g], I = mm.NominalInertia[g] * cfg.thetaInertia[g]; SetEnvParam("morph/k_" + MorphologyManager.AllGroupNames[g], k); SetEnvParam("morph/I_" + MorphologyManager.AllGroupNames[g], I); SetEnvParam("morph/b_" + MorphologyManager.AllGroupNames[g], 2f * cfg.thetaZeta[g] * Mathf.Sqrt(Mathf.Max(k * I, 0f))); }
+        for (int g = 0; g < nMask; g++) SetEnvParam("morph/mask_" + HandLayout.GroupNames[g], cfg.thetaMask[g] == '1' ? 1f : 0f);
+        if (slotTheta && !string.IsNullOrEmpty(cfg.thetaExist)) for (int k = 0; k < HandLayout.MaxDigits && k < cfg.thetaExist.Length; k++) SetEnvParam("morph/exist_" + HandLayout.DigitNames[HandLayout.SlotDigit[k]], cfg.thetaExist[k] == '1' ? 1f : 0f);
         massScalePending = true;
     }
     void PreApplyTheta()
@@ -778,9 +804,34 @@ public class ArticulatedGates : MonoBehaviour
     {   // execution order +100: runs after the Academy stepper (whose step rebuilt the rig in OnEpisodeBegin) and before this cycle's physics step
         if (cfg == null || !cfg.thetaFixed || !massScalePending || agent == null || agent.Hand == null) return;
         massScalePending = false; var h = agent.Hand;
-        for (int g = 0; g < ArticulatedHand.GroupCount; g++) if (h.Groups[g] != null) h.Groups[g].mass *= cfg.thetaInertia[g];
-        foreach (var (eb, eg) in h.ExtraLinks) if (eb != null) eb.mass *= cfg.thetaInertia[eg];
+        for (int g = 0; g < HandLayout.MaxFingerGroups; g++) if (h.Groups[g] != null && HandLayout.MorphIndex(g) < cfg.thetaInertia.Length) h.Groups[g].mass *= cfg.thetaInertia[HandLayout.MorphIndex(g)];   // legacy: MorphIndex(g) = g for g < 14
+        foreach (var (eb, eg) in h.ExtraLinks) if (eb != null && HandLayout.MorphIndex(eg) < cfg.thetaInertia.Length) eb.mass *= cfg.thetaInertia[HandLayout.MorphIndex(eg)];
         if (!massLogged) { massLogged = true; Debug.Log("[Gates] theta fixed: lengths " + string.Join("/", System.Array.ConvertAll(cfg.thetaLength, v => v.ToString("F3"))) + " k0=" + mm.stiffness[0].ToString("F3") + " zeta0=" + mm.DampingRatio(0).ToString("F3") + " inertiaScale0=" + mm.inertiaScale[0].ToString("F3") + " indexBase mass=" + (h.Groups[0] != null ? h.Groups[0].mass.ToString("F5") : "-") + " mask=" + cfg.thetaMask + " active=" + mm.ActiveCount + " randomizing=" + mm.Randomizing); }
+    }
+    /// <summary>Run 014: a 14-entry legacy target table read for any group: the extra finger takes the pinky's entries, the second thumb the thumb's.</summary>
+    /// <summary>Run 014 scripted-mode columns digitCount, thumbCount, slots (slot layout only; empty in the legacy layout so its CSV is unchanged).</summary>
+    string ScriptedSlots(bool leadingComma) => HandLayout.Slots ? (leadingComma ? "," : "") + mm.DigitCount + "," + mm.ThumbCount + "," + HandLayout.SlotString(mm.exists) + (leadingComma ? "" : ",") : "";
+    static float ClassTarget(float[] t, int g) => g < t.Length ? t[g] : (g < 17 ? t[9 + (g - 14)] : t[12 + (g - 17)]);
+    /// <summary>Mode "layout" (run 014, 2f): one row per built link of the current hand (reference theta): name, group, digit, slot, length (pivot to the next link or the
+    /// capsule end), capsule radius / height, mass, pivot in the palm frame (mm), plus the palm; the 5-digit table must reproduce the legacy hand (<= 1 %).</summary>
+    void DumpLayout()
+    {
+        var h = agent.Hand; var pl = h.PalmLink; var d = new StringBuilder("layout,link,group,digit,slot,lengthMm,radiusMm,capHeightMm,massG,pivotAlongMm,pivotOutMm,pivotAcrossMm\n");
+        string L = HandLayout.Selected + (HandLayout.Slots ? "/" + HandLayout.SlotString(mm.exists) : "");
+        Vector3 PF3(Vector3 w) { Vector3 v = w - pl.position; return new Vector3(Vector3.Dot(v, pl.up), Vector3.Dot(v, pl.right), Vector3.Dot(v, pl.forward)) * 1000f; }
+        void Row(ArticulationBody b, int g)
+        {
+            var cap = b.GetComponent<CapsuleCollider>(); float len = 0f; foreach (Transform c in b.transform) if (c.GetComponent<ArticulationBody>() != null) { len = Vector3.Distance(b.transform.position, c.position); break; }
+            if (len == 0f && cap != null) len = cap.center.y + 0.5f * cap.height; var pv = PF3(b.transform.position); int dg = g >= 0 ? HandLayout.GroupDigit[g] : -1;
+            d.Append(L).Append(',').Append(b.name).Append(',').Append(g).Append(',').Append(dg).Append(',').Append(dg >= 0 ? HandLayout.DigitSlot[dg] : -1).Append(',').Append((len * 1000f).ToString("F3")).Append(',')
+             .Append(cap != null ? (cap.radius * 1000f).ToString("F3") : "").Append(',').Append(cap != null ? (cap.height * 1000f).ToString("F3") : "").Append(',').Append((b.mass * 1000f).ToString("F4")).Append(',')
+             .Append(pv.x.ToString("F3")).Append(',').Append(pv.y.ToString("F3")).Append(',').Append(pv.z.ToString("F3")).Append('\n');
+        }
+        for (int g = 0; g < HandLayout.MaxFingerGroups; g++) if (h.Groups[g] != null) Row(h.Groups[g], g);
+        foreach (var (eb, eg) in h.ExtraLinks) if (eb != null) Row(eb, eg);
+        var box = h.Palm.GetComponent<BoxCollider>();
+        d.Append(L).Append(",L_Palm,-1,-1,-1,,,").Append(box != null ? (box.size.z * 1000f).ToString("F3") : "").Append(',').Append((h.Palm.mass * 1000f).ToString("F4")).Append(",0,0,").Append(box != null ? (box.center.z * 1000f).ToString("F3") : "").Append('\n');
+        sb.Length = 0; sb.Append(d); Debug.Log("[Gates] layout dump " + L + ": " + (h.Groups.Length) + " group slots, " + h.ExtraLinks.Count + " extra links");
     }
     void Flush() { try { File.WriteAllText(cfg.csv, sb.ToString()); } catch (System.Exception e) { Debug.LogWarning(e.Message); } }
     void Finish()

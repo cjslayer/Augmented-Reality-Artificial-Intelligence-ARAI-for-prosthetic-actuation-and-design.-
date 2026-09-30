@@ -1,0 +1,32 @@
+[
+ {
+  "tag": "anchor_canonical_7001_7300",
+  "csv": "results/014/noop_core_fresh/anchor_canonical_7001_7300.csv",
+  "hash": "9f171357ec54afa9",
+  "success": 0.8833333333333333,
+  "n": 300,
+  "wall_s": 104.9,
+  "extra": {},
+  "time": "12:06:03"
+ },
+ {
+  "tag": "heldout_randomStable_10001_10300_p0",
+  "csv": "results/014/noop_core_fresh/heldout_randomStable_10001_10300_p0.csv",
+  "hash": "88f11f7449828cf3",
+  "success": 0.5533333333333333,
+  "n": 300,
+  "wall_s": 131.3,
+  "extra": {},
+  "time": "12:08:19"
+ },
+ {
+  "tag": "heldout_canonical_10001_10300_p0",
+  "csv": "results/014/noop_core_fresh/heldout_canonical_10001_10300_p0.csv",
+  "hash": "2410b973783bc1e1",
+  "success": 0.73,
+  "n": 300,
+  "wall_s": 125.0,
+  "extra": {},
+  "time": "12:11:42"
+ }
+]

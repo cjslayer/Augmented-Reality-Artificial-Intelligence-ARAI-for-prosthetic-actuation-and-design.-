@@ -1,0 +1,22 @@
+[
+ {
+  "tag": "anchor_canonical_7001_7300",
+  "csv": "results/014/noop_core_r2/anchor_canonical_7001_7300.csv",
+  "hash": "9f171357ec54afa9",
+  "success": 0.8833333333333333,
+  "n": 300,
+  "wall_s": 105.0,
+  "extra": {},
+  "time": "11:58:29"
+ },
+ {
+  "tag": "heldout_randomStable_10001_10300_p0",
+  "csv": "results/014/noop_core_r2/heldout_randomStable_10001_10300_p0.csv",
+  "hash": "8becc01d941440c7",
+  "success": 0.5533333333333333,
+  "n": 300,
+  "wall_s": 131.4,
+  "extra": {},
+  "time": "12:00:45"
+ }
+]

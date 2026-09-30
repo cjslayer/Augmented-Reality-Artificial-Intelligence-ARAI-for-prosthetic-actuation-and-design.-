@@ -80,7 +80,7 @@ public class CheckpointTheater : MonoBehaviour
             UnityEditor.AssetDatabase.ImportAsset(assetPath, UnityEditor.ImportAssetOptions.ForceSynchronousImport);
             var asset = UnityEditor.AssetDatabase.LoadAssetAtPath<ModelAsset>(assetPath);
             if (asset == null) { lastError = "import failed: " + assetPath; Debug.LogError("[Theater] " + lastError); return; }
-            string why; if (!ModelMatchesScene(asset, out why)) { lastError = "REFUSED " + Path.GetFileName(path) + ": " + why; Debug.LogError("[Theater] " + lastError + " (keeping " + loadedSteps + ")"); return; }
+            string why; if (!ModelMatchesScene(asset, out why) || !LayoutGuard.ModelMatches(asset, out why))   // run 014: the full input set of the selected layout (rays included) { lastError = "REFUSED " + Path.GetFileName(path) + ": " + why; Debug.LogError("[Theater] " + lastError + " (keeping " + loadedSteps + ")"); return; }
             foreach (var a in agents) { a.SetModel(cfg.behavior, asset, InferenceDevice.Default); var bp = a.GetComponent<BehaviorParameters>(); if (bp != null) bp.BehaviorType = BehaviorType.InferenceOnly; }
             loadedSteps = steps; loadedPath = path; lastError = "";
             Debug.Log("[Theater] loaded checkpoint " + steps + " (" + path + ") lesson " + lessonNum + " (perturb scale " + lessonValue + ")");

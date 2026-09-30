@@ -48,7 +48,12 @@ def summarize(path):
     lifted = sum(1 for x in r if int(x["stepsToLift"]) >= 0) / n if n else float("nan"); palm = sum(int(x["palm"]) for x in r) / n if n else float("nan")
     cont = st.mean(int(x["contacts"]) for x in r) if n else float("nan"); hold = st.mean(int(x["holdSteps"]) for x in r) if n else float("nan")
     head = r[0]["head_mode"] if r else "?"; mu = r[0]["mu"] if r else "?"
-    return dict(file=path, head=head, mu=mu, n_total=len(rows), excluded_zero_step=len(ex), reach_failures=reach, n=n, success=s, lo=lo, hi=hi, lifted=lifted, palm=palm, contacts=cont, meanHold=hold, ends=ends, rows=r)
+    by_digits = None
+    if r and "digitCount" in r[0]:   # run 014 slot-layout passes: success per digit count and per composition (the slots string, slot order thumb..second thumb)
+        by_digits = {}
+        for key in sorted(set((x["digitCount"], x["slots"]) for x in r)):
+            v = [int(x["success"]) for x in r if (x["digitCount"], x["slots"]) == key]; p_, l_, h_ = wilson(sum(v), len(v)); by_digits[key] = (len(v), p_, l_, h_)
+    return dict(file=path, head=head, mu=mu, n_total=len(rows), excluded_zero_step=len(ex), reach_failures=reach, n=n, success=s, lo=lo, hi=hi, lifted=lifted, palm=palm, contacts=cont, meanHold=hold, ends=ends, rows=r, by_digits=by_digits)
 
 
 def main():
@@ -63,6 +68,7 @@ def main():
     for p in a.passes:
         d = summarize(p)
         print(f"| {os.path.basename(p)} | {d['head']} | {d['mu']} | {d['n']} | {d['excluded_zero_step']} | {d['reach_failures']} | {d['success']:.3f} [{d['lo']:.3f}, {d['hi']:.3f}] | {d['lifted']:.3f} | {d['palm']:.3f} | {d['contacts']:.2f} | {d['meanHold']:.0f} | {d['ends']} |")
+        for (dc, sl), (nn, p_, l_, h_) in (d["by_digits"] or {}).items(): print(f"|   digits {dc} ({sl}) | | | {nn} | | | {p_:.3f} [{l_:.3f}, {h_:.3f}] | | | | | |")
         if w:
             w.writerow([os.path.basename(p), d["head"], d["mu"], d["n_total"], d["excluded_zero_step"], d["reach_failures"], d["n"], "%.4f" % d["success"], "%.4f" % d["lo"], "%.4f" % d["hi"], "%.4f" % d["lifted"], "%.4f" % d["palm"], "%.3f" % d["contacts"], "%.1f" % d["meanHold"], str(d["ends"]).replace(",", ";")])
 

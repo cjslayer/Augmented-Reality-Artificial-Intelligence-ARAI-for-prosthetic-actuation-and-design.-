@@ -148,12 +148,15 @@ public class ArmGraspAgent : Agent
     public Vector3 GraspPoint => m_Palm != null ? m_Palm.position + m_Palm.TransformDirection(EffectiveGraspPointOffset) : Vector3.zero;
     public float GraspPointDistance => cylinderTransform != null ? Vector3.Distance(GraspPoint, cylinderTransform.position) : 0f;
 
+    /// <summary>Legacy layout constants (the 013 interface: 14 finger actions, 19 actions, 16 x 13 tokens). The run-014 slot layout sizes are HandLayout.*;
+    /// arrays inside the agent hold HandLayout.MaxFingerGroups (19) finger groups, absent groups being skipped.</summary>
     public const int GroupCount = 14;
     public const int ArmAxisCount = 5;
     public const int ActionCount = GroupCount + ArmAxisCount;
-    static readonly int[] k_GroupFinger = { 0,0,0, 1,1,1, 2,2,2, 3,3,3, 4,4 };
-    static readonly int[] k_GroupParent = { -1, 0, 1, -1, 3, 4, -1, 6, 7, -1, 9, 10, -1, 12 };
-    static readonly int[] k_GroupSegment = { 0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1 };
+    const int MaxGroups = HandLayout.MaxFingerGroups;
+    static int[] k_GroupFinger => HandLayout.GroupDigit;
+    static int[] k_GroupParent => HandLayout.GroupParent;
+    static int[] k_GroupSegment => HandLayout.GroupSegment;
     const int k_ThumbFinger = 4;
 
     // ---- rig ----
@@ -161,7 +164,10 @@ public class ArmGraspAgent : Agent
     Unity.MLAgents.Sensors.BufferSensorComponent m_TokenSensor;
     public const int TokenSize = 13;
     public const int MaxTokens = GroupCount + 2;
-    float[] m_Token = new float[TokenSize];
+    float[] m_Token = new float[TokenSize];   // resized to HandLayout.TokenSize at Initialize
+    /// <summary>Action index of the first arm action (legacy 14, slots 19).</summary>
+    public int ArmActionOffset => HandLayout.FingerActionCount;
+    public bool IsGroupPresent(int g) => m_Hand != null && m_Hand.Present(g);
     float m_HandSpanRatio = 1f, m_FingerLengthRatio = 1f;
     int m_LimitEvents, m_SaturationEvents; float m_EffortReturn, m_SafetyReturn; int m_EpisodeSaturationEvents, m_EpisodeLimitEvents;
     public float EffortReturn => m_EffortReturn;
@@ -175,7 +181,7 @@ public class ArmGraspAgent : Agent
     /// <summary>Half-height (m) of the object above its centre in its rest orientation, used for the pedestal rest height (SpawnCylinder). Measured once at
     /// Initialize from the scene object; the object bank (ObjectBank, run 013 prep) sets it per episode when it swaps the shape and restores the Initialize value for the anchor.</summary>
     public float ObjectHalfHeight { get => m_CylHalfHeight; set => m_CylHalfHeight = value; }
-    float[] m_Setpoint = new float[GroupCount]; bool[] m_Masked = new bool[GroupCount]; float[] m_WristSetpoint = new float[2];
+    float[] m_Setpoint = new float[MaxGroups]; bool[] m_Masked = new bool[MaxGroups]; float[] m_WristSetpoint = new float[2];
     /// <summary>State of a finger group (angle deg, velocity deg/s, drive target deg).</summary>
     public Vector3 GetGroupState(int g) => m_Hand != null && m_Hand.Built ? new Vector3(m_Hand.GroupAngle(g), m_Hand.GroupVelocity(g), m_Setpoint[g]) : Vector3.zero;
     public bool IsGroupMasked(int g) => m_Masked[g];
@@ -204,7 +210,7 @@ public class ArmGraspAgent : Agent
     struct ContactSample { public float azimuthDeg; public float height; public bool isThumb; public bool isPalm; public Vector3 point, normal; public float impulse; }
     private List<ContactSample> m_Contacts = new List<ContactSample>();
     private List<float> m_Azimuths = new List<float>();
-    bool[] m_GroupTouching = new bool[GroupCount];
+    bool[] m_GroupTouching = new bool[MaxGroups];
 
     // per-episode bookkeeping
     private float m_ShapingReturn, m_PenaltyReturn, m_BonusReturn;
@@ -282,6 +288,122 @@ public class ArmGraspAgent : Agent
     int[] m_PulseStart = new int[0]; Vector3[] m_PulseForce = new Vector3[0], m_PulseTorque = new Vector3[0];
     float m_GripForceSum, m_MaxJointSpeed; int m_GripForceSteps; PhysicsMaterial m_ObjectMaterial; Vector3 m_ObjectUp0;
 
+    // ---- run 014: observation / action layout (HandLayout) ----
+    /// <summary>Legacy fingertip ray sensors captured when the slot layout removes them: cast settings (ML-Agents' own RayPerceptionInput) and the sensor's
+    /// transform, whose pose relative to its finger bone is carried onto the matching physics link every rebuild (the bones follow the links).</summary>
+    class TipRay { public string name; public Transform sensor; public RayPerceptionInput input; public bool end; public int group = -1; public Vector3 relPos, relScale; public Quaternion relRot; }
+    readonly List<TipRay> m_TipRays = new List<TipRay>();
+    /// <summary>Per finger group (distal groups only): the cast frames of the digit's end and middle rays on the current skeleton (null = none).</summary>
+    readonly Transform[,] m_TipFrames = new Transform[MaxGroups, 2]; readonly RayPerceptionInput[,] m_TipInputs = new RayPerceptionInput[MaxGroups, 2];
+
+    protected override void OnEnable()
+    {
+        HandLayout.Resolve();
+        ConfigureLayout();
+        base.OnEnable();   // LazyInitialize: policy from BrainParameters.ActionSpec, then Initialize(), then the sensors (BufferSensorComponent sizes, ray components)
+    }
+
+    /// <summary>Slot layout: set the vector size, the action spec and the token buffer shape, and remove the scene's ten fingertip ray sensors (their reading is
+    /// folded into the distal tokens). Runs before ML-Agents creates the policy and collects the sensor components; the scene files are not edited.
+    /// Legacy: nothing changes (the scene's own values).</summary>
+    void ConfigureLayout()
+    {
+        m_TipRays.Clear();
+        if (!HandLayout.Slots) return;
+        var bp = GetComponent<Unity.MLAgents.Policies.BehaviorParameters>();
+        if (bp != null) { bp.BrainParameters.VectorObservationSize = HandLayout.VectorSize; bp.BrainParameters.NumStackedVectorObservations = 1; bp.BrainParameters.ActionSpec = ActionSpec.MakeContinuous(HandLayout.ActionCount); }
+        if (bp != null && bp.Model != null && !LayoutGuard.ModelMatches(bp.Model, out string whyScene))
+        {   // the deployed scene carries a legacy model (Dynamic_Scene: run 012); it can never run on the slot layout (a mismatched model hangs the Editor,
+            // MLAGENTS_UPGRADE.md:272-285). In the slot layout the policy comes from the trainer or from the harness (which guards its own model), so detach it.
+            Debug.LogWarning("[ArmGraspAgent] scene model " + bp.Model.name + " does not match the slot layout (" + whyScene + "); detached for this session");
+            bp.Model = null;
+            if (bp.BehaviorType == Unity.MLAgents.Policies.BehaviorType.InferenceOnly) bp.BehaviorType = Unity.MLAgents.Policies.BehaviorType.Default;   // Default: the trainer when connected, else the heuristic
+        }
+        var buf = GetComponent<BufferSensorComponent>();
+        if (buf != null) { buf.ObservableSize = HandLayout.TokenSize; buf.MaxNumObservables = HandLayout.MaxTokens; }
+        foreach (var rc in GetComponentsInChildren<RayPerceptionSensorComponent3D>(true))
+        {
+            var input = rc.GetRayPerceptionInput();
+            m_TipRays.Add(new TipRay { name = rc.SensorName, sensor = rc.transform, input = input, end = rc.SensorName.ToLowerInvariant().EndsWith("end") });
+            DestroyImmediate(rc);
+        }
+        Debug.Log("[ArmGraspAgent] layout " + HandLayout.Describe() + "; fingertip ray sensors folded into the tokens: " + m_TipRays.Count);
+    }
+
+    /// <summary>Fail loud when the configured BehaviorParameters, token buffer, ray sensors or model do not match the selected layout (checkpoint-1 decision 6a).</summary>
+    void AssertLayout()
+    {
+        var bp = GetComponent<Unity.MLAgents.Policies.BehaviorParameters>(); var buf = GetComponent<BufferSensorComponent>();
+        int vec = bp != null ? bp.BrainParameters.VectorObservationSize : -1, act = bp != null ? bp.BrainParameters.ActionSpec.NumContinuousActions : -1;
+        int rays = GetComponentsInChildren<RayPerceptionSensorComponent3D>(true).Length;
+        var errs = new List<string>();
+        if (vec != HandLayout.VectorSize) errs.Add("vector " + vec + " != " + HandLayout.VectorSize);
+        if (act != HandLayout.ActionCount) errs.Add("actions " + act + " != " + HandLayout.ActionCount);
+        if (buf == null || buf.ObservableSize != HandLayout.TokenSize || buf.MaxNumObservables != HandLayout.MaxTokens) errs.Add("tokens " + (buf != null ? buf.MaxNumObservables + "x" + buf.ObservableSize : "none") + " != " + HandLayout.MaxTokens + "x" + HandLayout.TokenSize);
+        if (rays != HandLayout.RaySensors) errs.Add("ray sensors " + rays + " != " + HandLayout.RaySensors);
+        if (bp != null && bp.Model != null && !LayoutGuard.ModelMatches(bp.Model, out string why)) errs.Add("model " + bp.Model.name + ": " + why);
+        if (errs.Count == 0) { Debug.Log("[ArmGraspAgent] layout check passed: " + HandLayout.Describe()); return; }
+        string msg = "[ArmGraspAgent] FATAL layout mismatch (" + HandLayout.Selected + "): " + string.Join("; ", errs);
+        Debug.LogError(msg);
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit(3);
+#endif
+        throw new UnityAgentsException(msg);
+    }
+
+    /// <summary>Slot layout: resolve each captured ray sensor to the finger group whose bone carries it and store its pose relative to that bone (world units;
+    /// the bone's world pose equals its link's after every LateUpdate, so the relative pose carries over to the link exactly). Called once the bones are captured.</summary>
+    void BindTipRays()
+    {
+        foreach (var r in m_TipRays)
+        {
+            for (var t = r.sensor; t != null && r.group < 0; t = t.parent)
+                for (int g = 0; g < GroupCount; g++) if (m_Hand.BoneOfGroup(g) == t) { r.group = g; break; }
+            if (r.group < 0) { Debug.LogWarning("[ArmGraspAgent] ray sensor " + r.name + " has no finger bone ancestor; ignored"); continue; }
+            var bone = m_Hand.BoneOfGroup(r.group); var qi = Quaternion.Inverse(bone.rotation);
+            r.relPos = qi * (r.sensor.position - bone.position); r.relRot = qi * r.sensor.rotation; r.relScale = r.sensor.lossyScale;
+        }
+    }
+
+    /// <summary>Slot layout, after every rebuild: one cast frame per (digit, end / middle ray) on the digit's distal link. The legacy digits use their own
+    /// sensors; the extra finger borrows the pinky's, the second thumb the primary thumb's (same link-frame construction). The frame is a child of the link
+    /// with the sensor's world scale, so ML-Agents' RayPerceptionSensor.Perceive reproduces the legacy ray exactly (range, sphere radius, tag, encoding).</summary>
+    void BuildTipFrames()
+    {
+        for (int g = 0; g < MaxGroups; g++) { m_TipFrames[g, 0] = null; m_TipFrames[g, 1] = null; }
+        if (!HandLayout.Slots || m_Hand == null) return;
+        foreach (var r in m_TipRays)
+        {
+            if (r.group < 0) continue;
+            int d = k_GroupFinger[r.group];
+            foreach (int dd in d == 3 ? new[] { 3, 5 } : d == 4 ? new[] { 4, 6 } : new[] { d })
+            {
+                int gSrc = r.group, gDst = gSrc + HandLayout.FirstGroupOfDigit(dd) - HandLayout.FirstGroupOfDigit(d);   // same segment on the target digit
+                int gDist = HandLayout.FirstGroupOfDigit(dd) + HandLayout.GroupsOfDigit(dd) - 1;                       // the digit's distal group carries the token
+                if (!m_Hand.Present(gDst) || !m_Hand.Present(gDist)) continue;
+                var link = m_Hand.Groups[gDst].transform;
+                var go = new GameObject("TipRay_" + HandLayout.DigitNames[dd] + (r.end ? "_end" : "_middle"));
+                go.transform.SetParent(link, false); go.transform.SetPositionAndRotation(link.TransformPoint(r.relPos), link.rotation * r.relRot);
+                var ls = link.lossyScale; go.transform.localScale = new Vector3(r.relScale.x / Mathf.Max(ls.x, 1e-6f), r.relScale.y / Mathf.Max(ls.y, 1e-6f), r.relScale.z / Mathf.Max(ls.z, 1e-6f));
+                int slot = r.end ? 0 : 1; var inp = r.input; inp.Transform = go.transform; inp.UseBatchedRaycasts = false;
+                m_TipFrames[gDist, slot] = go.transform; m_TipInputs[gDist, slot] = inp;
+            }
+        }
+    }
+
+    /// <summary>One legacy-encoded ray reading (the RayPerceptionSensor output of a one-ray sensor): [hit a detectable tag, hit nothing, hit fraction].</summary>
+    void TipRayReading(int g, int slot, float[] dst, int offset)
+    {
+        dst[offset] = 0f; dst[offset + 1] = 0f; dst[offset + 2] = 0f;
+        var frame = m_TipFrames[g, slot]; if (frame == null) return;
+        var o = RayPerceptionSensor.Perceive(m_TipInputs[g, slot], false);
+        if (o.RayOutputs == null || o.RayOutputs.Length == 0) return;
+        var ro = o.RayOutputs[0];
+        dst[offset] = ro.HitTaggedObject ? 1f : 0f; dst[offset + 1] = ro.HasHit ? 0f : 1f; dst[offset + 2] = ro.HitFraction;
+    }
+
     public override void Initialize()
     {
         m_Hand = GetComponent<ArticulatedHand>();
@@ -309,35 +431,41 @@ public class ArmGraspAgent : Agent
 
         // build the skeleton at the reference morphology, then let the morphology manager capture it and take over rebuilds
         m_Hand.CaptureBones();
+        BindTipRays();   // slot layout only (the list is empty in the legacy layout)
         m_Hand.Rebuild(null, null);
         CacheLinks();
         if (m_Morph != null)
         {
             m_Morph.rig = m_Hand;
-            var groupJoints = new Transform[GroupCount][];
-            for (int g = 0; g < GroupCount; g++) groupJoints[g] = m_Hand.Groups[g] != null ? new Transform[] { m_Hand.Groups[g].transform } : new Transform[0];
+            var groupJoints = new Transform[MaxGroups][];
+            for (int g = 0; g < MaxGroups; g++) groupJoints[g] = m_Hand.Groups[g] != null ? new Transform[] { m_Hand.Groups[g].transform } : new Transform[0];
             m_Morph.Initialize(groupJoints, m_Palm);
             CacheLinks();   // Initialize rebuilt the skeleton once more at scale 1
             if (wedgeHandSpanRef <= 0f) wedgeHandSpanRef = m_Morph.HandSpanRef;
         }
         m_TokenSensor = GetComponent<Unity.MLAgents.Sensors.BufferSensorComponent>();
+        m_Token = new float[HandLayout.TokenSize];
         if (neutralPoseDeg == null || neutralPoseDeg.Length != GroupCount) neutralPoseDeg = new float[GroupCount];
         var requester = GetComponent<DecisionRequester>();
         m_DecisionPeriod = requester != null ? Mathf.Max(1, requester.DecisionPeriod) : 1;
-        if (heuristicActions == null || heuristicActions.Length != ActionCount) heuristicActions = new float[ActionCount];
+        if (heuristicActions == null || heuristicActions.Length != HandLayout.ActionCount) heuristicActions = new float[HandLayout.ActionCount];
+        AssertLayout();
     }
+    /// <summary>Neutral pose (deg) of a masked group: the serialized 14-entry table; the extra finger takes the pinky's entries, the second thumb the thumb's.</summary>
+    float NeutralDeg(int g) => g < GroupCount ? neutralPoseDeg[g] : (g < 17 ? neutralPoseDeg[9 + (g - 14)] : neutralPoseDeg[12 + (g - 17)]);
 
     /// <summary>Re-cache link transforms and colliders after a skeleton rebuild.</summary>
     void CacheLinks()
     {
         m_Shoulder = m_Hand.ShoulderLink; m_Forearm = m_Hand.ForearmLink; m_Palm = m_Hand.PalmLink;
         segmentColliders.Clear(); segmentFinger.Clear(); armColliders.Clear();
-        for (int g = 0; g < GroupCount; g++)
+        for (int g = 0; g < MaxGroups; g++)
         {
             var b = m_Hand.Groups[g]; if (b == null) continue;
             var col = b.GetComponent<Collider>(); if (col == null) continue;
             segmentColliders.Add(col); segmentFinger[col] = k_GroupFinger[g];
         }
+        BuildTipFrames();
         m_ForearmCollider = m_Forearm != null ? m_Forearm.GetComponent<Collider>() : null; if (m_ForearmCollider != null) armColliders.Add(m_ForearmCollider);
         m_PalmCollider = m_Palm != null ? m_Palm.GetComponent<Collider>() : null; if (m_PalmCollider != null) armColliders.Add(m_PalmCollider);
     }
@@ -346,17 +474,19 @@ public class ArmGraspAgent : Agent
     void ConfigureDrives()
     {
         if (m_Hand == null || !m_Hand.Built) return;
-        for (int g = 0; g < GroupCount; g++)
+        for (int g = 0; g < MaxGroups; g++)
         {
-            float k = m_Morph != null ? m_Morph.stiffness[g] : 0.5f, b = m_Morph != null ? m_Morph.damping[g] : 0.03f;
+            if (!m_Hand.Present(g)) { m_Masked[g] = false; m_Setpoint[g] = 0f; continue; }   // absent (run 014) groups: no drive, no action, no token
+            int mg = HandLayout.MorphIndex(g);
+            float k = m_Morph != null ? m_Morph.stiffness[mg] : 0.5f, b = m_Morph != null ? m_Morph.damping[mg] : 0.03f;
             m_Masked[g] = m_Morph != null && !m_Morph.mask[g];
             var lim = GetLimits(g);
-            m_Hand.ConfigureGroup(g, k, b, lim, m_Masked[g], neutralPoseDeg[g]);
-            m_Setpoint[g] = m_Masked[g] ? Mathf.Clamp(neutralPoseDeg[g], lim.x, lim.y) : 0f;
+            m_Hand.ConfigureGroup(g, k, b, lim, m_Masked[g], NeutralDeg(g));
+            m_Setpoint[g] = m_Masked[g] ? Mathf.Clamp(NeutralDeg(g), lim.x, lim.y) : 0f;
         }
         for (int a = 0; a < 2; a++)
         {
-            int mi = GroupCount + a;
+            int mi = HandLayout.WristMorphIndex(a);   // = GroupCount + a (unchanged)
             float k = m_Morph != null ? m_Morph.stiffness[mi] : 5f, b = m_Morph != null ? m_Morph.damping[mi] : 0.5f;
             m_Hand.ConfigureWrist(a, k, b, GetArmLimits(3 + a)); m_WristSetpoint[a] = 0f;
         }
@@ -365,8 +495,38 @@ public class ArmGraspAgent : Agent
 
     /// <summary>Diagnostics hook (Editor harnesses): invoked at the top of every OnEpisodeBegin, before the episode's random draws, so an evaluation can seed each episode. No effect when nothing is subscribed.</summary>
     public static System.Action BeforeEpisodeBegin;
+    bool m_SensorsVerified;
+    /// <summary>Run 014 (2c): the sensors ML-Agents actually created (after Initialize) must have the selected layout's shapes: this is the proof that the
+    /// OnEnable configuration ran before the policy and the sensors were built (no reliance on script execution order). Fails loud like AssertLayout.</summary>
+    void VerifySensors()
+    {
+        m_SensorsVerified = true;
+        var f = typeof(Agent).GetField("sensors", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var list = f != null ? f.GetValue(this) as List<ISensor> : null;
+        if (list == null) { Debug.LogWarning("[ArmGraspAgent] sensor verification skipped (Agent.sensors not accessible)"); return; }
+        var shapes = new List<string>(); int vecOk = 0, tokOk = 0, rays = 0;
+        foreach (var s in list)
+        {
+            var sh = s.GetObservationSpec().Shape; var dims = new List<int>(); for (int i = 0; i < sh.Length; i++) dims.Add(sh[i]);
+            shapes.Add(s.GetName() + "[" + string.Join(",", dims) + "]");
+            if (dims.Count == 1 && dims[0] == HandLayout.VectorSize && s.GetName().Contains("Vector")) vecOk++;
+            else if (dims.Count == 2 && dims[0] == HandLayout.MaxTokens && dims[1] == HandLayout.TokenSize) tokOk++;
+            else if (s is RayPerceptionSensor) rays++;
+        }
+        string msg = "[ArmGraspAgent] created sensors (" + HandLayout.Selected + "): " + string.Join(" ", shapes);
+        if (vecOk == 1 && tokOk == 1 && rays == HandLayout.RaySensors && list.Count == 2 + HandLayout.RaySensors) { Debug.Log(msg + " -> OK"); return; }
+        Debug.LogError(msg + " -> FATAL: expected vector " + HandLayout.VectorSize + ", tokens " + HandLayout.MaxTokens + "x" + HandLayout.TokenSize + ", " + HandLayout.RaySensors + " ray sensors");
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit(3);
+#endif
+        throw new UnityAgentsException(msg);
+    }
+
     public override void OnEpisodeBegin()
     {
+        if (!m_SensorsVerified) VerifySensors();
         if (m_EpisodeActive) { if (string.IsNullOrEmpty(m_EndReason)) m_EndReason = "maxStep"; LogEpisode(false); }
         BeforeEpisodeBegin?.Invoke();
 
@@ -467,6 +627,7 @@ public class ArmGraspAgent : Agent
     // Per-joint tokens (BufferSensor, up to 16 x 13): one per ACTIVE finger group plus the two wrist axes.
     public override void CollectObservations(VectorSensor sensor)
     {
+        if (HandLayout.Slots) { CollectObservationsSlots(sensor); return; }
         Vector3 rel = (m_Palm != null && cylinderTransform != null)
             ? m_Palm.InverseTransformDirection(cylinderTransform.position - m_Palm.position) / Mathf.Max(targetObsScale, 1e-4f)
             : Vector3.zero;
@@ -510,6 +671,54 @@ public class ArmGraspAgent : Agent
         }
     }
 
+    /// <summary>
+    /// Run 014 slot layout. Vector (28): [0-2] object in the palm frame, [3] hold progress, [4] touching groups / 19, [5] hold pay, [6] phase, [7] mass,
+    /// [8-17] sin / cos of the 5 arm axes, [18-24] length scale per slot (slot 0 primary thumb, 1-4 index..pinky, 5 extra finger, 6 second thumb; 0 = absent),
+    /// [25] actuated groups / 19, [26] digit count / 7, [27] thumb count / 2.
+    /// Tokens (up to 21 x 20): one per present, unmasked finger group in group order, then the two wrist tokens. Features 0-12 as the legacy token with the
+    /// codes re-normalised for 21 tokens and 7 slots (parent (g + 1) / 21, slot / 6 with the wrist at 7 / 6); 13-15 the digit's end ray and 16-18 its middle
+    /// ray on the distal token ([hit "Cylinder", hit nothing, hit fraction], the legacy RayPerceptionSensor encoding; zeros on the other tokens); 19 thumb flag.
+    /// </summary>
+    void CollectObservationsSlots(VectorSensor sensor)
+    {
+        Vector3 rel = (m_Palm != null && cylinderTransform != null) ? m_Palm.InverseTransformDirection(cylinderTransform.position - m_Palm.position) / Mathf.Max(targetObsScale, 1e-4f) : Vector3.zero;
+        sensor.AddObservation(Vector3.ClampMagnitude(rel, 1.5f));
+        int holdNeeded = HoldStepsNeeded();
+        sensor.AddObservation(Mathf.Clamp01((float)m_HoldSteps / holdNeeded));
+        sensor.AddObservation(CurrentContacts / (float)MaxGroups);
+        sensor.AddObservation(holdRewardBudgetSteps > 0 ? Mathf.Clamp01((float)m_HoldStepsPaid / holdRewardBudgetSteps) : 0f);
+        sensor.AddObservation(0.5f * (int)m_Phase);
+        sensor.AddObservation(m_MassObs);
+        for (int a = 0; a < ArmAxisCount; a++) { float rad = GetArmAngle(a) * Mathf.Deg2Rad; sensor.AddObservation(Mathf.Sin(rad)); sensor.AddObservation(Mathf.Cos(rad)); }
+        for (int slot = 0; slot < HandLayout.MaxDigits; slot++) { int d = HandLayout.SlotDigit[slot]; sensor.AddObservation(m_Morph != null && m_Morph.exists[d] ? m_Morph.lengthScale[d] : 0f); }
+        sensor.AddObservation(m_Morph != null ? m_Morph.ActiveCount / (float)MaxGroups : 0f);
+        sensor.AddObservation(m_Morph != null ? m_Morph.DigitCount / (float)HandLayout.MaxDigits : 0f);
+        sensor.AddObservation(m_Morph != null ? m_Morph.ThumbCount / 2f : 0f);
+
+        if (m_TokenSensor == null || m_Hand == null || !m_Hand.Built) return;
+        float scale = Mathf.Max(workspaceScale, 1e-4f), nTok = HandLayout.MaxTokens;
+        for (int g = 0; g < MaxGroups; g++)
+        {
+            if (!m_Hand.Present(g) || m_Masked[g]) continue;
+            var lim = GetLimits(g); var body = m_Hand.Groups[g];
+            float d = body != null && cylinderTransform != null ? Vector3.Distance(body.transform.position, cylinderTransform.position) / scale : 0f;
+            FillToken(k_GroupParent[g] < 0 ? 0f : (k_GroupParent[g] + 1) / nTok, m_Morph != null ? m_Morph.LinkLength[g] : 0.03f,
+                      HandLayout.DigitSlot[k_GroupFinger[g]] / 6f, k_GroupSegment[g] / 2f, lim, HandLayout.MorphIndex(g), GetGroupAngle(g), m_Hand.GroupVelocity(g), m_Setpoint[g], Mathf.Clamp(d, 0f, 1.5f));
+            for (int i = 13; i < m_Token.Length; i++) m_Token[i] = 0f;
+            if (HandLayout.IsDistal(g)) { TipRayReading(g, 0, m_Token, 13); TipRayReading(g, 1, m_Token, 16); }
+            m_Token[19] = HandLayout.IsThumbGroup(g) ? 1f : 0f;
+            m_TokenSensor.AppendObservation(m_Token);
+        }
+        for (int w = 0; w < 2; w++)
+        {
+            var lim = GetArmLimits(3 + w);
+            float d = m_Palm != null && cylinderTransform != null ? Vector3.Distance(m_Palm.position, cylinderTransform.position) / scale : 0f;
+            FillToken(0f, m_Morph != null ? m_Morph.HandSpan : 0.19f, 7f / 6f, w / 2f, lim, HandLayout.WristMorphIndex(w), GetArmAngle(3 + w), m_Hand.ArmVelocity(3 + w), m_WristSetpoint[w], Mathf.Clamp(d, 0f, 1.5f));
+            for (int i = 13; i < m_Token.Length; i++) m_Token[i] = 0f;
+            m_TokenSensor.AppendObservation(m_Token);
+        }
+    }
+
     void FillToken(float parent, float length, float fingerCode, float segCode, Vector2 lim, int morphIndex, float angle, float vel, float setpoint, float dist)
     {
         float rad = angle * Mathf.Deg2Rad;
@@ -532,7 +741,7 @@ public class ArmGraspAgent : Agent
     public override void Heuristic(in ActionBuffers actionsOut)
     {
         var a = actionsOut.ContinuousActions;
-        for (int i = 0; i < ActionCount && i < a.Length; i++)
+        for (int i = 0; i < a.Length; i++)   // legacy: 19, slots: 24 (a.Length is the configured action count)
             a[i] = heuristicActions != null && i < heuristicActions.Length ? Mathf.Clamp(heuristicActions[i], -1f, 1f) : 0f;
     }
 
@@ -543,31 +752,38 @@ public class ArmGraspAgent : Agent
         float dt = Time.fixedDeltaTime;
         m_LimitEvents = 0; m_SaturationEvents = 0;
         float sumA2 = 0f;
-        for (int i = 0; i < a.Length; i++) sumA2 += a[i] * a[i];
+        int armOff = HandLayout.FingerActionCount;   // legacy 14 (= GroupCount), slots 19
+        if (!HandLayout.Slots) for (int i = 0; i < a.Length; i++) sumA2 += a[i] * a[i];
+        else
+        {   // run 014 (checkpoint-1 decision 8): effort over the PRESENT joints only (present finger groups, masked ones included as today, plus the 5 arm axes);
+            // unnormalised, so a hand with more digits pays more effort for the same per-joint activity
+            for (int g = 0; g < MaxGroups && g < a.Length; g++) if (m_Hand.Present(g)) sumA2 += a[g] * a[g];
+            for (int i = armOff; i < a.Length; i++) sumA2 += a[i] * a[i];
+        }
 
         // arm: shoulder flexion / abduction, elbow as velocity drives; wrist flexion / pronation as spring targets
-        for (int i = 0; i < ArmAxisCount && GroupCount + i < a.Length; i++)
+        for (int i = 0; i < ArmAxisCount && armOff + i < a.Length; i++)
         {
             var lim = GetArmLimits(i);
             if (i < 3)
             {
                 if (!actuateProximalJoints) { m_Hand.SetArmVelocity(i, 0f); continue; }
-                float v = a[GroupCount + i] * armRotationSpeed, ang = GetArmAngle(i);
+                float v = a[armOff + i] * armRotationSpeed, ang = GetArmAngle(i);
                 if ((ang <= lim.x + 0.5f && v < 0f) || (ang >= lim.y - 0.5f && v > 0f)) { m_LimitEvents++; v = 0f; }
                 m_Hand.SetArmVelocity(i, v);
             }
             else
             {
                 int w = i - 3;
-                float sp = m_WristSetpoint[w] + a[GroupCount + i] * setpointRateDegPerSec * dt;
+                float sp = m_WristSetpoint[w] + a[armOff + i] * setpointRateDegPerSec * dt;
                 if (sp < lim.x || sp > lim.y) { m_LimitEvents++; sp = Mathf.Clamp(sp, lim.x, lim.y); }
                 m_WristSetpoint[w] = sp; m_Hand.SetWristTarget(w, sp);
             }
         }
-        // fingers: delta-target on the spring drives; masked groups hold neutral
-        for (int g = 0; g < GroupCount; g++)
+        // fingers: delta-target on the spring drives; masked groups hold neutral; absent groups have no drive (their actions are ignored)
+        for (int g = 0; g < MaxGroups && g < armOff; g++)
         {
-            if (m_Masked[g]) continue;
+            if (m_Masked[g] || !m_Hand.Present(g)) continue;
             var lim = GetLimits(g);
             float sp = m_Setpoint[g] + a[g] * setpointRateDegPerSec * dt;
             if (sp < lim.x || sp > lim.y) { m_LimitEvents++; sp = Mathf.Clamp(sp, lim.x, lim.y); }
@@ -578,22 +794,23 @@ public class ArmGraspAgent : Agent
 
         // ---- contacts (real collisions relayed by the links during the last physics step) ----
         int contacts = 0; bool thumbTouching = false; int fingerMask = 0; bool palmTouching = false, forearmTouching = false;
-        for (int g = 0; g < GroupCount; g++) m_GroupTouching[g] = false;
+        for (int g = 0; g < MaxGroups; g++) m_GroupTouching[g] = false;
         m_Contacts.Clear(); float impulseSum = 0f; Vector3 impulseVec = Vector3.zero;
         foreach (var c in m_Hand.Contacts)
         {
             if (c.separation > contactDistance) continue;
             impulseSum += c.impulse; impulseVec += c.normal * c.impulse;
             if (c.group >= 0) m_GroupTouching[c.group] = true; else if (c.isPalm) palmTouching = true; else if (c.isForearm) forearmTouching = true;
-            var s = MakeSample(c.point); s.isThumb = c.group >= 0 && k_GroupFinger[c.group] == k_ThumbFinger; s.isPalm = c.isPalm; s.impulse = c.impulse;
+            var s = MakeSample(c.point); s.isThumb = c.group >= 0 && HandLayout.IsThumbGroup(c.group); s.isPalm = c.isPalm; s.impulse = c.impulse;   // any thumb slot (legacy: groups 12-13)
             if (c.group >= 0 || c.isPalm) m_Contacts.Add(s);
         }
         m_Hand.ClearContacts();
         float gripTorque = 0f;
-        for (int g = 0; g < GroupCount; g++)
-        {
-            if (m_GroupTouching[g]) { contacts++; int f = k_GroupFinger[g]; if (f == k_ThumbFinger) thumbTouching = true; else fingerMask |= 1 << f; gripTorque += Mathf.Abs(m_Hand.GroupDriveForce(g)); }
-            if (!m_Masked[g] && Mathf.Abs(m_Hand.GroupDriveForce(g)) >= 0.98f * m_Hand.forceLimits[g < 12 ? g % 3 : (g == 12 ? 3 : 4)]) m_SaturationEvents++;
+        for (int g = 0; g < MaxGroups; g++)
+        {   // gate semantics unchanged: contacts = touching groups, thumb = any thumb slot, distinct fingers = non-thumb digits (bit per digit id)
+            if (!m_Hand.Present(g)) continue;
+            if (m_GroupTouching[g]) { contacts++; int f = k_GroupFinger[g]; if (HandLayout.IsThumbDigit(f)) thumbTouching = true; else fingerMask |= 1 << f; gripTorque += Mathf.Abs(m_Hand.GroupDriveForce(g)); }
+            if (!m_Masked[g] && Mathf.Abs(m_Hand.GroupDriveForce(g)) >= 0.98f * m_Hand.forceLimits[HandLayout.GroupClass(g)]) m_SaturationEvents++;
         }
         m_EpisodeSaturationEvents += m_SaturationEvents;
         CurrentContacts = contacts; GripForce = gripTorque; FrictionForce = impulseSum / dt; NetFrictionForce = impulseVec / dt; NetSqueezeForce = Vector3.zero;
@@ -799,6 +1016,13 @@ public class ArmGraspAgent : Agent
             rec.Add("Pose/CanonicalShare", pm == "Canonical" ? 1f : 0f);
             rec.Add("Pose/CanonicalFraction", ObjectBank.Instance.CurrentCanonicalFraction);
         }
+        if (HandLayout.Slots && m_Morph != null)
+        {   // run 014 stats only: success, gate and lift by digit count (the two 6-digit compositions also separately)
+            int dc = m_Morph.DigitCount; string dk = "Digits" + dc;
+            rec.Add("Success/" + dk, success ? 1f : 0f); rec.Add("Gate/" + dk, m_TransitionStep >= 0 ? 1f : 0f); rec.Add("Lift/" + dk, m_StepsToLift >= 0 ? 1f : 0f);
+            if (dc == 6) rec.Add("Success/Digits6" + (m_Morph.exists[6] ? "b" : "a"), success ? 1f : 0f);
+            rec.Add("Morph/DigitCount", dc); rec.Add("Morph/ThumbCount", m_Morph.ThumbCount); rec.Add("Morph/PresentGroups", m_Morph.PresentGroupCount);
+        }
         rec.Add("Grasp/StepsToFirstSixContacts", m_StepsToFirstSixContacts);
         rec.Add("Grasp/StepsToSuccess", success ? StepCount : -1);
         rec.Add("Grasp/ContactsAtEnd", CurrentContacts);
@@ -903,8 +1127,40 @@ public class ArmGraspAgent : Agent
             case 3: return middleBaseLimits;  case 4: return middleMiddleLimits;  case 5: return middleEndLimits;
             case 6: return ringBaseLimits;    case 7: return ringMiddleLimits;    case 8: return ringEndLimits;
             case 9: return pinkyBaseLimits;   case 10: return pinkyMiddleLimits;  case 11: return pinkyEndLimits;
-            case 12: return thumbBaseLimits;  default: return thumbEndLimits;
+            case 12: return thumbBaseLimits;  case 13: return thumbEndLimits;
+            case 14: return pinkyBaseLimits;  case 15: return pinkyMiddleLimits;  case 16: return pinkyEndLimits;   // run 014 extra finger: the pinky's limits
+            case 17: return thumbBaseLimits;  default: return thumbEndLimits;                                      // run 014 second thumb: the thumb's limits
         }
     }
     private static int CountBits(int v) { int c = 0; while (v != 0) { c += v & 1; v >>= 1; } return c; }
+}
+
+/// <summary>
+/// Run 014 shape guard: does an ONNX policy match the selected observation / action layout (HandLayout)? Legacy: a [*, 16, 13] token input, a [*, 24]
+/// vector input and 10 ray inputs (12 inputs); slots: a [*, 21, 20] token input and a [*, 28] vector input (2 inputs). Used by the agent's start-up
+/// assert (when a model is assigned) and by the Editor harness before it assigns an evaluation model.
+/// </summary>
+public static class LayoutGuard
+{
+    public static bool ModelMatches(Unity.InferenceEngine.ModelAsset asset, out string why)
+    {
+        why = "";
+        if (asset == null) { why = "no model"; return false; }
+        Unity.InferenceEngine.Model model;
+        try { model = Unity.InferenceEngine.ModelLoader.Load(asset); } catch (System.Exception e) { why = "cannot parse model: " + e.Message; return false; }
+        int vecSize = HandLayout.VectorSize, tokN = HandLayout.MaxTokens, tokD = HandLayout.TokenSize, rays = HandLayout.RaySensors;
+        bool vecOk = false, tokOk = false; int small = 0; var seen = new System.Text.StringBuilder();
+        foreach (var inp in model.inputs)
+        {
+            var dims = new List<int>(); foreach (var tok in inp.shape.ToString().Trim('(', ')', '[', ']').Split(',')) dims.Add(int.TryParse(tok.Trim(), out int v) ? v : -1);
+            seen.Append(inp.name).Append('[').Append(string.Join(",", dims)).Append("] ");
+            if (dims.Count == 2 && dims[1] == vecSize) vecOk = true;
+            else if (dims.Count == 2 && (dims[1] == 2 || dims[1] == 3)) small++;   // legacy ray sensor inputs
+            if (dims.Count == 3 && dims[1] == tokN && dims[2] == tokD) tokOk = true;
+        }
+        int expectedInputs = 2 + rays;
+        if (!vecOk || !tokOk || small != rays || model.inputs.Count != expectedInputs)
+        { why = "inputs " + seen + "do not match the " + HandLayout.Selected + " layout (vector " + vecSize + ", tokens " + tokN + "x" + tokD + ", ray inputs " + rays + ", " + expectedInputs + " inputs)"; return false; }
+        return true;
+    }
 }

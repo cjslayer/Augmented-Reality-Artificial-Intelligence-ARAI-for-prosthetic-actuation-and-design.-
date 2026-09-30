@@ -12,12 +12,13 @@ using UnityEngine;
 /// </summary>
 public class MorphologyWatchOverlay : MonoBehaviour
 {
-    static readonly string[] k_TipTags = { "indexEnd", "middleEnd", "ringEnd", "pinkyEnd", "thumbEnd" };
-    static readonly string[] k_TipLabels = { "idx", "mid", "ring", "pnk", "thb" };
+    // run 014: one tip per digit slot (design-doc slot order: primary thumb, index, middle, ring, pinky, extra finger, second thumb); the tip is the distal link of the
+    // digit, read from the agent's ArticulatedHand (the rebuilt skeleton is not parented under the agent, so the old tag + IsChildOf lookup never found it)
+    static readonly string[] k_TipLabels = { "thb", "idx", "mid", "ring", "pnk", "ext", "th2" };
 
     class Watched
     {
-        public ArmGraspAgent agent; public MorphologyManager morph; public Collider[] tips = new Collider[5];
+        public ArmGraspAgent agent; public MorphologyManager morph; public Collider[] tips = new Collider[HandLayout.MaxDigits];
         public Transform cylinder; public Collider cylinderCollider; public string name;
     }
     readonly List<Watched> m_Watched = new List<Watched>();
@@ -39,9 +40,6 @@ public class MorphologyWatchOverlay : MonoBehaviour
         {
             if (!agent.isActiveAndEnabled) continue;
             var w = new Watched { agent = agent, morph = agent.GetComponent<MorphologyManager>(), name = agent.gameObject.name };
-            for (int i = 0; i < 5; i++)
-                foreach (var tagged in GameObject.FindGameObjectsWithTag(k_TipTags[i]))
-                    if (tagged.transform.IsChildOf(agent.transform) && tagged.TryGetComponent<Collider>(out var col)) { w.tips[i] = col; break; }
             // the agent's cylinder: FindGameObjectWithTag("Cylinder") in ArmGraspAgent.Initialize; mirror it, nearest to this agent if several
             float best = float.MaxValue;
             foreach (var c in GameObject.FindGameObjectsWithTag("Cylinder"))
@@ -54,12 +52,12 @@ public class MorphologyWatchOverlay : MonoBehaviour
     }
 
     void RefreshTips(Watched w)
-    {   // the articulated skeleton is rebuilt every episode: re-find the tip colliders when they have been destroyed
-        for (int i = 0; i < 5; i++)
+    {   // the articulated skeleton is rebuilt every episode: take each digit's distal link from the agent's hand (null when the digit is absent)
+        var h = w.agent.Hand;
+        for (int k = 0; k < HandLayout.MaxDigits; k++)
         {
-            if (w.tips[i] != null) continue;
-            foreach (var tagged in GameObject.FindGameObjectsWithTag(k_TipTags[i]))
-                if (tagged.transform.IsChildOf(w.agent.transform) || tagged.transform.root == w.agent.transform.root) { if (tagged.TryGetComponent<Collider>(out var col)) { w.tips[i] = col; break; } }
+            int d = HandLayout.SlotDigit[k], g = HandLayout.FirstGroupOfDigit(d) + HandLayout.GroupsOfDigit(d) - 1;
+            w.tips[k] = h != null && h.Present(g) ? h.Groups[g].GetComponent<Collider>() : null;
         }
     }
     bool TipTouching(Watched w, Collider col)
@@ -90,29 +88,30 @@ public class MorphologyWatchOverlay : MonoBehaviour
             else
             {
                 m_Sb.Append("randomize ").Append(m.Randomizing ? "<color=#7CFC00>ON</color>" : "<color=#FF6060>OFF</color>").Append("   ");
-                m_Sb.Append("len  idx ").Append(m.lengthScale[0].ToString("F2")).Append("  mid ").Append(m.lengthScale[1].ToString("F2"))
-                    .Append("  ring ").Append(m.lengthScale[2].ToString("F2")).Append("  pnk ").Append(m.lengthScale[3].ToString("F2"))
-                    .Append("  thb ").Append(m.lengthScale[4].ToString("F2")).Append('\n');
-                int active = 0; float wSum = 0f, kSum = 0f;
-                for (int g = 0; g < MorphologyManager.FingerGroupCount; g++) { if (m.mask[g]) active++; wSum += m.NaturalFrequency(g); kSum += m.stiffness[g]; }
-                m_Sb.Append("active groups ").Append(active).Append("/14   masked: ");
+                m_Sb.Append(HandLayout.Slots ? "digits " + m.DigitCount + " (" + HandLayout.SlotString(m.exists) + ")  len" : "len");
+                for (int k = 0; k < HandLayout.MaxDigits; k++) { int d = HandLayout.SlotDigit[k]; if (m.exists[d]) m_Sb.Append("  ").Append(k_TipLabels[k]).Append(' ').Append(m.lengthScale[d].ToString("F2")); }
+                m_Sb.Append('\n');
+                int active = 0, present = 0; float wSum = 0f, kSum = 0f;
+                for (int g = 0; g < HandLayout.MaxFingerGroups; g++) { if (!m.GroupPresent(g)) continue; present++; int mg = HandLayout.MorphIndex(g); if (m.mask[g]) active++; wSum += m.NaturalFrequency(mg); kSum += m.stiffness[mg]; }
+                m_Sb.Append("active groups ").Append(active).Append('/').Append(present).Append("   masked: ");
                 bool any = false;
-                for (int g = 0; g < MorphologyManager.FingerGroupCount; g++)
-                    if (!m.mask[g]) { if (any) m_Sb.Append(", "); m_Sb.Append(MorphologyManager.GroupNames[g]); any = true; }
+                for (int g = 0; g < HandLayout.MaxFingerGroups; g++)
+                    if (m.GroupPresent(g) && !m.mask[g]) { if (any) m_Sb.Append(", "); m_Sb.Append(HandLayout.GroupNames[g]); any = true; }
                 if (!any) m_Sb.Append("none");
                 m_Sb.Append('\n');
-                m_Sb.Append("mean finger k ").Append((kSum / MorphologyManager.FingerGroupCount).ToString("F2")).Append(" Nm/rad (derived omega ").Append((wSum / MorphologyManager.FingerGroupCount).ToString("F0")).Append(" rad/s)")
+                m_Sb.Append("mean finger k ").Append((kSum / Mathf.Max(1, present)).ToString("F2")).Append(" Nm/rad (derived omega ").Append((wSum / Mathf.Max(1, present)).ToString("F0")).Append(" rad/s)")
                     .Append("   wrist omega ").Append(m.NaturalFrequency(MorphologyManager.FingerGroupCount).ToString("F1"))
                     .Append(" / ").Append(m.NaturalFrequency(MorphologyManager.FingerGroupCount + 1).ToString("F1")).Append('\n');
             }
             RefreshTips(w);
             m_Sb.Append("palm ").Append(a.LastPalmTouching ? "<color=#7CFC00>TOUCH</color>" : "<color=#808080>----</color>").Append("   tips ");
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < HandLayout.MaxDigits; i++)
             {
+                if (w.tips[i] == null) continue;
                 bool t = TipTouching(w, w.tips[i]);
                 m_Sb.Append(t ? "<color=#7CFC00>" : "<color=#808080>").Append(k_TipLabels[i]).Append("</color> ");
             }
-            m_Sb.Append("  contacts ").Append(a.CurrentContacts).Append("/14");
+            m_Sb.Append("  contacts ").Append(a.CurrentContacts).Append('/').Append(w.morph != null ? w.morph.PresentGroupCount : 14);
             var content = new GUIContent(m_Sb.ToString());
             Vector2 size = m_Style.CalcSize(content);
             GUI.Box(new Rect(8f, y, size.x + 12f, size.y + 8f), content, m_Style);

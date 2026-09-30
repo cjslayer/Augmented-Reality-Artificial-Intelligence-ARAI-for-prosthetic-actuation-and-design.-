@@ -84,6 +84,10 @@ public class HandSpec
     };
     public Thumb thumb = new Thumb();
     public Palm palm = new Palm();
+    [Tooltip("Run 014 slot layout: the extra ulnar finger (slot 5), extrapolated past the pinky from the radial-to-ulnar trend of the table (MCP along 99/104/100/91 -> 82 mm, across -31.5 - 21 = -52.5 mm, rest abduction +8/0/-6/-14 -> -22 deg, tilt 2/3/8/13 -> 18 deg); phalanges and radii copied from the pinky. Built only when the digit exists; the palm then widens by extraFingerPalmWidening on the ulnar side (docs/design/014_topology.md).")]
+    public Finger extraFinger = new Finger { name = "extra", proximal = 0.0319f, middle = 0.0171f, distal = 0.0149f, mcp = new Vector3(0.082f, 0f, -0.0525f), restAbductionDeg = -22f, flexionPlaneTiltDeg = 18f, radiusProximal = 0.008f, radiusMiddle = 0.007f, radiusDistal = 0.0065f };
+    [Tooltip("Palm widening (m) on the ulnar side when the extra finger exists (one MCP spacing).")]
+    public float extraFingerPalmWidening = 0.021f;
     [Tooltip("Palmar soft-tissue depth over each phalanx (m): bone axis to palmar skin ~10 mm; the capsule centre is offset toward the palm by (this - radius).")]
     public float palmarFleshOffset = 0.010f;
     [Tooltip("Fingertip pad beyond the distal phalanx bone (m).")]
@@ -102,14 +106,98 @@ public class HandSpec
     }
 }
 
+/// <summary>
+/// Hand topology (run 014, docs/design/014_topology.md). Two observation / action layouts share one generator:
+///   Legacy (default): the 013 hand and interface: 5 digits, 14 finger groups, 24-float vector, 16 x 13 tokens, 10 scene ray sensors, 19 actions.
+///   Slots: digit count 3-7 per episode over 7 digit slots, 19 finger groups max, 28-float vector, 21 x 20 tokens (fingertip rays folded into
+///   the distal tokens, thumb flag), no ray sensors, 24 actions.
+/// Digit ids keep the legacy order as a prefix (0 index, 1 middle, 2 ring, 3 pinky, 4 thumb) and append 5 = extra ulnar finger, 6 = second
+/// thumb (mirrored, ulnar). Finger-group ids keep the legacy 0-13 as a prefix and append 14-16 (extra finger) and 17-18 (second thumb).
+/// Morphology arrays (k, b, I, inertia scale) keep the legacy 16 as a prefix (wrist at 14-15) and append the new groups at 16-20
+/// (MorphIndex). The design doc's slot numbering (slot 0 = primary thumb, 1-4 index..pinky, 5 extra, 6 second thumb) is SlotDigit / DigitSlot.
+/// The layout is chosen once per Play session / player process: command-line "--topology slots" (the run-014 trainer passes it through
+/// env_settings.env_args), or, in the Editor, the harness config key "topology": "slots" in Temp/gates.json. Anything else = Legacy.
+/// </summary>
+public static class HandLayout
+{
+    public enum Layout { Legacy = 0, Slots = 1 }
+    public const int LegacyFingerGroups = 14, MaxFingerGroups = 19, MaxDigits = 7, LegacyDigits = 5, WristAxes = 2, ArmAxes = 5;
+    public const int LegacyMorphGroups = LegacyFingerGroups + WristAxes, MaxMorphGroups = MaxFingerGroups + WristAxes;   // 16 / 21
+    public const int SlotsTokenSize = 20, SlotsVectorSize = 28, LegacyTokenSize = 13, LegacyVectorSize = 24, LegacyRaySensors = 10;
+    public static readonly string[] DigitNames = { "index", "middle", "ring", "pinky", "thumb", "extra", "thumb2" };
+    public static readonly int[] SlotDigit = { 4, 0, 1, 2, 3, 5, 6 };
+    public static readonly int[] DigitSlot = { 1, 2, 3, 4, 0, 5, 6 };
+    public static readonly string[] GroupNames = {
+        "indexBase","indexMiddle","indexEnd","middleBase","middleMiddle","middleEnd","ringBase","ringMiddle","ringEnd",
+        "pinkyBase","pinkyMiddle","pinkyEnd","thumbBase","thumbEnd","extraBase","extraMiddle","extraEnd","thumb2Base","thumb2End" };
+    public static readonly int[] GroupDigit = { 0,0,0, 1,1,1, 2,2,2, 3,3,3, 4,4, 5,5,5, 6,6 };
+    public static readonly int[] GroupParent = { -1, 0, 1, -1, 3, 4, -1, 6, 7, -1, 9, 10, -1, 12, -1, 14, 15, -1, 17 };   // -1 = palm
+    public static readonly int[] GroupSegment = { 0,1,2, 0,1,2, 0,1,2, 0,1,2, 0,1, 0,1,2, 0,1 };
+    public static readonly bool[] FiveDigit = { true, true, true, true, true, false, false };
+    public static bool IsThumbDigit(int d) => d == 4 || d == 6;
+    public static bool IsThumbGroup(int g) => IsThumbDigit(GroupDigit[g]);
+    /// <summary>Joint class: 0 finger base (MCP), 1 middle (PIP), 2 end (DIP), 3 thumb base (CMC), 4 thumb end (IP). Selects force limit, k range and joint limits.</summary>
+    public static int GroupClass(int g) => IsThumbGroup(g) ? 3 + GroupSegment[g] : GroupSegment[g];
+    public static bool IsDistal(int g) => IsThumbGroup(g) ? GroupSegment[g] == 1 : GroupSegment[g] == 2;
+    public static int FirstGroupOfDigit(int d) => d < 4 ? d * 3 : (d == 4 ? 12 : (d == 5 ? 14 : 17));
+    public static int GroupsOfDigit(int d) => IsThumbDigit(d) ? 2 : 3;
+    /// <summary>Morphology-array index of a finger group (legacy 0-13 unchanged, wrist stays at 14-15, new groups at 16-20).</summary>
+    public static int MorphIndex(int g) => g < LegacyFingerGroups ? g : g + WristAxes;
+    public static int WristMorphIndex(int w) => LegacyFingerGroups + w;
+    /// <summary>Finger group of a morphology index, or -1 for the wrist.</summary>
+    public static int GroupOfMorph(int m) => m < LegacyFingerGroups ? m : (m < LegacyMorphGroups ? -1 : m - WristAxes);
+
+    /// <summary>Digit existence for a digit count (run 014): 3 = thumb + index + middle, 4 = + ring, 5 = + pinky (the 013 hand), 6 = + extra finger
+    /// (secondThumbAtSix false) or + second thumb (true), 7 = + extra finger + second thumb. Digits drop from the ulnar side; 2-digit hands are not built.</summary>
+    public static bool[] Composition(int digits, bool secondThumbAtSix)
+    {
+        var e = new bool[MaxDigits]; e[4] = true; e[0] = true;
+        digits = Mathf.Clamp(digits, 3, 7);
+        if (digits >= 3) e[1] = true; if (digits >= 4) e[2] = true; if (digits >= 5) e[3] = true;
+        if (digits == 6) { if (secondThumbAtSix) e[6] = true; else e[5] = true; }
+        if (digits == 7) { e[5] = true; e[6] = true; }
+        return e;
+    }
+    public static int DigitCount(bool[] e) { int n = 0; for (int d = 0; d < MaxDigits; d++) if (e != null && d < e.Length && e[d]) n++; return n; }
+    public static int ThumbCount(bool[] e) => (e != null && e.Length > 4 && e[4] ? 1 : 0) + (e != null && e.Length > 6 && e[6] ? 1 : 0);
+    /// <summary>Existence string in design-doc slot order (slot 0 = primary thumb ... slot 6 = second thumb), e.g. "1111100" for the 013 hand.</summary>
+    public static string SlotString(bool[] e) { var s = new System.Text.StringBuilder(); for (int k = 0; k < MaxDigits; k++) s.Append(e != null && e[SlotDigit[k]] ? '1' : '0'); return s.ToString(); }
+
+    // ---- layout selection ----
+    static Layout s_Layout; static bool s_Resolved;
+    public static Layout Selected { get { if (!s_Resolved) Resolve(); return s_Layout; } }
+    public static bool Slots => Selected == Layout.Slots;
+    [System.Serializable] class HarnessTopologyCfg { public string topology = ""; }
+    /// <summary>(Re)resolve the layout; the agent calls this in OnEnable, before ML-Agents creates the policy and the sensors.</summary>
+    public static void Resolve()
+    {
+        s_Layout = Layout.Legacy; s_Resolved = true;
+        var args = System.Environment.GetCommandLineArgs();
+        for (int i = 0; i < args.Length - 1; i++) if ((args[i] == "--topology" || args[i] == "-topology") && args[i + 1].ToLowerInvariant() == "slots") s_Layout = Layout.Slots;
+#if UNITY_EDITOR
+        try { if (System.IO.File.Exists("Temp/gates.json")) { var c = JsonUtility.FromJson<HarnessTopologyCfg>(System.IO.File.ReadAllText("Temp/gates.json")); if (c != null && c.topology != null && c.topology.ToLowerInvariant() == "slots") s_Layout = Layout.Slots; } }
+        catch (System.Exception ex) { Debug.LogWarning("[HandLayout] harness config not readable: " + ex.Message); }
+#endif
+    }
+    public static int FingerActionCount => Slots ? MaxFingerGroups : LegacyFingerGroups;
+    public static int ActionCount => FingerActionCount + ArmAxes;
+    public static int TokenSize => Slots ? SlotsTokenSize : LegacyTokenSize;
+    public static int MaxTokens => (Slots ? MaxFingerGroups : LegacyFingerGroups) + WristAxes;
+    public static int VectorSize => Slots ? SlotsVectorSize : LegacyVectorSize;
+    public static int RaySensors => Slots ? 0 : LegacyRaySensors;
+    public static string Describe() => Selected + " (vector " + VectorSize + ", tokens " + MaxTokens + " x " + TokenSize + ", ray sensors " + RaySensors + ", actions " + ActionCount + ")";
+}
+
 public class ArticulatedHand : MonoBehaviour
 {
+    /// <summary>Legacy finger-group count (the 013 hand); the built skeleton holds up to HandLayout.MaxFingerGroups groups (Groups[g] == null when absent).</summary>
     public const int GroupCount = 14;
+    /// <summary>Tags of the 14 legacy finger groups (bones, and the links built for them). The run-014 groups 14-18 are not tagged (no new tags: ProjectSettings is out of scope).</summary>
     public static readonly string[] GroupTags = {
         "indexBase","indexMiddle","indexEnd","middleBase","middleMiddle","middleEnd","ringBase","ringMiddle","ringEnd",
         "pinkyBase","pinkyMiddle","pinkyEnd","thumbBase","thumbEnd" };
-    static readonly int[] k_GroupParent = { -1, 0, 1, -1, 3, 4, -1, 6, 7, -1, 9, 10, -1, 12 };   // -1 = palm
-    static readonly int[] k_GroupFinger = { 0,0,0, 1,1,1, 2,2,2, 3,3,3, 4,4 };
+    static int[] k_GroupParent => HandLayout.GroupParent;
+    static int[] k_GroupFinger => HandLayout.GroupDigit;
 
     [Header("Bones (visual armature)")]
     public string shoulderPath = "Armature/Bone/Bicep.r";
@@ -166,7 +254,14 @@ public class ArticulatedHand : MonoBehaviour
     public ArticulationBody Bicep { get; private set; }
     public ArticulationBody Forearm { get; private set; }
     public ArticulationBody Palm { get; private set; }
-    public ArticulationBody[] Groups { get; private set; } = new ArticulationBody[GroupCount];
+    public ArticulationBody[] Groups { get; private set; } = new ArticulationBody[HandLayout.MaxFingerGroups];   // null = absent group (legacy: 14-18 always absent)
+    /// <summary>Digit existence of the built hand (digit ids, HandLayout.DigitNames).</summary>
+    public bool[] Exists { get; private set; } = (bool[])HandLayout.FiveDigit.Clone();
+    public bool Present(int g) => g >= 0 && g < Groups.Length && Groups[g] != null;
+    /// <summary>Unscaled link length (m) per finger group as built at length scale 1: pivot to the next link, or the capsule end (with the tip pad) for a distal link.</summary>
+    public float[] NominalLinkLength { get; private set; } = new float[HandLayout.MaxFingerGroups];
+    /// <summary>Palm box width (m) of the built hand (widened when the extra finger exists).</summary>
+    public float PalmWidth { get; private set; }
     public Transform PalmLink => Palm != null ? Palm.transform : null;
     public Transform ForearmLink => Forearm != null ? Forearm.transform : null;
     public Transform ShoulderLink => Bicep != null ? Bicep.transform : null;
@@ -179,7 +274,7 @@ public class ArticulatedHand : MonoBehaviour
     Transform[] m_BoneOfLink; ArticulationBody[] m_LinkOfBone;
     GameObject m_SkeletonRoot;
     bool m_Captured;
-    float[] m_LengthScale = { 1f, 1f, 1f, 1f, 1f }, m_InertiaScale = new float[GroupCount + 2];
+    float[] m_LengthScale = { 1f, 1f, 1f, 1f, 1f, 1f, 1f }, m_InertiaScale = new float[HandLayout.MaxMorphGroups];   // per digit id; per morphology index (HandLayout.MorphIndex)
     readonly List<(ArticulationBody body, Transform bone)> m_Follow = new List<(ArticulationBody, Transform)>();
     static readonly Quaternion k_ZAxisAnchor = Quaternion.Euler(0f, -90f, 0f);   // anchor X -> body local Z
 
@@ -241,11 +336,14 @@ public class ArticulatedHand : MonoBehaviour
         return b;
     }
 
-    /// <summary>(Re)build the link skeleton for the given per-finger length scales and per-group inertia scales (16 = 14 fingers + wrist flex + wrist pron).</summary>
-    public void Rebuild(float[] lengthScale, float[] inertiaScale)
+    /// <summary>(Re)build the link skeleton for the given per-digit length scales (digit ids; legacy 5 or 7), per-morphology-index inertia scales
+    /// (legacy 16 = 14 fingers + wrist flex + wrist pron; run 014: 21, HandLayout.MorphIndex) and digit existence (null = the 013 five-digit hand).</summary>
+    public void Rebuild(float[] lengthScale, float[] inertiaScale, bool[] exists = null)
     {
         CaptureBones();
-        if (lengthScale != null) for (int f = 0; f < 5; f++) m_LengthScale[f] = lengthScale[f];
+        if (lengthScale != null) for (int f = 0; f < m_LengthScale.Length && f < lengthScale.Length; f++) m_LengthScale[f] = lengthScale[f];
+        Exists = exists != null ? (bool[])exists.Clone() : (bool[])HandLayout.FiveDigit.Clone();
+        for (int g = 0; g < Groups.Length; g++) Groups[g] = null;
         if (inertiaScale != null) for (int i = 0; i < m_InertiaScale.Length && i < inertiaScale.Length; i++) m_InertiaScale[i] = inertiaScale[i];
         else for (int i = 0; i < m_InertiaScale.Length; i++) m_InertiaScale[i] = 1f;
         if (m_SkeletonRoot != null) { DestroyImmediate(m_SkeletonRoot); }
@@ -279,11 +377,14 @@ public class ArticulatedHand : MonoBehaviour
         Palm = MakeLink("L_Palm", Forearm.transform, m_Palm.worldPos, m_Palm.worldRot, m_Palm.bone);
         Palm.jointType = ArticulationJointType.SphericalJoint; Palm.anchorPosition = Vector3.zero; Palm.anchorRotation = anatomicalAxes ? k_ZAxisAnchor : Quaternion.identity; Palm.matchAnchors = true;
         Palm.twistLock = ArticulationDofLock.LimitedMotion; Palm.swingYLock = ArticulationDofLock.LimitedMotion; Palm.swingZLock = ArticulationDofLock.LockedMotion;
+        // run 014: the palm widens on the ulnar side (-across) by one MCP spacing when the extra finger exists; its across centre moves by half of that
+        bool widen = Exists[5]; float palmWidth = spec.palm.width + (widen ? spec.extraFingerPalmWidening : 0f), palmCentreAcross = widen ? -0.5f * spec.extraFingerPalmWidening : 0f;
+        PalmWidth = palmWidth;
         {   // palm box from the spec: metacarpal plane at out = 0, palmar face at +faceOffset, dorsal face at faceOffset - thickness (link local X = out, Y = along, Z = across)
             var box = Palm.gameObject.AddComponent<BoxCollider>();
-            box.size = new Vector3(spec.palm.thickness, spec.palm.length, spec.palm.width);
-            box.center = new Vector3(spec.palm.faceOffset - 0.5f * spec.palm.thickness, 0.5f * spec.palm.length, 0f);
-            Palm.mass = spec.palm.mass;
+            box.size = new Vector3(spec.palm.thickness, spec.palm.length, widen ? palmWidth : spec.palm.width);
+            box.center = new Vector3(spec.palm.faceOffset - 0.5f * spec.palm.thickness, 0.5f * spec.palm.length, widen ? palmCentreAcross : 0f);
+            Palm.mass = widen ? spec.palm.mass * palmWidth / spec.palm.width : spec.palm.mass;   // mass scales with the box volume
         }
         Palm.maxAngularVelocity = armMaxAngularVelocity;
 
@@ -293,9 +394,9 @@ public class ArticulatedHand : MonoBehaviour
         ExtraLinks.Clear();
         bool radialIsPlusAcross = Vector3.Dot(Quaternion.AngleAxis(1f, pOut) * pAlong, pAcross) >= 0f;   // sign of a rotation about out that turns along toward across
         float SignedAbout(float deg) => radialIsPlusAcross ? deg : -deg;
-        for (int f = 0; f < 4; f++)
-        {
-            var fs = spec.fingers[f]; float sc = m_LengthScale[f];
+        void BuildFinger(int f)
+        {   // f = digit id 0-3 (spec.fingers) or 5 (spec.extraFinger); groups FirstGroupOfDigit(f) .. +2
+            var fs = f < 4 ? spec.fingers[f] : spec.extraFinger; float sc = m_LengthScale[f]; int g0 = HandLayout.FirstGroupOfDigit(f);
             Vector3 dir = Quaternion.AngleAxis(SignedAbout(fs.restAbductionDeg), pOut) * pAlong;                 // rest direction in the palm plane
             Vector3 z = Vector3.Cross(pOut, dir).normalized; Quaternion rot = Quaternion.LookRotation(z, dir);       // local X = out (palmar), Y = finger, Z = nominal flexion axis
             Vector3 sag = Vector3.Cross(pOut, pAlong).normalized; float tilt = fs.flexionPlaneTiltDeg;
@@ -305,54 +406,70 @@ public class ArticulatedHand : MonoBehaviour
             Vector3 pivot = W(fs.mcp); Transform parentLink = Palm.transform;
             for (int seg = 0; seg < 3; seg++)
             {
-                int g = f * 3 + seg;
-                var link = MakeLink("L_" + GroupTags[g], parentLink, pivot, rot, m_Group[g] != null ? m_Group[g].bone : null);
+                int g = g0 + seg; bool legacy = g < GroupCount;
+                var link = MakeLink("L_" + HandLayout.GroupNames[g], parentLink, pivot, rot, legacy && m_Group[g] != null ? m_Group[g].bone : null);
                 link.jointType = ArticulationJointType.RevoluteJoint; link.anchorPosition = Vector3.zero; link.matchAnchors = true;
                 link.anchorRotation = Quaternion.AngleAxis(Vector3.SignedAngle(Vector3.forward, link.transform.InverseTransformDirection(axisW), Vector3.right), Vector3.right) * k_ZAxisAnchor;
                 link.twistLock = ArticulationDofLock.LimitedMotion;
                 float len = L[seg] + (seg == 2 ? spec.tipPad : 0f);
-                SpecCapsule(link.gameObject, R[seg], len, spec.palmarFleshOffset); link.mass = SpecMass(R[seg], len) * m_InertiaScale[g];
-                link.maxAngularVelocity = fingerMaxAngularVelocity; link.gameObject.tag = GroupTags[g]; Groups[g] = link;
-                if (m_Group[g] != null) MeshFollowDeviation[f] = Mathf.Max(MeshFollowDeviation[f], Vector3.Distance(m_Group[g].worldPos, pivot));
+                SpecCapsule(link.gameObject, R[seg], len, spec.palmarFleshOffset); link.mass = SpecMass(R[seg], len) * m_InertiaScale[HandLayout.MorphIndex(g)];
+                link.maxAngularVelocity = fingerMaxAngularVelocity; if (legacy) link.gameObject.tag = GroupTags[g]; Groups[g] = link;
+                NominalLinkLength[g] = (seg == 0 ? fs.proximal : seg == 1 ? fs.middle : fs.distal) + (seg == 2 ? spec.tipPad : 0f);
+                if (legacy && m_Group[g] != null) MeshFollowDeviation[f] = Mathf.Max(MeshFollowDeviation[f], Vector3.Distance(m_Group[g].worldPos, pivot));
                 parentLink = link.transform; pivot += dir * L[seg];
             }
         }
-        {   // thumb: CMC (driven, opposition arc) -> MC1 -> MCP (fixed flexion) -> PP -> IP (driven) -> DP; all in the plane through the MC1 rest direction and the opposition target
-            var ts = spec.thumb; float sc = m_LengthScale[4];
+        void BuildThumb(int d)
+        {   // thumb: CMC (driven, opposition arc) -> MC1 -> MCP (fixed flexion) -> PP -> IP (driven) -> DP; all in the plane through the MC1 rest direction and the opposition target.
+            // d = 4 primary thumb (groups 12, 13; legacy); d = 6 second thumb (groups 17, 18; run 014): the mirror image of the primary thumb about the palm's
+            // across centre (CMC and opposition target across -> 2 c - across, radial abduction -> ulnar); the CMC axis Cross(dir, target - cmc) mirrors with them,
+            // so positive angles still sweep the thumb toward its target and the joint limits keep their sign.
+            bool second = d == 6; int gb = second ? 17 : 12, ge = second ? 18 : 13;
+            var ts = spec.thumb; float sc = m_LengthScale[d];
             float pa = ts.restPalmarAbductionDeg * Mathf.Deg2Rad, ra = ts.restRadialAbductionDeg * Mathf.Deg2Rad;
-            Vector3 radial = Quaternion.AngleAxis(SignedAbout(ts.restRadialAbductionDeg), pOut) * pAlong;
+            Vector3 radial = Quaternion.AngleAxis(SignedAbout(second ? -ts.restRadialAbductionDeg : ts.restRadialAbductionDeg), pOut) * pAlong;
             Vector3 dir = (radial * Mathf.Cos(pa) + pOut * Mathf.Sin(pa)).normalized;
-            Vector3 cmc = W(ts.cmc), target = W(ts.oppositionTarget);
+            Vector3 cmcPf = ts.cmc, targetPf = ts.oppositionTarget;
+            if (second) { cmcPf.z = 2f * palmCentreAcross - cmcPf.z; targetPf.z = 2f * palmCentreAcross - targetPf.z; }
+            Vector3 cmc = W(cmcPf), target = W(targetPf);
             Vector3 axisW = Vector3.Cross(dir, (target - cmc).normalized).normalized;             // positive angles sweep the thumb toward the target
             Vector3 padSide = Vector3.Cross(axisW, dir).normalized;                                 // in-plane direction toward the target: the pad faces it
             Quaternion rot = Quaternion.LookRotation(Vector3.Cross(padSide, dir).normalized, dir); // local X = pad side, Y = thumb, Z = axis
             Quaternion mcpFlex = Quaternion.AngleAxis(ts.mcpFixedFlexionDeg, axisW);
-            // MC1 (group 12, CMC joint)
-            var mc1 = MakeLink("L_thumbBase", Palm.transform, cmc, rot, null);
+            // MC1 (CMC joint)
+            var mc1 = MakeLink(second ? "L_thumb2Base" : "L_thumbBase", Palm.transform, cmc, rot, null);
             mc1.jointType = ArticulationJointType.RevoluteJoint; mc1.anchorPosition = Vector3.zero; mc1.matchAnchors = true;
             mc1.anchorRotation = Quaternion.FromToRotation(Vector3.right, mc1.transform.InverseTransformDirection(axisW)); mc1.twistLock = ArticulationDofLock.LimitedMotion;
-            SpecCapsule(mc1.gameObject, ts.radiusMetacarpal, ts.metacarpal, spec.palmarFleshOffset); mc1.mass = SpecMass(ts.radiusMetacarpal, ts.metacarpal) * m_InertiaScale[12];
-            mc1.maxAngularVelocity = fingerMaxAngularVelocity; mc1.gameObject.tag = GroupTags[12]; Groups[12] = mc1;
-            // PP on a fixed MCP (extra link counted with group 12)
+            SpecCapsule(mc1.gameObject, ts.radiusMetacarpal, ts.metacarpal, spec.palmarFleshOffset); mc1.mass = SpecMass(ts.radiusMetacarpal, ts.metacarpal) * m_InertiaScale[HandLayout.MorphIndex(gb)];
+            mc1.maxAngularVelocity = fingerMaxAngularVelocity; if (!second) mc1.gameObject.tag = GroupTags[12]; Groups[gb] = mc1; NominalLinkLength[gb] = ts.metacarpal;
+            // PP on a fixed MCP (extra link counted with the base group)
             Vector3 mcp = cmc + dir * ts.metacarpal; Vector3 dirPP = mcpFlex * dir; Quaternion rotPP = mcpFlex * rot;
-            var pp = MakeLink("L_thumbProximal", mc1.transform, mcp, rotPP, m_Group[12] != null ? m_Group[12].bone : null);
+            var pp = MakeLink(second ? "L_thumb2Proximal" : "L_thumbProximal", mc1.transform, mcp, rotPP, !second && m_Group[12] != null ? m_Group[12].bone : null);
             pp.jointType = ArticulationJointType.FixedJoint; pp.anchorPosition = Vector3.zero; pp.matchAnchors = true;
-            SpecCapsule(pp.gameObject, ts.radiusProximal, ts.proximal * sc, spec.palmarFleshOffset); pp.mass = SpecMass(ts.radiusProximal, ts.proximal * sc) * m_InertiaScale[12];
-            pp.maxAngularVelocity = fingerMaxAngularVelocity; ExtraLinks.Add((pp, 12));
-            if (m_Group[12] != null) MeshFollowDeviation[4] = Mathf.Max(MeshFollowDeviation[4], Vector3.Distance(m_Group[12].worldPos, mcp));
-            // DP (group 13, IP joint)
+            SpecCapsule(pp.gameObject, ts.radiusProximal, ts.proximal * sc, spec.palmarFleshOffset); pp.mass = SpecMass(ts.radiusProximal, ts.proximal * sc) * m_InertiaScale[HandLayout.MorphIndex(gb)];
+            pp.maxAngularVelocity = fingerMaxAngularVelocity; ExtraLinks.Add((pp, gb));
+            if (!second && m_Group[12] != null) MeshFollowDeviation[4] = Mathf.Max(MeshFollowDeviation[4], Vector3.Distance(m_Group[12].worldPos, mcp));
+            // DP (IP joint)
             Vector3 ip = mcp + dirPP * ts.proximal * sc;
-            var dp = MakeLink("L_thumbEnd", pp.transform, ip, rotPP, m_Group[13] != null ? m_Group[13].bone : null);
+            var dp = MakeLink(second ? "L_thumb2End" : "L_thumbEnd", pp.transform, ip, rotPP, !second && m_Group[13] != null ? m_Group[13].bone : null);
             dp.jointType = ArticulationJointType.RevoluteJoint; dp.anchorPosition = Vector3.zero; dp.matchAnchors = true;
             dp.anchorRotation = Quaternion.FromToRotation(Vector3.right, dp.transform.InverseTransformDirection(axisW)); dp.twistLock = ArticulationDofLock.LimitedMotion;
-            SpecCapsule(dp.gameObject, ts.radiusDistal, ts.distal * sc + spec.tipPad, spec.palmarFleshOffset); dp.mass = SpecMass(ts.radiusDistal, ts.distal * sc + spec.tipPad) * m_InertiaScale[13];
-            dp.maxAngularVelocity = fingerMaxAngularVelocity; dp.gameObject.tag = GroupTags[13]; Groups[13] = dp;
-            if (m_Group[13] != null) MeshFollowDeviation[4] = Mathf.Max(MeshFollowDeviation[4], Vector3.Distance(m_Group[13].worldPos, ip));
-            OppositionAngleDeg = Vector3.Angle(axisW, Groups[3].transform.TransformDirection(Groups[3].anchorRotation * Vector3.right));
-            ThumbAxisPalm = new Vector3(Vector3.Dot(axisW, pAlong), Vector3.Dot(axisW, pOut), Vector3.Dot(axisW, pAcross));
+            SpecCapsule(dp.gameObject, ts.radiusDistal, ts.distal * sc + spec.tipPad, spec.palmarFleshOffset); dp.mass = SpecMass(ts.radiusDistal, ts.distal * sc + spec.tipPad) * m_InertiaScale[HandLayout.MorphIndex(ge)];
+            dp.maxAngularVelocity = fingerMaxAngularVelocity; if (!second) dp.gameObject.tag = GroupTags[13]; Groups[ge] = dp; NominalLinkLength[ge] = ts.distal + spec.tipPad;
+            if (!second && m_Group[13] != null) MeshFollowDeviation[4] = Mathf.Max(MeshFollowDeviation[4], Vector3.Distance(m_Group[13].worldPos, ip));
+            if (!second)
+            {
+                OppositionAngleDeg = Vector3.Angle(axisW, Groups[3] != null ? Groups[3].transform.TransformDirection(Groups[3].anchorRotation * Vector3.right) : Groups[0].transform.TransformDirection(Groups[0].anchorRotation * Vector3.right));
+                ThumbAxisPalm = new Vector3(Vector3.Dot(axisW, pAlong), Vector3.Dot(axisW, pOut), Vector3.Dot(axisW, pAcross));
+            }
         }
+        // build order: index..pinky, primary thumb (the legacy order: the 013 hand is built exactly as before), then the run-014 digits
+        for (int f = 0; f < 4; f++) if (Exists[f]) BuildFinger(f);
+        if (Exists[4]) BuildThumb(4);
+        if (Exists[5]) BuildFinger(5);
+        if (Exists[6]) BuildThumb(6);
         // self-collision policy
-        var all = new List<ArticulationBody> { Bicep, Forearm, Palm }; all.AddRange(Groups); foreach (var (eb, _) in ExtraLinks) all.Add(eb);
+        var all = new List<ArticulationBody> { Bicep, Forearm, Palm }; foreach (var gb in Groups) if (gb != null) all.Add(gb); foreach (var (eb, _) in ExtraLinks) all.Add(eb);
         foreach (var a in all) foreach (var b in all)
         {
             if (a == b || a == null || b == null) continue;
@@ -388,17 +505,18 @@ public class ArticulatedHand : MonoBehaviour
         }
         float palmToMiddle = Vector3.Distance(Palm.transform.position, Groups[3].transform.position);
         float handLength = palmToMiddle + LinkLen(3) + LinkLen(4) + LinkLen(5);
-        var ci = Groups[0].GetComponent<CapsuleCollider>(); var cp = Groups[9].GetComponent<CapsuleCollider>();
-        float palmWidth = Vector3.Distance(Groups[0].transform.position, Groups[9].transform.position) + (ci != null ? ci.radius : 0f) + (cp != null ? cp.radius : 0f);
+        int ulnar = Groups[14] != null ? 14 : Groups[9] != null ? 9 : Groups[6] != null ? 6 : 3;   // ulnar-most finger base present
+        var ci = Groups[0].GetComponent<CapsuleCollider>(); var cp = Groups[ulnar].GetComponent<CapsuleCollider>();
+        float palmWidth = Vector3.Distance(Groups[0].transform.position, Groups[ulnar].transform.position) + (ci != null ? ci.radius : 0f) + (cp != null ? cp.radius : 0f);
         float forearm = Vector3.Distance(Forearm.transform.position, Palm.transform.position);
-        float handMass = Palm.mass; for (int g = 0; g < GroupCount; g++) if (Groups[g] != null) handMass += Groups[g].mass; foreach (var (eb, _) in ExtraLinks) handMass += eb.mass;
+        float handMass = Palm.mass; for (int g = 0; g < Groups.Length; g++) if (Groups[g] != null) handMass += Groups[g].mass; foreach (var (eb, _) in ExtraLinks) handMass += eb.mass;
         var s = new System.Text.StringBuilder();
         s.Append("anthropometrics: modelScale(armature)=").Append(modelScale).Append(" specPalmWidth=").Append((spec.palm.width * 1000f).ToString("F0")).Append("mm thumbCMCaxis(palm)=").Append(ThumbAxisPalm.ToString("F2")).Append(" oppositionAngle=").Append(OppositionAngleDeg.ToString("F1")).Append(" meshFollowDev(mm idx/mid/ring/pnk/thb)=").Append((MeshFollowDeviation[0] * 1000f).ToString("F0")).Append('/').Append((MeshFollowDeviation[1] * 1000f).ToString("F0")).Append('/').Append((MeshFollowDeviation[2] * 1000f).ToString("F0")).Append('/').Append((MeshFollowDeviation[3] * 1000f).ToString("F0")).Append('/').Append((MeshFollowDeviation[4] * 1000f).ToString("F0")).Append(" handLength=").Append((handLength * 1000f).ToString("F1")).Append("mm (palm->middleBase ").Append((palmToMiddle * 1000f).ToString("F1")).Append(") palmWidth=").Append((palmWidth * 1000f).ToString("F1")).Append("mm forearm=").Append((forearm * 1000f).ToString("F1")).Append("mm handMass=").Append(handMass.ToString("F3")).Append("kg (palm ").Append(Palm.mass.ToString("F3")).Append(") forearmMass=").Append(Forearm.mass.ToString("F3")).Append(" bicepMass=").Append(Bicep.mass.ToString("F2")).Append(" links(mm,r mm,g):");
-        for (int g = 0; g < GroupCount; g++) { var cap = Groups[g] != null ? Groups[g].GetComponent<CapsuleCollider>() : null; s.Append(' ').Append(GroupTags[g]).Append('=').Append((LinkLen(g) * 1000f).ToString("F1")).Append('/').Append(cap != null ? (cap.radius * 1000f).ToString("F1") : "-").Append('/').Append(Groups[g] != null ? (Groups[g].mass * 1000f).ToString("F1") : "-"); }
+        for (int g = 0; g < Groups.Length; g++) { if (g >= GroupCount && Groups[g] == null) continue; var cap = Groups[g] != null ? Groups[g].GetComponent<CapsuleCollider>() : null; s.Append(' ').Append(HandLayout.GroupNames[g]).Append('=').Append((LinkLen(g) * 1000f).ToString("F1")).Append('/').Append(cap != null ? (cap.radius * 1000f).ToString("F1") : "-").Append('/').Append(Groups[g] != null ? (Groups[g].mass * 1000f).ToString("F1") : "-"); }
         return s.ToString();
     }
 
-    bool IsBase(ArticulationBody b) { for (int g = 0; g < GroupCount; g++) if (Groups[g] == b && k_GroupParent[g] < 0) return true; return false; }
+    bool IsBase(ArticulationBody b) { for (int g = 0; g < Groups.Length; g++) if (Groups[g] == b && k_GroupParent[g] < 0) return true; return false; }
     /// <summary>Thumb CMC axis in the palm frame (along, out, across), after the build (report only).</summary>
     public Vector3 ThumbAxisPalm { get; private set; }
     /// <summary>Capsule along local Y spanning [-r, length] (the cap overlaps the joint), centred toward the palmar side so the skin lies fleshOffset from the bone axis.</summary>
@@ -432,8 +550,10 @@ public class ArticulatedHand : MonoBehaviour
     }
 
     /// <summary>Group index of a link body (-1 if not a finger link).</summary>
-    public int GroupOf(ArticulationBody b) { for (int g = 0; g < GroupCount; g++) if (Groups[g] == b) return g; foreach (var (eb, eg) in ExtraLinks) if (eb == b) return eg; return -1; }
+    public int GroupOf(ArticulationBody b) { for (int g = 0; g < Groups.Length; g++) if (Groups[g] == b && b != null) return g; foreach (var (eb, eg) in ExtraLinks) if (eb == b) return eg; return -1; }
     public int FingerOfGroup(int g) => k_GroupFinger[g];
+    /// <summary>Imported armature bone captured for a legacy finger group (the bone follows the group's link every LateUpdate); null otherwise.</summary>
+    public Transform BoneOfGroup(int g) => g >= 0 && g < GroupCount && m_Group[g] != null ? m_Group[g].bone : null;
     public int ParentOfGroup(int g) => k_GroupParent[g];
     public float LengthScaleOfGroup(int g) => m_LengthScale[k_GroupFinger[g]];
 
@@ -451,7 +571,7 @@ public class ArticulatedHand : MonoBehaviour
         var body = Groups[g]; if (body == null) return;
         var d = body.xDrive;
         d.lowerLimit = limitsDeg.x; d.upperLimit = limitsDeg.y;
-        d.forceLimit = forceLimits[g < 12 ? g % 3 : (g == 12 ? 3 : 4)];
+        d.forceLimit = forceLimits[HandLayout.GroupClass(g)];   // legacy g < 12 -> g % 3, 12 -> 3, 13 -> 4 (unchanged)
         if (masked) { d.driveType = ArticulationDriveType.Acceleration; d.stiffness = maskedHoldStiffness; d.damping = maskedHoldDamping; d.target = Mathf.Clamp(neutralDeg, limitsDeg.x, limitsDeg.y); d.forceLimit = Mathf.Max(d.forceLimit, forceLimits[3]); }
         else { d.driveType = ArticulationDriveType.Force; d.stiffness = k; d.damping = b; d.target = 0f; }
         d.targetVelocity = 0f;

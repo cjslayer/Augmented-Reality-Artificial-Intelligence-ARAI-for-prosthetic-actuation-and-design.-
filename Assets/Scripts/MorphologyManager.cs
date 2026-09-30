@@ -25,6 +25,7 @@ using Unity.MLAgents;
 /// </summary>
 public class MorphologyManager : MonoBehaviour
 {
+    // legacy layout constants (the 013 hand; BoEval, the harness's legacy theta format and the 013 tools use them with this meaning)
     public const int FingerCount = 5;
     public const int FingerGroupCount = 14;
     public const int WristAxisCount = 2;
@@ -33,7 +34,25 @@ public class MorphologyManager : MonoBehaviour
         "indexBase","indexMiddle","indexEnd","middleBase","middleMiddle","middleEnd","ringBase","ringMiddle","ringEnd",
         "pinkyBase","pinkyMiddle","pinkyEnd","thumbBase","thumbEnd","wristFlex","wristPron" };
     public static readonly string[] FingerNames = { "index", "middle", "ring", "pinky", "thumb" };
-    static readonly int[] k_GroupFinger = { 0,0,0, 1,1,1, 2,2,2, 3,3,3, 4,4 };
+    // run 014 (HandLayout): arrays hold every digit / group of the slot layout with the legacy entries as a prefix: lengthScale per digit id (7),
+    // stiffness / damping / inertia / inertiaScale / NominalInertia per morphology index (21: legacy 16, then extraBase..thumb2End at 16-20), mask per finger group (19)
+    public const int MaxDigits = HandLayout.MaxDigits, MaxFingerGroups = HandLayout.MaxFingerGroups, MaxMorphGroups = HandLayout.MaxMorphGroups;
+    /// <summary>Names per morphology index (21): the legacy 16, then the run-014 groups (env keys morph/k_extraBase ... morph/k_thumb2End).</summary>
+    public static readonly string[] AllGroupNames = {
+        "indexBase","indexMiddle","indexEnd","middleBase","middleMiddle","middleEnd","ringBase","ringMiddle","ringEnd",
+        "pinkyBase","pinkyMiddle","pinkyEnd","thumbBase","thumbEnd","wristFlex","wristPron","extraBase","extraMiddle","extraEnd","thumb2Base","thumb2End" };
+    static int[] k_GroupFinger => HandLayout.GroupDigit;
+    [Header("Digit count (run 014 slot layout; ignored in the legacy layout)")]
+    [Tooltip("Per-episode digit-count distribution P(3), P(4), P(5), P(6: thumb + 5 fingers), P(6: thumb + 4 fingers + second thumb), P(7). Checkpoint-1 decisions: 2-digit hands out; the brief's P(2) moved to 5; the two 6-digit compositions at equal share.")]
+    public float[] digitDistribution = { 0.10f, 0.15f, 0.45f, 0.075f, 0.075f, 0.15f };
+    /// <summary>Digit existence of this episode (digit ids, HandLayout.DigitNames); the five-digit hand in the legacy layout.</summary>
+    [System.NonSerialized] public bool[] exists = (bool[])HandLayout.FiveDigit.Clone();
+    public int DigitCount => HandLayout.DigitCount(exists);
+    public int ThumbCount => HandLayout.ThumbCount(exists);
+    public bool GroupPresent(int g) => g >= 0 && g < MaxFingerGroups && exists[HandLayout.GroupDigit[g]];
+    int ActiveFingerGroups => HandLayout.Slots ? MaxFingerGroups : FingerGroupCount;
+    int ActiveMorphGroups => HandLayout.Slots ? MaxMorphGroups : GroupCount;
+    int ActiveDigits => HandLayout.Slots ? MaxDigits : FingerCount;
 
     [Header("Randomization (used when morph/randomize = 1)")]
     public bool randomizeByDefault = true;
@@ -77,13 +96,13 @@ public class MorphologyManager : MonoBehaviour
     public float density = 1000f;
 
     [Header("Current theta (serialized defaults = reference hand; overwritten per episode when randomizing)")]
-    public float[] lengthScale = { 1f, 1f, 1f, 1f, 1f };
-    public float[] stiffness = new float[GroupCount];
-    public float[] damping = new float[GroupCount];
-    public float[] inertia = new float[GroupCount];
-    public bool[] mask = { true, true, true, true, true, true, true, true, true, true, true, true, true, true };
-    /// <summary>Per-group inertia scale of this episode (multiplies the geometric nominal inertia; link mass on the articulation).</summary>
-    [System.NonSerialized] public float[] inertiaScale = { 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f };
+    public float[] lengthScale = { 1f, 1f, 1f, 1f, 1f, 1f, 1f };
+    public float[] stiffness = new float[MaxMorphGroups];
+    public float[] damping = new float[MaxMorphGroups];
+    public float[] inertia = new float[MaxMorphGroups];
+    public bool[] mask = { true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true };
+    /// <summary>Per-morphology-index inertia scale of this episode (multiplies the geometric nominal inertia; link mass on the articulation).</summary>
+    [System.NonSerialized] public float[] inertiaScale = { 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f };
     /// <summary>Articulated rig (branch articulated-hand): length scales rebuild the link skeleton instead of moving bone transforms.</summary>
     [System.NonSerialized] public ArticulatedHand rig;
 
@@ -91,29 +110,38 @@ public class MorphologyManager : MonoBehaviour
     public int OutOfRangeEvents { get; private set; }
     const int k_MaxLoggedOutOfRange = 10;   // warnings after this many are counted silently
     static int s_LoggedOutOfRange;
-    public float[] NominalInertia { get; private set; } = new float[GroupCount];
-    public float[] LinkLength { get; private set; } = new float[FingerGroupCount];   // world metres, after scaling
+    public float[] NominalInertia { get; private set; } = new float[MaxMorphGroups];   // per morphology index
+    public float[] LinkLength { get; private set; } = new float[MaxFingerGroups];   // per finger group, world metres, after scaling
     public float HandSpan { get; private set; }
     public float HandSpanRef { get; private set; }
     /// <summary>Sum of the 14 finger link lengths (world metres) at the reference scales, measured once at Initialize.</summary>
     public float FingerLengthRef { get; private set; }
     /// <summary>Sum of the current finger link lengths over FingerLengthRef (1 for the reference hand).</summary>
-    public float FingerLengthRatio { get { if (FingerLengthRef <= 1e-6f) return 1f; float t = 0f; for (int g = 0; g < FingerGroupCount; g++) t += LinkLength[g]; return t / FingerLengthRef; } }
+    public float FingerLengthRatio { get {
+        if (HandLayout.Slots)
+        {   // run 014: present groups only, against their own nominal lengths (the grasp-point offset follows the mean length scale, not the digit count)
+            float t = 0f, t0 = 0f; for (int g = 0; g < MaxFingerGroups; g++) if (GroupPresent(g) && rig != null) { t += LinkLength[g]; t0 += rig.NominalLinkLength[g]; }
+            return t0 > 1e-6f ? t / t0 : 1f;
+        }
+        if (FingerLengthRef <= 1e-6f) return 1f; float s = 0f; for (int g = 0; g < FingerGroupCount; g++) s += LinkLength[g]; return s / FingerLengthRef; } }
     public bool Randomizing { get; private set; }
-    public int ActiveCount { get { int n = 0; for (int g = 0; g < FingerGroupCount; g++) if (mask[g]) n++; return n; } }
+    /// <summary>Actuated finger groups (present and unmasked).</summary>
+    public int ActiveCount { get { int n = 0; for (int g = 0; g < ActiveFingerGroups; g++) if (mask[g] && GroupPresent(g)) n++; return n; } }
+    /// <summary>Present finger groups (14 in the legacy layout).</summary>
+    public int PresentGroupCount { get { int n = 0; for (int g = 0; g < ActiveFingerGroups; g++) if (GroupPresent(g)) n++; return n; } }
 
     // geometry captured once at Initialize (unscaled)
     class Segment { public Transform joint; public CapsuleCollider capsule; public float capHeight0, capCenterY0, capRadius; public Transform[] children; public Vector3[] childPos0; }
-    Segment[] m_Segments = new Segment[FingerGroupCount];
+    Segment[] m_Segments = new Segment[MaxFingerGroups];
     Transform m_Palm; BoxCollider m_PalmBox; float m_PalmLength;
     bool m_Initialized;
 
     void CaptureSegments(Transform[][] groupJoints, Transform palm)
     {
         m_Palm = palm; m_PalmBox = palm != null ? palm.GetComponent<BoxCollider>() : null;
-        for (int g = 0; g < FingerGroupCount; g++)
+        for (int g = 0; g < MaxFingerGroups; g++)
         {
-            var joint = groupJoints[g].Length > 0 ? groupJoints[g][0] : null;
+            var joint = g < groupJoints.Length && groupJoints[g].Length > 0 ? groupJoints[g][0] : null;
             var seg = new Segment { joint = joint };
             if (joint != null)
             {
@@ -131,19 +159,25 @@ public class MorphologyManager : MonoBehaviour
 
     public void Initialize(Transform[][] groupJoints, Transform palm)
     {
+        // serialized arrays from scenes saved before run 014 are shorter: extend them (legacy entries kept as the prefix)
+        lengthScale = Extend(lengthScale, MaxDigits, 1f); mask = Extend(mask, MaxFingerGroups, true);
+        if (inertiaScale == null || inertiaScale.Length != MaxMorphGroups) inertiaScale = new float[MaxMorphGroups];
+        exists = HandLayout.Slots ? HandLayout.Composition(5, false) : (bool[])HandLayout.FiveDigit.Clone();   // reference hand = the 013 five-digit hand in both layouts
         CaptureSegments(groupJoints, palm);
-        for (int g = 0; g < GroupCount; g++) inertiaScale[g] = 1f;
-        ApplyLengthScales(new float[] { 1f, 1f, 1f, 1f, 1f });
+        for (int g = 0; g < MaxMorphGroups; g++) inertiaScale[g] = 1f;
+        ApplyLengthScales(new float[] { 1f, 1f, 1f, 1f, 1f, 1f, 1f });
         HandSpanRef = ComputeHandSpan();
         FingerLengthRef = 0f; for (int g = 0; g < FingerGroupCount; g++) FingerLengthRef += LinkLength[g];
         ComputeNominalInertia();
-        if (stiffness == null || stiffness.Length != GroupCount) stiffness = new float[GroupCount];
-        if (damping == null || damping.Length != GroupCount) damping = new float[GroupCount];
-        if (inertia == null || inertia.Length != GroupCount) inertia = new float[GroupCount];
-        for (int g = 0; g < GroupCount; g++)   // reference hand: geometric mean of each class range, zeta = referenceZeta
+        if (stiffness == null || stiffness.Length != MaxMorphGroups) stiffness = new float[MaxMorphGroups];
+        if (damping == null || damping.Length != MaxMorphGroups) damping = new float[MaxMorphGroups];
+        if (inertia == null || inertia.Length != MaxMorphGroups) inertia = new float[MaxMorphGroups];
+        for (int g = 0; g < MaxMorphGroups; g++)   // reference hand: geometric mean of each class range, zeta = referenceZeta (absent run-014 groups get their class reference too)
         { inertia[g] = NominalInertia[g]; stiffness[g] = ReferenceStiffness(g); damping[g] = 2f * referenceZeta * Mathf.Sqrt(stiffness[g] * inertia[g]); }
         m_Initialized = true;
     }
+    static float[] Extend(float[] a, int n, float fill) { if (a != null && a.Length >= n) return a; var r = new float[n]; for (int i = 0; i < n; i++) r[i] = a != null && i < a.Length ? a[i] : fill; return r; }
+    static bool[] Extend(bool[] a, int n, bool fill) { if (a != null && a.Length >= n) return a; var r = new bool[n]; for (int i = 0; i < n; i++) r[i] = a != null && i < a.Length ? a[i] : fill; return r; }
 
     /// <summary>Samples or reads theta for the new episode and applies link scales. Call from OnEpisodeBegin before spawning.</summary>
     public void ApplyForEpisode()
@@ -153,34 +187,44 @@ public class MorphologyManager : MonoBehaviour
         Randomizing = ep.GetWithDefault("morph/randomize", randomizeByDefault ? 1f : 0f) > 0.5f;
         OutOfRangeEvents = 0;
         // (k, zeta) of this episode: sampled, or the values carried by the current (k, b, I) arrays (reference hand at Initialize)
-        float[] k = new float[GroupCount], zeta = new float[GroupCount];
-        for (int g = 0; g < GroupCount; g++) { k[g] = stiffness[g] > 0f ? stiffness[g] : ReferenceStiffness(g); zeta[g] = DampingRatio(g); if (zeta[g] <= 0f) zeta[g] = referenceZeta; }
+        int nM = ActiveMorphGroups, nF = ActiveFingerGroups;   // legacy: 16 / 14 (the loops below are then the pre-014 loops, draw for draw)
+        float[] k = new float[MaxMorphGroups], zeta = new float[MaxMorphGroups];
+        for (int g = 0; g < nM; g++) { k[g] = stiffness[g] > 0f ? stiffness[g] : ReferenceStiffness(g); zeta[g] = DampingRatio(g); if (zeta[g] <= 0f) zeta[g] = referenceZeta; }
         if (Randomizing) Sample(k, zeta);
-        else for (int g = 0; g < GroupCount; g++) inertiaScale[g] = 1f;
+        else for (int g = 0; g < nM; g++) inertiaScale[g] = 1f;
         // env-param overrides (present keys win)
-        for (int f = 0; f < FingerCount; f++) lengthScale[f] = ep.GetWithDefault("morph/len_" + FingerNames[f], lengthScale[f]);
+        if (HandLayout.Slots)
+        {   // digit existence: morph/digits (3-7) with morph/digits6b (1 = the 6-digit hand with a second thumb), then per digit morph/exist_<digit>; thumb and index always exist
+            float dn = ep.GetWithDefault("morph/digits", -1f);
+            if (dn >= 2.5f) exists = HandLayout.Composition(Mathf.RoundToInt(dn), ep.GetWithDefault("morph/digits6b", 0f) > 0.5f);
+            for (int d = 0; d < MaxDigits; d++) exists[d] = ep.GetWithDefault("morph/exist_" + HandLayout.DigitNames[d], exists[d] ? 1f : 0f) > 0.5f;
+            exists[0] = true; exists[4] = true;
+        }
+        for (int f = 0; f < ActiveDigits; f++) lengthScale[f] = ep.GetWithDefault("morph/len_" + HandLayout.DigitNames[f], lengthScale[f]);   // DigitNames[0..4] = FingerNames
         ApplyLengthScales(lengthScale);   // rebuilds the articulation when a rig is attached (link masses use inertiaScale)
         ComputeNominalInertia();
-        for (int g = 0; g < GroupCount; g++)
+        for (int g = 0; g < nM; g++)
         {
             float I0 = NominalInertia[g] * inertiaScale[g];
-            float kg = ep.GetWithDefault("morph/k_" + GroupNames[g], k[g]);
-            float bg = ep.GetWithDefault("morph/b_" + GroupNames[g], 2f * zeta[g] * Mathf.Sqrt(kg * I0));
-            float I = ep.GetWithDefault("morph/I_" + GroupNames[g], I0);
-            CheckPlausibility(GroupNames[g], ref kg, ref bg, ref I);
+            float kg = ep.GetWithDefault("morph/k_" + AllGroupNames[g], k[g]);
+            float bg = ep.GetWithDefault("morph/b_" + AllGroupNames[g], 2f * zeta[g] * Mathf.Sqrt(kg * I0));
+            float I = ep.GetWithDefault("morph/I_" + AllGroupNames[g], I0);
+            CheckPlausibility(AllGroupNames[g], ref kg, ref bg, ref I);
             stiffness[g] = kg; damping[g] = bg; inertia[g] = I;
             if (NominalInertia[g] > 1e-9f) inertiaScale[g] = I / NominalInertia[g];
         }
-        for (int g = 0; g < FingerGroupCount; g++) mask[g] = ep.GetWithDefault("morph/mask_" + GroupNames[g], mask[g] ? 1f : 0f) > 0.5f;
+        for (int g = 0; g < nF; g++) mask[g] = ep.GetWithDefault("morph/mask_" + HandLayout.GroupNames[g], mask[g] ? 1f : 0f) > 0.5f;
+        if (HandLayout.Slots) for (int g = 0; g < nF; g++) if (!GroupPresent(g)) mask[g] = true;   // absent groups carry no mask bit
         HandSpan = ComputeHandSpan();
     }
 
     /// <summary>Stiffness range (N m/rad) of a group's joint class.</summary>
+    /// <param name="g">morphology index (legacy 0-15: 14 finger groups then the wrist; run 014 16-20: the extra finger and the second thumb)</param>
     public Vector2 StiffnessRange(int g)
     {
-        if (g >= FingerGroupCount) return wristStiffnessRange;
-        if (g == 12) return stiffnessRangeThumbBase; if (g == 13) return stiffnessRangeThumbEnd;
-        switch (g % 3) { case 0: return stiffnessRangeBase; case 1: return stiffnessRangeMiddle; default: return stiffnessRangeEnd; }
+        int fg = HandLayout.GroupOfMorph(g);
+        if (fg < 0) return wristStiffnessRange;
+        switch (HandLayout.GroupClass(fg)) { case 3: return stiffnessRangeThumbBase; case 4: return stiffnessRangeThumbEnd; case 0: return stiffnessRangeBase; case 1: return stiffnessRangeMiddle; default: return stiffnessRangeEnd; }   // legacy: 12 / 13 thumb, else g % 3
     }
     /// <summary>Reference-hand stiffness (N m/rad): geometric mean of the class range.</summary>
     public float ReferenceStiffness(int g) { var r = StiffnessRange(g); return Mathf.Sqrt(Mathf.Max(r.x, 1e-6f) * Mathf.Max(r.y, 1e-6f)); }
@@ -194,21 +238,35 @@ public class MorphologyManager : MonoBehaviour
     /// <summary>Draw this episode's theta: link scales, inertia scales, (k, zeta) per group, actuation mask. Applied by ApplyForEpisode.</summary>
     void Sample(float[] k, float[] zeta)
     {
-        for (int f = 0; f < FingerCount; f++) lengthScale[f] = Random.Range(lengthScaleRange.x, lengthScaleRange.y);
-        for (int g = 0; g < GroupCount; g++)
+        if (HandLayout.Slots) exists = DrawComposition();   // run 014: one extra draw at the head of the episode's morphology stream (legacy: none)
+        for (int f = 0; f < ActiveDigits; f++) lengthScale[f] = Random.Range(lengthScaleRange.x, lengthScaleRange.y);
+        for (int g = 0; g < ActiveMorphGroups; g++)
         {
-            bool wrist = g >= FingerGroupCount;
+            bool wrist = HandLayout.GroupOfMorph(g) < 0;
             k[g] = SampleStiffness(g);
             zeta[g] = wrist ? Random.Range(wristZetaRange.x, wristZetaRange.y) : Random.Range(fingerZetaRange.x, fingerZetaRange.y);
             inertiaScale[g] = Random.Range(inertiaScaleRange.x, inertiaScaleRange.y);
         }
+        int nF = ActiveFingerGroups, minActive = HandLayout.Slots ? Mathf.Min(minActiveGroups, PresentGroupCount) : minActiveGroups;   // run 014: min(6, present groups)
         for (int attempt = 0; attempt < 100; attempt++)
         {
             int active = 0; bool thumb = false;
-            for (int g = 0; g < FingerGroupCount; g++) { mask[g] = Random.value < maskActiveProbability; if (mask[g]) { active++; if (k_GroupFinger[g] == 4) thumb = true; } }
-            if (active >= minActiveGroups && (!requireThumbActive || thumb)) return;
+            for (int g = 0; g < nF; g++)
+            {
+                if (!GroupPresent(g)) { mask[g] = true; continue; }   // absent groups draw nothing (legacy: every group is present)
+                mask[g] = Random.value < maskActiveProbability; if (mask[g]) { active++; if (HandLayout.IsThumbGroup(g)) thumb = true; }   // any thumb slot counts (legacy: groups 12-13)
+            }
+            if (active >= minActive && (!requireThumbActive || thumb)) return;
         }
-        for (int g = 0; g < FingerGroupCount; g++) mask[g] = true;   // fallback: fully actuated
+        for (int g = 0; g < nF; g++) mask[g] = true;   // fallback: fully actuated
+    }
+    /// <summary>Run 014: this episode's digit composition from digitDistribution (one Random.value).</summary>
+    bool[] DrawComposition()
+    {
+        float u = Random.value, c = 0f, tot = 0f; foreach (var p in digitDistribution) tot += Mathf.Max(0f, p);
+        int[] digits = { 3, 4, 5, 6, 6, 7 }; bool[] six2 = { false, false, false, false, true, false };
+        for (int i = 0; i < digits.Length && i < digitDistribution.Length; i++) { c += Mathf.Max(0f, digitDistribution[i]) / Mathf.Max(tot, 1e-6f); if (u < c) return HandLayout.Composition(digits[i], six2[i]); }
+        return HandLayout.Composition(7, false);
     }
 
     /// <summary>
@@ -248,12 +306,13 @@ public class MorphologyManager : MonoBehaviour
     {
         if (rig != null)
         {   // articulated rig: rebuild the link skeleton (anchor offsets and capsule lengths scaled, masses x inertiaScale), then re-capture it
-            rig.Rebuild(s, inertiaScale);
-            var joints = new Transform[FingerGroupCount][];
-            for (int g = 0; g < FingerGroupCount; g++) joints[g] = rig.Groups[g] != null ? new Transform[] { rig.Groups[g].transform } : new Transform[0];
+            rig.Rebuild(s, inertiaScale, exists);
+            var joints = new Transform[MaxFingerGroups][];
+            for (int g = 0; g < MaxFingerGroups; g++) joints[g] = rig.Groups[g] != null ? new Transform[] { rig.Groups[g].transform } : new Transform[0];
             CaptureSegments(joints, rig.PalmLink);
-            for (int g = 0; g < FingerGroupCount; g++)
+            for (int g = 0; g < MaxFingerGroups; g++)
             {
+                if (rig.Groups[g] == null) { LinkLength[g] = 0f; continue; }
                 var seg = m_Segments[g]; if (seg.joint == null) continue;
                 Transform child = null; foreach (Transform c in seg.joint) if (c.GetComponent<ArticulationBody>() != null) { child = c; break; }
                 LinkLength[g] = child != null ? Vector3.Distance(seg.joint.position, child.position)
@@ -292,30 +351,35 @@ public class MorphologyManager : MonoBehaviour
     void ComputeNominalInertia()
     {
         // segment mass from the capsule volume (cylinder part), inertia about the group's pivot including distal segments
-        float[] mass = new float[FingerGroupCount]; Vector3[] centre = new Vector3[FingerGroupCount];
-        for (int g = 0; g < FingerGroupCount; g++)
+        int nF = ActiveFingerGroups;   // legacy 14 (all present, the pre-014 loops); run 014: 19, absent groups skipped
+        float[] mass = new float[MaxFingerGroups]; Vector3[] centre = new Vector3[MaxFingerGroups];
+        for (int g = 0; g < nF; g++)
         {
+            if (!GroupPresent(g)) continue;
+            int mg = HandLayout.MorphIndex(g);
             var seg = m_Segments[g]; if (seg.joint == null || seg.capsule == null) { mass[g] = 0.005f; centre[g] = seg.joint != null ? seg.joint.position : Vector3.zero; continue; }
             float r = seg.capRadius, h = seg.capsule.height * seg.joint.lossyScale.y;
             // rig: the PhysX link mass (capsule volume x density x inertiaScale) without the inertia scale, so NominalInertia stays geometric
-            mass[g] = rig != null && rig.Groups[g] != null && inertiaScale[g] > 0f ? rig.Groups[g].mass / inertiaScale[g]
+            mass[g] = rig != null && rig.Groups[g] != null && inertiaScale[mg] > 0f ? rig.Groups[g].mass / inertiaScale[mg]
                     : density * Mathf.PI * r * r * h + density * 4f / 3f * Mathf.PI * r * r * r;
             centre[g] = seg.joint.TransformPoint(seg.capsule.center);
         }
-        for (int g = 0; g < FingerGroupCount; g++)
+        for (int g = 0; g < nF; g++)
         {
-            var seg = m_Segments[g]; if (seg.joint == null) { NominalInertia[g] = 1e-6f; continue; }
+            int mg = HandLayout.MorphIndex(g);
+            var seg = m_Segments[g]; if (!GroupPresent(g) || seg.joint == null) { NominalInertia[mg] = 1e-6f; continue; }
             float I = 0f; int f = k_GroupFinger[g];
-            for (int j = 0; j < FingerGroupCount; j++)
+            for (int j = 0; j < nF; j++)
             {
+                if (!GroupPresent(j)) continue;
                 if (k_GroupFinger[j] != f || j < g) continue;   // own segment and distal segments of the same finger
                 float d = Vector3.Distance(centre[j], seg.joint.position);
                 float L = m_Segments[j].capsule != null ? m_Segments[j].capsule.height * m_Segments[j].joint.lossyScale.y : 0.02f;
                 I += mass[j] * (d * d + L * L / 12f);
             }
             if (rig != null) foreach (var (eb, eg) in rig.ExtraLinks)   // links without a group (thumb proximal phalanx, fixed MCP): mass counts toward the groups proximal of it on the same finger
-                if (k_GroupFinger[eg] == f && eg >= g && inertiaScale[eg] > 0f) { var ec = eb.GetComponent<CapsuleCollider>(); Vector3 c = ec != null ? eb.transform.TransformPoint(ec.center) : eb.transform.position; float d = Vector3.Distance(c, seg.joint.position); float L = ec != null ? ec.height : 0.02f; I += eb.mass / inertiaScale[eg] * (d * d + L * L / 12f); }
-            NominalInertia[g] = Mathf.Max(I, 1e-8f);
+                if (k_GroupFinger[eg] == f && eg >= g && inertiaScale[HandLayout.MorphIndex(eg)] > 0f) { var ec = eb.GetComponent<CapsuleCollider>(); Vector3 c = ec != null ? eb.transform.TransformPoint(ec.center) : eb.transform.position; float d = Vector3.Distance(c, seg.joint.position); float L = ec != null ? ec.height : 0.02f; I += eb.mass / inertiaScale[HandLayout.MorphIndex(eg)] * (d * d + L * L / 12f); }
+            NominalInertia[mg] = Mathf.Max(I, 1e-8f);
         }
         // wrist: palm box + all fingers about the palm pivot
         float palmMass = rig != null && rig.Palm != null ? rig.Palm.mass : (m_PalmBox != null ? density * m_PalmBox.size.x * m_PalmBox.size.y * m_PalmBox.size.z * m_Palm.lossyScale.x * m_Palm.lossyScale.y * m_Palm.lossyScale.z : 0.3f);
@@ -324,15 +388,16 @@ public class MorphologyManager : MonoBehaviour
         {
             Vector3 pc = m_PalmBox != null ? m_Palm.TransformPoint(m_PalmBox.center) : m_Palm.position;
             float dp = Vector3.Distance(pc, m_Palm.position); Iw += palmMass * (dp * dp + m_PalmLength * m_PalmLength / 12f);
-            for (int g = 0; g < FingerGroupCount; g++) { float d = Vector3.Distance(centre[g], m_Palm.position); Iw += mass[g] * d * d; }
-            if (rig != null) foreach (var (eb, eg) in rig.ExtraLinks) { float d = Vector3.Distance(eb.transform.position, m_Palm.position); Iw += eb.mass / Mathf.Max(inertiaScale[eg], 1e-3f) * d * d; }
+            for (int g = 0; g < nF; g++) { if (!GroupPresent(g)) continue; float d = Vector3.Distance(centre[g], m_Palm.position); Iw += mass[g] * d * d; }
+            if (rig != null) foreach (var (eb, eg) in rig.ExtraLinks) { float d = Vector3.Distance(eb.transform.position, m_Palm.position); Iw += eb.mass / Mathf.Max(inertiaScale[HandLayout.MorphIndex(eg)], 1e-3f) * d * d; }
         }
         NominalInertia[FingerGroupCount] = Mathf.Max(Iw, 1e-6f);        // wrist flexion
         NominalInertia[FingerGroupCount + 1] = Mathf.Max(Iw * 0.5f, 1e-6f);   // pronation: roughly half (mass closer to the axis)
     }
 
-    public int FingerOfGroup(int g) => g < FingerGroupCount ? k_GroupFinger[g] : 5;
-    public float LengthScaleOfGroup(int g) => g < FingerGroupCount ? lengthScale[k_GroupFinger[g]] : 1f;
+    /// <param name="g">morphology index</param>
+    public int FingerOfGroup(int g) { int fg = HandLayout.GroupOfMorph(g); return fg >= 0 ? k_GroupFinger[fg] : 5; }
+    public float LengthScaleOfGroup(int g) { int fg = HandLayout.GroupOfMorph(g); return fg >= 0 ? lengthScale[k_GroupFinger[fg]] : 1f; }
     /// <summary>Derived natural frequency omega = sqrt(k / I) (rad/s); logged only, not a sampled quantity.</summary>
     public float NaturalFrequency(int g) => inertia[g] > 0f ? Mathf.Sqrt(stiffness[g] / inertia[g]) : 0f;
     public float MeanStiffness(int from, int to) { float s = 0f; int n = 0; for (int g = from; g < to; g++) { s += stiffness[g]; n++; } return n > 0 ? s / n : 0f; }

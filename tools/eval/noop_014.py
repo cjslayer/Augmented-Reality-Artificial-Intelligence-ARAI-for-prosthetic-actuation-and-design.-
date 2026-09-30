@@ -11,7 +11,8 @@ from tools.eval.summarize_pass import summarize
 
 MODEL = "results/013/013E/Prosthetic.onnx"; REC = "results/013/eval/013E"
 PASSES = {"anchor_canonical_7001_7300": dict(seeds=(7001, 7300), pose="canonical", obj_mode="", stratify=""),
-          "heldout_randomStable_10001_10300_p0": dict(seeds=(10001, 10300), pose="randomStable", obj_mode="", stratify="heldout")}
+          "heldout_randomStable_10001_10300_p0": dict(seeds=(10001, 10300), pose="randomStable", obj_mode="", stratify="heldout"),
+          "heldout_canonical_10001_10300_p0": dict(seeds=(10001, 10300), pose="canonical", obj_mode="", stratify="heldout")}
 
 
 def cfg(seeds, csv_path, pose, obj_mode, stratify, extra):
@@ -24,7 +25,9 @@ def cfg(seeds, csv_path, pose, obj_mode, stratify, extra):
 def run(out, extra):
     os.makedirs(os.path.join(REPO, out), exist_ok=True); log = os.path.join(REPO, out, "passes.json"); L = json.load(open(log)) if os.path.exists(log) else []
     ts = time.strftime("%H%M%S"); run_pass(cfg((6091, 6100), f"{out}/throwaway_{ts}.csv", "canonical", "", "", extra), max_wait=600)
+    have = {e["tag"] for e in L}
     for tag, p in PASSES.items():
+        if tag in have: continue
         path, wall = run_pass(cfg(p["seeds"], f"{out}/{tag}.csv", p["pose"], p["obj_mode"], p["stratify"], extra), max_wait=3600); s = summarize(path)
         L.append({"tag": tag, "csv": f"{out}/{tag}.csv", "hash": pass_hash(path), "success": s["success"], "n": s["n"], "wall_s": round(wall, 1), "extra": extra, "time": time.strftime("%H:%M:%S")})
         json.dump(L, open(log, "w"), indent=1); print(f"{tag}: success {s['success']:.3f} n {s['n']} hash {pass_hash(path)} ({wall:.0f} s)", flush=True)

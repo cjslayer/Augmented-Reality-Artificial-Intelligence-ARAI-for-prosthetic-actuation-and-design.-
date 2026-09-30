@@ -1,0 +1,119 @@
+[
+ {
+  "tag": "g1",
+  "ok": true,
+  "csv": "results/014/gates_final_legacy/g1.csv",
+  "wall_s": 16.2,
+  "extra": {},
+  "error": "",
+  "time": "2026-09-30 12:37:48"
+ },
+ {
+  "tag": "g1x",
+  "ok": true,
+  "csv": "results/014/gates_final_legacy/g1x.csv",
+  "wall_s": 16.2,
+  "extra": {},
+  "error": "",
+  "time": "2026-09-30 12:38:08"
+ },
+ {
+  "tag": "g2",
+  "ok": true,
+  "csv": "results/014/gates_final_legacy/g2.csv",
+  "wall_s": 16.1,
+  "extra": {},
+  "error": "",
+  "time": "2026-09-30 12:38:29"
+ },
+ {
+  "tag": "g2x",
+  "ok": true,
+  "csv": "results/014/gates_final_legacy/g2x.csv",
+  "wall_s": 16.1,
+  "extra": {},
+  "error": "",
+  "time": "2026-09-30 12:38:49"
+ },
+ {
+  "tag": "g3m",
+  "ok": true,
+  "csv": "results/014/gates_final_legacy/g3m.csv",
+  "wall_s": 16.2,
+  "extra": {},
+  "error": "",
+  "time": "2026-09-30 12:39:10"
+ },
+ {
+  "tag": "g3mx",
+  "ok": true,
+  "csv": "results/014/gates_final_legacy/g3mx.csv",
+  "wall_s": 11.2,
+  "extra": {},
+  "error": "",
+  "time": "2026-09-30 12:39:25"
+ },
+ {
+  "tag": "g3s",
+  "ok": true,
+  "csv": "results/014/gates_final_legacy/g3s.csv",
+  "wall_s": 16.1,
+  "extra": {},
+  "error": "",
+  "time": "2026-09-30 12:39:46"
+ },
+ {
+  "tag": "g3x",
+  "ok": true,
+  "csv": "results/014/gates_final_legacy/g3x.csv",
+  "wall_s": 16.1,
+  "extra": {},
+  "error": "",
+  "time": "2026-09-30 12:40:06"
+ },
+ {
+  "tag": "g4",
+  "ok": true,
+  "csv": "results/014/gates_final_legacy/g4.csv",
+  "wall_s": 31.2,
+  "extra": {},
+  "error": "",
+  "time": "2026-09-30 12:40:42"
+ },
+ {
+  "tag": "g6_10",
+  "ok": true,
+  "csv": "results/014/gates_final_legacy/g6_10.csv",
+  "wall_s": 11.1,
+  "extra": {},
+  "error": "",
+  "time": "2026-09-30 12:40:57"
+ },
+ {
+  "tag": "g6_20",
+  "ok": true,
+  "csv": "results/014/gates_final_legacy/g6_20.csv",
+  "wall_s": 11.2,
+  "extra": {},
+  "error": "",
+  "time": "2026-09-30 12:41:13"
+ },
+ {
+  "tag": "g6_40",
+  "ok": true,
+  "csv": "results/014/gates_final_legacy/g6_40.csv",
+  "wall_s": 11.2,
+  "extra": {},
+  "error": "",
+  "time": "2026-09-30 12:41:29"
+ },
+ {
+  "tag": "g6_80",
+  "ok": true,
+  "csv": "results/014/gates_final_legacy/g6_80.csv",
+  "wall_s": 11.2,
+  "extra": {},
+  "error": "",
+  "time": "2026-09-30 12:41:44"
+ }
+]

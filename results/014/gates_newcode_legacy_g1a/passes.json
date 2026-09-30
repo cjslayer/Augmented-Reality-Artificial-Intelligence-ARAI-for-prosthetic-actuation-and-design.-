@@ -1,0 +1,11 @@
+[
+ {
+  "tag": "g1",
+  "ok": true,
+  "csv": "results/014/gates_newcode_legacy_g1a/g1.csv",
+  "wall_s": 16.2,
+  "extra": {},
+  "error": "",
+  "time": "2026-09-30 12:16:45"
+ }
+]

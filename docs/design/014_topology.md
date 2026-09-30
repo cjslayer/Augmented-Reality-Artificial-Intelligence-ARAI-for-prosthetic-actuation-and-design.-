@@ -308,3 +308,28 @@ long run.
    the extra finger's.
 4. Should the eval lift budget follow training (300)? The harness sets 200 (GATES:261); run 014 can keep 200 for comparability with
    013E or measure both.
+
+## Decisions at checkpoint 1 (2026-09-30) and what Part 2 implemented
+
+| # | decision | implemented as |
+|---|---|---|
+| D1 | 19 finger joints (thumb 2 + fingers 1-5 x 3 + second thumb 2), 21 tokens, 24 actions | `HandLayout` (ArticulatedHand.cs): digit ids keep the legacy order as a prefix (0 index .. 3 pinky, 4 thumb, 5 extra finger, 6 second thumb); groups 0-13 legacy, 14-16 extra finger, 17-18 second thumb; morphology arrays keep the legacy 16 (wrist at 14-15) and append 16-20 |
+| D2 | anatomical slots; the palm widens 21 mm only with the extra finger; smaller hands drop from the ulnar side | `HandSpec.extraFinger`, `extraFingerPalmWidening`; the second thumb mirrors the primary about the palm's across centre |
+| D3 | fingertip rays folded into the tokens, computed in code, with the scene RaySensor semantics | each legacy ray sensor's cast settings (ML-Agents' own `RayPerceptionInput`) and its pose relative to its finger bone are captured, then replayed on the matching link every rebuild through `RayPerceptionSensor.Perceive` (tag "Cylinder", range 20 x bone scale, sphere radius 0.5, the 3-float encoding). The extra finger borrows the pinky's sensors, the second thumb the thumb's. Known difference: the legacy sensors read the bones' pose from the last LateUpdate (stale by up to one rendered frame at timeScale 20); the folded rays read the current link pose |
+| D4 | vector 28 with per-slot length scales, absent = 0 | `CollectObservationsSlots` |
+| D5 | 2-digit hands out of run 014; digit range 3-7; the gate is unchanged | `MorphologyManager.digitDistribution` = P(3, 4, 5, 6a, 6b, 7) = (0.10, 0.15, 0.45, 0.075, 0.075, 0.15): the brief's P(2) moved to 5, the two 6-digit compositions at equal share |
+| D6 | code-side layout switch, default = the 013 layout; `--topology slots` via env_args; fail loud; no-op proof | `HandLayout.Resolve` / `ArmGraspAgent.OnEnable` (configures `BrainParameters`, the token buffer and removes the ray components before ML-Agents builds the policy and sensors); `AssertLayout` (Initialize) and `VerifySensors` (first episode, the sensors ML-Agents actually created); `LayoutGuard.ModelMatches` for any model; a legacy scene model is detached in the slot layout |
+| D7 | no new tags | links of the extra finger and the second thumb are untagged |
+| D8 | effort over present joints only, masked joints as today, unnormalised | `OnActionReceived` (slot layout). Consequence: a hand with more digits pays more effort for the same per-joint activity (24 / 13 = 1.85x between the 7-digit hand, 19 finger + 5 arm terms, and the 3-digit hand, 8 + 5, at equal per-joint action magnitude) |
+| open | thumb flag in the tokens | feature 19 (thumb = any thumb slot); final token width **20** = 13 legacy features + 2 rays x 3 floats + the thumb flag |
+| open | lift budget in the harness | `ArticulatedGates` config `liftBudgetSteps` sets `task/liftBudgetSteps` (eval at 300 headline and 200 for 013D comparability) |
+
+ONNX input set of the slot layout: **2 inputs**, `obs_0` [21, 20] (JointTokens), `obs_1` [28] (vector); output `continuous_actions` [24].
+
+## Known limitation: digit identity and digit count are confounded
+
+Digits drop from the ulnar side, so the digit count also fixes which digits a hand has: every 3-digit hand is thumb + index + middle, every 4-digit hand
+adds the ring finger, and the only 6-digit hands are the two fixed compositions. A difference between digit counts is therefore a difference between these
+specific hands, not an effect of "one more finger" in general; e.g. 3 vs 4 digits cannot separate "a third finger" from "the ring finger". The two 6-digit
+compositions (thumb + 5 fingers vs thumb + 4 fingers + second thumb) are the only within-count contrast. Separating count from identity would need
+position-randomized placement (the brief's spread-and-interpolate variant) or compositions that remove radial digits, both excluded by decision D2.

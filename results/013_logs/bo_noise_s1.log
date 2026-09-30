@@ -1,0 +1,3 @@
+session 1 repeat 0: J 0.8594 (canonical 0.969, randomStable 0.750, n 128, shapes ok True) hash {'canonical': 'f8816016c5af5c62', 'randomStable': '1329567a5dd9fd76'} wall 71 s
+session 1 repeat 1: J 0.8594 (canonical 0.969, randomStable 0.750, n 128, shapes ok True) hash {'canonical': 'f8816016c5af5c62', 'randomStable': '1329567a5dd9fd76'} wall 71 s
+session 1 repeat 2: J 0.8594 (canonical 0.969, randomStable 0.750, n 128, shapes ok True) hash {'canonical': 'f8816016c5af5c62', 'randomStable': '1329567a5dd9fd76'} wall 71 s

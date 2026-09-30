@@ -1,0 +1,250 @@
+[
+ {
+  "tag": "noise_ref_s1_r0",
+  "model": "results/013/013D/Prosthetic.onnx",
+  "per_mode": {
+   "canonical": {
+    "success": 0.96875,
+    "n": 64,
+    "reach": 0,
+    "gate": 1.0,
+    "lifted": 0.984375
+   },
+   "randomStable": {
+    "success": 0.75,
+    "n": 64,
+    "reach": 1,
+    "gate": 0.984375,
+    "lifted": 0.828125
+   }
+  },
+  "per_family": {
+   "length 130-210 mm | canonical": {
+    "success": 0.9583333333333334,
+    "n": 24
+   },
+   "length 130-210 mm | randomStable": {
+    "success": 0.7916666666666666,
+    "n": 24
+   },
+   "length 210-280 mm | canonical": {
+    "success": 0.95,
+    "n": 20
+   },
+   "length 210-280 mm | randomStable": {
+    "success": 0.6,
+    "n": 20
+   },
+   "length < 130 mm | canonical": {
+    "success": 1.0,
+    "n": 20
+   },
+   "length < 130 mm | randomStable": {
+    "success": 0.85,
+    "n": 20
+   }
+  },
+  "hash": {
+   "canonical": "f8816016c5af5c62",
+   "randomStable": "1329567a5dd9fd76"
+  },
+  "wall_play": {
+   "canonical": 31.1,
+   "randomStable": 31.1
+  },
+  "n": 128,
+  "J": 0.859375,
+  "reach": 1,
+  "wall_s": 70.6,
+  "shape_counts_ok": true,
+  "session": 1,
+  "repeat": 0,
+  "time": "2026-09-29 16:52:53"
+ },
+ {
+  "tag": "noise_ref_s1_r1",
+  "model": "results/013/013D/Prosthetic.onnx",
+  "per_mode": {
+   "canonical": {
+    "success": 0.96875,
+    "n": 64,
+    "reach": 0,
+    "gate": 1.0,
+    "lifted": 0.984375
+   },
+   "randomStable": {
+    "success": 0.75,
+    "n": 64,
+    "reach": 1,
+    "gate": 0.984375,
+    "lifted": 0.828125
+   }
+  },
+  "per_family": {
+   "length 130-210 mm | canonical": {
+    "success": 0.9583333333333334,
+    "n": 24
+   },
+   "length 130-210 mm | randomStable": {
+    "success": 0.7916666666666666,
+    "n": 24
+   },
+   "length 210-280 mm | canonical": {
+    "success": 0.95,
+    "n": 20
+   },
+   "length 210-280 mm | randomStable": {
+    "success": 0.6,
+    "n": 20
+   },
+   "length < 130 mm | canonical": {
+    "success": 1.0,
+    "n": 20
+   },
+   "length < 130 mm | randomStable": {
+    "success": 0.85,
+    "n": 20
+   }
+  },
+  "hash": {
+   "canonical": "f8816016c5af5c62",
+   "randomStable": "1329567a5dd9fd76"
+  },
+  "wall_play": {
+   "canonical": 31.1,
+   "randomStable": 31.1
+  },
+  "n": 128,
+  "J": 0.859375,
+  "reach": 1,
+  "wall_s": 70.7,
+  "shape_counts_ok": true,
+  "session": 1,
+  "repeat": 1,
+  "time": "2026-09-29 16:54:04"
+ },
+ {
+  "tag": "noise_ref_s1_r2",
+  "model": "results/013/013D/Prosthetic.onnx",
+  "per_mode": {
+   "canonical": {
+    "success": 0.96875,
+    "n": 64,
+    "reach": 0,
+    "gate": 1.0,
+    "lifted": 0.984375
+   },
+   "randomStable": {
+    "success": 0.75,
+    "n": 64,
+    "reach": 1,
+    "gate": 0.984375,
+    "lifted": 0.828125
+   }
+  },
+  "per_family": {
+   "length 130-210 mm | canonical": {
+    "success": 0.9583333333333334,
+    "n": 24
+   },
+   "length 130-210 mm | randomStable": {
+    "success": 0.7916666666666666,
+    "n": 24
+   },
+   "length 210-280 mm | canonical": {
+    "success": 0.95,
+    "n": 20
+   },
+   "length 210-280 mm | randomStable": {
+    "success": 0.6,
+    "n": 20
+   },
+   "length < 130 mm | canonical": {
+    "success": 1.0,
+    "n": 20
+   },
+   "length < 130 mm | randomStable": {
+    "success": 0.85,
+    "n": 20
+   }
+  },
+  "hash": {
+   "canonical": "f8816016c5af5c62",
+   "randomStable": "1329567a5dd9fd76"
+  },
+  "wall_play": {
+   "canonical": 31.1,
+   "randomStable": 31.1
+  },
+  "n": 128,
+  "J": 0.859375,
+  "reach": 1,
+  "wall_s": 70.7,
+  "shape_counts_ok": true,
+  "session": 1,
+  "repeat": 2,
+  "time": "2026-09-29 16:55:15"
+ },
+ {
+  "tag": "noise_ref_s2_r0",
+  "model": "results/013/013D/Prosthetic.onnx",
+  "per_mode": {
+   "canonical": {
+    "success": 0.96875,
+    "n": 64,
+    "reach": 0,
+    "gate": 1.0,
+    "lifted": 0.984375
+   },
+   "randomStable": {
+    "success": 0.765625,
+    "n": 64,
+    "reach": 2,
+    "gate": 0.96875,
+    "lifted": 0.875
+   }
+  },
+  "per_family": {
+   "length 130-210 mm | canonical": {
+    "success": 0.9583333333333334,
+    "n": 24
+   },
+   "length 130-210 mm | randomStable": {
+    "success": 0.75,
+    "n": 24
+   },
+   "length 210-280 mm | canonical": {
+    "success": 0.95,
+    "n": 20
+   },
+   "length 210-280 mm | randomStable": {
+    "success": 0.8,
+    "n": 20
+   },
+   "length < 130 mm | canonical": {
+    "success": 1.0,
+    "n": 20
+   },
+   "length < 130 mm | randomStable": {
+    "success": 0.75,
+    "n": 20
+   }
+  },
+  "hash": {
+   "canonical": "f8816016c5af5c62",
+   "randomStable": "bea5360dd3f23041"
+  },
+  "wall_play": {
+   "canonical": 31.1,
+   "randomStable": 37.4
+  },
+  "n": 128,
+  "J": 0.8671875,
+  "reach": 2,
+  "wall_s": 76.9,
+  "shape_counts_ok": true,
+  "session": 2,
+  "repeat": 0,
+  "time": "2026-09-29 16:58:14"
+ }
+]

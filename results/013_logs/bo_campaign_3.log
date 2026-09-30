@@ -1,0 +1,64 @@
+random #70: J 0.750 (canonical 0.906, randomStable 0.594, n 128, 71 s)
+bo #70: J 0.867 (canonical 0.938, randomStable 0.797, n 128, 77 s) {'ei': 0.007419462195608066, 'gp_mean': 0.8931387446850642, 'gp_sd': 0.018547376086534915, 'incumbent_mean': 0.893098520119175}
+random #71: J 0.852 (canonical 0.938, randomStable 0.766, n 128, 83 s)
+bo #71: J 0.891 (canonical 0.953, randomStable 0.828, n 128, 77 s) {'ei': 0.0067432254596916305, 'gp_mean': 0.8883783826597881, 'gp_sd': 0.017277529882815768, 'incumbent_mean': 0.8886794996549792}
+random #72: J 0.711 (canonical 0.859, randomStable 0.562, n 128, 83 s)
+bo #72: J 0.898 (canonical 0.969, randomStable 0.828, n 128, 77 s) {'ei': 0.006322943907306, 'gp_mean': 0.889001828989256, 'gp_sd': 0.01575562928634816, 'incumbent_mean': 0.888927255341449}
+random #73: J 0.797 (canonical 0.953, randomStable 0.641, n 128, 77 s)
+bo #73: J 0.906 (canonical 0.984, randomStable 0.828, n 128, 77 s) {'ei': 0.006178423871835202, 'gp_mean': 0.8895642271826991, 'gp_sd': 0.016221371662938362, 'incumbent_mean': 0.8901588563785524}
+random #74: J 0.812 (canonical 0.953, randomStable 0.672, n 128, 71 s)
+bo #74: J 0.898 (canonical 0.984, randomStable 0.812, n 128, 77 s) {'ei': 0.005818543601896065, 'gp_mean': 0.8920407446938203, 'gp_sd': 0.014549316495833546, 'incumbent_mean': 0.8920123545927432}
+random #75: J 0.711 (canonical 0.734, randomStable 0.688, n 128, 82 s)
+bo #75: J 0.898 (canonical 0.984, randomStable 0.812, n 128, 77 s) {'ei': 0.005828380627922186, 'gp_mean': 0.8927566030999029, 'gp_sd': 0.014571804583416668, 'incumbent_mean': 0.892726484579185}
+random #76: J 0.789 (canonical 0.906, randomStable 0.672, n 128, 71 s)
+bo #76: J 0.875 (canonical 0.938, randomStable 0.812, n 128, 77 s) {'ei': 0.005767969427332055, 'gp_mean': 0.8929143056586226, 'gp_sd': 0.015012449508508318, 'incumbent_mean': 0.8933618917694489}
+random #77: J 0.797 (canonical 0.938, randomStable 0.656, n 128, 82 s)
+bo #77: J 0.898 (canonical 0.953, randomStable 0.844, n 128, 72 s) {'ei': 0.005291083708144086, 'gp_mean': 0.8918352305060047, 'gp_sd': 0.013127433003048397, 'incumbent_mean': 0.8917275913080146}
+random #78: J 0.727 (canonical 0.906, randomStable 0.547, n 128, 77 s)
+bo #78: J 0.883 (canonical 0.969, randomStable 0.797, n 128, 77 s) {'ei': 0.00523781842185087, 'gp_mean': 0.8913143098113953, 'gp_sd': 0.014464853973982837, 'incumbent_mean': 0.8924132481652802}
+random #79: J 0.812 (canonical 0.875, randomStable 0.750, n 128, 72 s)
+bo #79: J 0.852 (canonical 0.953, randomStable 0.750, n 128, 77 s) {'ei': 0.005047704366327911, 'gp_mean': 0.8911382966347943, 'gp_sd': 0.01337790174709508, 'incumbent_mean': 0.8917272514316763}
+DRIFT reference after 160: J 0.859 (first 0.8594)
+random #80: J 0.773 (canonical 0.922, randomStable 0.625, n 128, 77 s)
+bo #80: J 0.898 (canonical 0.984, randomStable 0.812, n 128, 77 s) {'ei': 0.0047691544121201915, 'gp_mean': 0.8889001453678387, 'gp_sd': 0.01218318803734576, 'incumbent_mean': 0.8890837176360299}
+random #81: J 0.883 (canonical 0.938, randomStable 0.828, n 128, 77 s)
+bo #81: J 0.891 (canonical 0.969, randomStable 0.812, n 128, 77 s) {'ei': 0.004815778623328183, 'gp_mean': 0.8896014652534284, 'gp_sd': 0.012184718254982808, 'incumbent_mean': 0.8896921759878124}
+random #82: J 0.875 (canonical 0.953, randomStable 0.797, n 128, 77 s)
+bo #82: J 0.898 (canonical 0.984, randomStable 0.812, n 128, 82 s) {'ei': 0.004558660103945783, 'gp_mean': 0.8898577831367535, 'gp_sd': 0.01127358255223684, 'incumbent_mean': 0.889736005177068}
+random #83: J 0.797 (canonical 0.953, randomStable 0.641, n 128, 77 s)
+bo #83: J 0.891 (canonical 0.984, randomStable 0.797, n 128, 82 s) {'ei': 0.004749609044340228, 'gp_mean': 0.8898620846562345, 'gp_sd': 0.01257544602554384, 'incumbent_mean': 0.8904060048245431}
+random #84: J 0.812 (canonical 0.953, randomStable 0.672, n 128, 77 s)
+bo #84: J 0.883 (canonical 0.969, randomStable 0.797, n 128, 82 s) {'ei': 0.004536321993350703, 'gp_mean': 0.8895283660638318, 'gp_sd': 0.012467908111472331, 'incumbent_mean': 0.8904296544082243}
+random #85: J 0.695 (canonical 0.812, randomStable 0.578, n 128, 77 s)
+bo #85: J 0.883 (canonical 0.984, randomStable 0.781, n 128, 82 s) {'ei': 0.004357026835073449, 'gp_mean': 0.8893487306123075, 'gp_sd': 0.01173391076566426, 'incumbent_mean': 0.8900119332843751}
+random #86: J 0.828 (canonical 0.922, randomStable 0.734, n 128, 72 s)
+bo #86: J 0.883 (canonical 0.969, randomStable 0.797, n 128, 77 s) {'ei': 0.004234685788506582, 'gp_mean': 0.8888299678927869, 'gp_sd': 0.011588405107401042, 'incumbent_mean': 0.8896287634824276}
+random #87: J 0.797 (canonical 0.969, randomStable 0.625, n 128, 78 s)
+bo #87: J 0.852 (canonical 0.953, randomStable 0.750, n 128, 77 s) {'ei': 0.004092489447980947, 'gp_mean': 0.889296658246391, 'gp_sd': 0.010299046910660466, 'incumbent_mean': 0.8893291708177902}
+random #88: J 0.711 (canonical 0.859, randomStable 0.562, n 128, 77 s)
+bo #88: J 0.883 (canonical 0.953, randomStable 0.812, n 128, 77 s) {'ei': 0.004105914247087945, 'gp_mean': 0.8874195781989414, 'gp_sd': 0.010709468253873302, 'incumbent_mean': 0.887756907602987}
+random #89: J 0.828 (canonical 0.984, randomStable 0.672, n 128, 71 s)
+bo #89: J 0.867 (canonical 0.953, randomStable 0.781, n 128, 77 s) {'ei': 0.003928106998950087, 'gp_mean': 0.8861470317845812, 'gp_sd': 0.011501318503481834, 'incumbent_mean': 0.8875342074752579}
+DRIFT reference after 180: J 0.859 (first 0.8594)
+random #90: J 0.789 (canonical 0.922, randomStable 0.656, n 128, 77 s)
+bo #90: J 0.859 (canonical 0.953, randomStable 0.766, n 128, 77 s) {'ei': 0.003761993150294005, 'gp_mean': 0.88604292529391, 'gp_sd': 0.010417634753590371, 'incumbent_mean': 0.886856333206667}
+random #91: J 0.672 (canonical 0.828, randomStable 0.516, n 128, 78 s)
+bo #91: J 0.891 (canonical 0.953, randomStable 0.828, n 128, 77 s) {'ei': 0.0038936342567006043, 'gp_mean': 0.8848701687680601, 'gp_sd': 0.010941741784239973, 'incumbent_mean': 0.8858479847522911}
+random #92: J 0.820 (canonical 0.938, randomStable 0.703, n 128, 83 s)
+bo #92: J 0.898 (canonical 0.969, randomStable 0.828, n 128, 77 s) {'ei': 0.004186799831377765, 'gp_mean': 0.8851014766159975, 'gp_sd': 0.01169178858383854, 'incumbent_mean': 0.8860898901768229}
+random #93: J 0.812 (canonical 0.953, randomStable 0.672, n 128, 77 s)
+bo #93: J 0.906 (canonical 0.953, randomStable 0.859, n 128, 78 s) {'ei': 0.004073684425350059, 'gp_mean': 0.886361005482036, 'gp_sd': 0.010623045846543921, 'incumbent_mean': 0.8866937587642104}
+random #94: J 0.711 (canonical 0.922, randomStable 0.500, n 128, 84 s)
+bo #94: J 0.883 (canonical 0.984, randomStable 0.781, n 128, 84 s) {'ei': 0.004003382950563863, 'gp_mean': 0.887289844886747, 'gp_sd': 0.010348770164305816, 'incumbent_mean': 0.8875426668586205}
+random #95: J 0.859 (canonical 1.000, randomStable 0.719, n 128, 78 s)
+bo #95: J 0.867 (canonical 0.969, randomStable 0.766, n 128, 78 s) {'ei': 0.003805099175818448, 'gp_mean': 0.8861970584158878, 'gp_sd': 0.010933335343435865, 'incumbent_mean': 0.8873596738485365}
+random #96: J 0.695 (canonical 0.844, randomStable 0.547, n 128, 78 s)
+bo #96: J 0.867 (canonical 0.984, randomStable 0.750, n 128, 82 s) {'ei': 0.0039382750741475455, 'gp_mean': 0.8744680453513758, 'gp_sd': 0.0218739329708801, 'incumbent_mean': 0.8867073651540835}
+random #97: J 0.859 (canonical 0.984, randomStable 0.734, n 128, 78 s)
+bo #97: J 0.914 (canonical 0.969, randomStable 0.859, n 128, 83 s) {'ei': 0.0038121007683097814, 'gp_mean': 0.8855336914745477, 'gp_sd': 0.01066931425191456, 'incumbent_mean': 0.8864540224182593}
+random #98: J 0.836 (canonical 0.984, randomStable 0.688, n 128, 72 s)
+bo #98: J 0.883 (canonical 0.984, randomStable 0.781, n 128, 78 s) {'ei': 0.0038367113933357347, 'gp_mean': 0.886430864748842, 'gp_sd': 0.010877665520664827, 'incumbent_mean': 0.887476642520545}
+random #99: J 0.758 (canonical 0.938, randomStable 0.578, n 128, 83 s)
+bo #99: J 0.875 (canonical 0.969, randomStable 0.781, n 128, 78 s) {'ei': 0.003582993783868565, 'gp_mean': 0.8864044638737562, 'gp_sd': 0.010111701236310396, 'incumbent_mean': 0.8873410286925145}
+DRIFT reference after 200: J 0.859 (first 0.8594)
+CAMPAIGN DONE

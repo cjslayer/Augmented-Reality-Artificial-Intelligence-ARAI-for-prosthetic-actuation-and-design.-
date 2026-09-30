@@ -1,0 +1,82 @@
+random #31: J 0.812 (canonical 0.938, randomStable 0.688, n 128, 89 s)
+bo #31: J 0.844 (canonical 0.984, randomStable 0.703, n 128, 83 s) {'ei': 0.009293772695784424, 'gp_mean': 0.8513275556524337, 'gp_sd': 0.0220341157215771, 'incumbent_mean': 0.8503384030274721}
+random #32: J 0.633 (canonical 0.844, randomStable 0.422, n 128, 77 s)
+bo #32: J 0.875 (canonical 0.984, randomStable 0.766, n 128, 83 s) {'ei': 0.008342438194660014, 'gp_mean': 0.8499716378575738, 'gp_sd': 0.02049165199548421, 'incumbent_mean': 0.8496388897540593}
+random #33: J 0.875 (canonical 0.969, randomStable 0.781, n 128, 77 s)
+bo #33: J 0.859 (canonical 0.984, randomStable 0.734, n 128, 83 s) {'ei': 0.007795406464066445, 'gp_mean': 0.8550649882299718, 'gp_sd': 0.019488803791847194, 'incumbent_mean': 0.8550240253042817}
+random #34: J 0.734 (canonical 0.922, randomStable 0.547, n 128, 77 s)
+bo #34: J 0.883 (canonical 1.000, randomStable 0.766, n 128, 83 s) {'ei': 0.00782137418290593, 'gp_mean': 0.8563915761483322, 'gp_sd': 0.01892244066299843, 'incumbent_mean': 0.8558528690336459}
+random #35: J 0.758 (canonical 0.906, randomStable 0.609, n 128, 83 s)
+bo #35: J 0.859 (canonical 1.000, randomStable 0.719, n 128, 83 s) {'ei': 0.0072503675990487305, 'gp_mean': 0.8609714396490817, 'gp_sd': 0.018212184547915077, 'incumbent_mean': 0.8610019457056971}
+random #36: J 0.773 (canonical 0.984, randomStable 0.562, n 128, 83 s)
+bo #36: J 0.875 (canonical 0.969, randomStable 0.781, n 128, 83 s) {'ei': 0.0067911156447843695, 'gp_mean': 0.8600138359303434, 'gp_sd': 0.01805285520645953, 'incumbent_mean': 0.8608511910226789}
+random #37: J 0.789 (canonical 0.953, randomStable 0.625, n 128, 83 s)
+bo #37: J 0.883 (canonical 0.984, randomStable 0.781, n 128, 88 s) {'ei': 0.00649552194894687, 'gp_mean': 0.8624937706027069, 'gp_sd': 0.016735243397131363, 'incumbent_mean': 0.8628586934419055}
+random #38: J 0.844 (canonical 1.000, randomStable 0.688, n 128, 83 s)
+bo #38: J 0.875 (canonical 0.969, randomStable 0.781, n 128, 83 s) {'ei': 0.00665584635864605, 'gp_mean': 0.8634926440214806, 'gp_sd': 0.019034233888882035, 'incumbent_mean': 0.865448150304973}
+random #39: J 0.773 (canonical 0.922, randomStable 0.625, n 128, 93 s)
+bo #39: J 0.859 (canonical 0.969, randomStable 0.750, n 128, 88 s) {'ei': 0.0062837967047561704, 'gp_mean': 0.8661184348807669, 'gp_sd': 0.016803105569887608, 'incumbent_mean': 0.8669752042365477}
+DRIFT reference after 80: J 0.859 (first 0.8594)
+random #40: J 0.734 (canonical 0.938, randomStable 0.531, n 128, 94 s)
+bo #40: J 0.867 (canonical 0.969, randomStable 0.766, n 128, 88 s) {'ei': 0.006215189653316364, 'gp_mean': 0.865988484501418, 'gp_sd': 0.01597531618291969, 'incumbent_mean': 0.8663070983161919}
+random #41: J 0.797 (canonical 0.891, randomStable 0.703, n 128, 89 s)
+bo #41: J 0.906 (canonical 0.969, randomStable 0.844, n 128, 88 s) {'ei': 0.005866380421726136, 'gp_mean': 0.865654218039641, 'gp_sd': 0.015716866489609044, 'incumbent_mean': 0.8664789640664853}
+random #42: J 0.852 (canonical 0.969, randomStable 0.734, n 128, 83 s)
+bo #42: J 0.891 (canonical 0.984, randomStable 0.797, n 128, 88 s) {'ei': 0.006499237897514052, 'gp_mean': 0.8687064926945677, 'gp_sd': 0.018820778153288777, 'incumbent_mean': 0.8708193527085535}
+random #43: J 0.688 (canonical 0.828, randomStable 0.547, n 128, 94 s)
+bo #43: J 0.867 (canonical 0.969, randomStable 0.766, n 128, 89 s) {'ei': 0.00646689927425543, 'gp_mean': 0.8723505336470756, 'gp_sd': 0.01765011069246563, 'incumbent_mean': 0.8735309696087612}
+random #44: J 0.844 (canonical 0.938, randomStable 0.750, n 128, 84 s)
+bo #44: J 0.852 (canonical 0.984, randomStable 0.719, n 128, 89 s) {'ei': 0.006003097305152926, 'gp_mean': 0.8700508573022093, 'gp_sd': 0.018644809793670898, 'incumbent_mean': 0.8731224922852123}
+random #45: J 0.781 (canonical 0.969, randomStable 0.594, n 128, 99 s)
+bo #45: J 0.875 (canonical 0.984, randomStable 0.766, n 128, 89 s) {'ei': 0.0056190587272515235, 'gp_mean': 0.8704115787007964, 'gp_sd': 0.015541485517900726, 'incumbent_mean': 0.8716106619286197}
+random #46: J 0.773 (canonical 0.922, randomStable 0.625, n 128, 88 s)
+bo #46: J 0.852 (canonical 0.953, randomStable 0.750, n 128, 89 s) {'ei': 0.005338368414581785, 'gp_mean': 0.8702909435398498, 'gp_sd': 0.015467409605699676, 'incumbent_mean': 0.8720336649241724}
+random #47: J 0.820 (canonical 0.922, randomStable 0.719, n 128, 89 s)
+bo #47: J 0.852 (canonical 0.953, randomStable 0.750, n 128, 94 s) {'ei': 0.005216577657120576, 'gp_mean': 0.8699355835673996, 'gp_sd': 0.014026591132208365, 'incumbent_mean': 0.870711131452937}
+random #48: J 0.773 (canonical 0.906, randomStable 0.641, n 128, 94 s)
+bo #48: J 0.891 (canonical 0.984, randomStable 0.797, n 128, 94 s) {'ei': 0.005027561428007692, 'gp_mean': 0.8653148276736219, 'gp_sd': 0.01751906165420365, 'incumbent_mean': 0.8696670257009151}
+random #49: J 0.875 (canonical 0.984, randomStable 0.766, n 128, 94 s)
+bo #49: J 0.859 (canonical 0.984, randomStable 0.734, n 128, 94 s) {'ei': 0.005775806008922501, 'gp_mean': 0.8608000855302914, 'gp_sd': 0.025435539443879485, 'incumbent_mean': 0.8712238244678967}
+DRIFT reference after 100: J 0.875 (first 0.8594)
+random #50: J 0.766 (canonical 0.906, randomStable 0.625, n 128, 94 s)
+bo #50: J 0.867 (canonical 0.984, randomStable 0.750, n 128, 94 s) {'ei': 0.005292104425483107, 'gp_mean': 0.8699927282878733, 'gp_sd': 0.014632974617675472, 'incumbent_mean': 0.871118477971052}
+random #51: J 0.750 (canonical 0.844, randomStable 0.656, n 128, 94 s)
+bo #51: J 0.875 (canonical 0.953, randomStable 0.797, n 128, 99 s) {'ei': 0.00503525426591533, 'gp_mean': 0.8690632004654057, 'gp_sd': 0.01490533695241203, 'incumbent_mean': 0.8709840475233748}
+random #52: J 0.789 (canonical 0.922, randomStable 0.656, n 128, 94 s)
+bo #52: J 0.883 (canonical 0.984, randomStable 0.781, n 128, 99 s) {'ei': 0.004935869833616035, 'gp_mean': 0.8673062509843855, 'gp_sd': 0.016897203393085248, 'incumbent_mean': 0.871289384381575}
+random #53: J 0.688 (canonical 0.734, randomStable 0.641, n 128, 99 s)
+bo #53: J 0.883 (canonical 0.953, randomStable 0.812, n 128, 104 s) {'ei': 0.0054660742404577505, 'gp_mean': 0.8690918994941514, 'gp_sd': 0.017421246958564934, 'incumbent_mean': 0.8722940440291457}
+random #54: J 0.641 (canonical 0.812, randomStable 0.469, n 128, 99 s)
+bo #54: J 0.891 (canonical 1.000, randomStable 0.781, n 128, 104 s) {'ei': 0.005464398819628314, 'gp_mean': 0.8703224853716603, 'gp_sd': 0.01713751346434643, 'incumbent_mean': 0.873269063518466}
+random #55: J 0.844 (canonical 0.953, randomStable 0.734, n 128, 104 s)
+bo #55: J 0.883 (canonical 0.984, randomStable 0.781, n 128, 99 s) {'ei': 0.005813053013166766, 'gp_mean': 0.8740759709848052, 'gp_sd': 0.015186570238924023, 'incumbent_mean': 0.8745734968212848}
+random #56: J 0.820 (canonical 0.938, randomStable 0.703, n 128, 100 s)
+bo #56: J 0.852 (canonical 0.969, randomStable 0.734, n 128, 109 s) {'ei': 0.005644128538078073, 'gp_mean': 0.8740530864370041, 'gp_sd': 0.015662632905141652, 'incumbent_mean': 0.8753014773097004}
+random #57: J 0.828 (canonical 0.953, randomStable 0.703, n 128, 104 s)
+bo #57: J 0.891 (canonical 0.984, randomStable 0.797, n 128, 110 s) {'ei': 0.005094199691698835, 'gp_mean': 0.8716808193511311, 'gp_sd': 0.015436749879576328, 'incumbent_mean': 0.8739409425719084}
+random #58: J 0.766 (canonical 0.906, randomStable 0.625, n 128, 104 s)
+bo #58: J 0.867 (canonical 1.000, randomStable 0.734, n 128, 110 s) {'ei': 0.005137578681344431, 'gp_mean': 0.8743942932375827, 'gp_sd': 0.013902769887396825, 'incumbent_mean': 0.8752320757787546}
+random #59: J 0.734 (canonical 0.938, randomStable 0.531, n 128, 115 s)
+bo #59: J 0.836 (canonical 0.906, randomStable 0.766, n 128, 105 s) {'ei': 0.005161263173933806, 'gp_mean': 0.8596091221626715, 'gp_sd': 0.02797729987088485, 'incumbent_mean': 0.8748362907741445}
+DRIFT reference after 120: J 0.891 (first 0.8594)
+random #60: J 0.781 (canonical 0.906, randomStable 0.656, n 128, 105 s)
+bo #60: J 0.844 (canonical 0.969, randomStable 0.719, n 128, 110 s) {'ei': 0.0053760933436300985, 'gp_mean': 0.873225248471835, 'gp_sd': 0.014868384221789058, 'incumbent_mean': 0.8743715557947804}
+random #61: J 0.711 (canonical 0.875, randomStable 0.547, n 128, 110 s)
+bo #61: J 0.828 (canonical 0.969, randomStable 0.688, n 128, 109 s) {'ei': 0.004914870590510721, 'gp_mean': 0.863981971026047, 'gp_sd': 0.021774085900680886, 'incumbent_mean': 0.8729919312907588}
+random #62: J 0.789 (canonical 0.875, randomStable 0.703, n 128, 115 s)
+bo #62: J 0.906 (canonical 1.000, randomStable 0.812, n 128, 115 s) {'ei': 0.004408867459219186, 'gp_mean': 0.8716993054450193, 'gp_sd': 0.011842191950453164, 'incumbent_mean': 0.8723442833658291}
+random #63: J 0.859 (canonical 0.984, randomStable 0.734, n 128, 115 s)
+bo #63: J 0.812 (canonical 0.938, randomStable 0.688, n 128, 115 s) {'ei': 0.00546830551481759, 'gp_mean': 0.8730424975948619, 'gp_sd': 0.014966862531082417, 'incumbent_mean': 0.8740761849484883}
+random #64: J 0.688 (canonical 0.875, randomStable 0.500, n 128, 105 s)
+bo #64: J 0.875 (canonical 1.000, randomStable 0.750, n 128, 120 s) {'ei': 0.004398220844611927, 'gp_mean': 0.8703117537736254, 'gp_sd': 0.012485567302641, 'incumbent_mean': 0.8715242945791616}
+random #65: J 0.766 (canonical 0.922, randomStable 0.609, n 128, 120 s)
+bo #65: J 0.836 (canonical 1.000, randomStable 0.672, n 128, 115 s) {'ei': 0.004383089239326364, 'gp_mean': 0.8714457055254248, 'gp_sd': 0.011291454808932358, 'incumbent_mean': 0.8716909290599508}
+random #66: J 0.867 (canonical 0.984, randomStable 0.750, n 128, 120 s)
+bo #66: J 0.922 (canonical 0.984, randomStable 0.859, n 128, 120 s) {'ei': 0.004281856027790357, 'gp_mean': 0.8582846549466787, 'gp_sd': 0.022662824197986216, 'incumbent_mean': 0.8702777587354014}
+random #67: J 0.781 (canonical 0.938, randomStable 0.625, n 128, 115 s)
+bo #67: J 0.898 (canonical 0.969, randomStable 0.828, n 128, 125 s) {'ei': 0.008649766526803777, 'gp_mean': 0.8730034942519722, 'gp_sd': 0.02056549166565041, 'incumbent_mean': 0.8721277254201897}
+random #68: J 0.836 (canonical 0.922, randomStable 0.750, n 128, 120 s)
+bo #68: J 0.930 (canonical 0.969, randomStable 0.891, n 128, 121 s) {'ei': 0.00799675422994343, 'gp_mean': 0.877906051050925, 'gp_sd': 0.019861881417190058, 'incumbent_mean': 0.8777604568928776}
+random #69: J 0.758 (canonical 0.969, randomStable 0.547, n 128, 126 s)
+bo #69: J 0.914 (canonical 0.969, randomStable 0.859, n 128, 127 s) {'ei': 0.007924234774286096, 'gp_mean': 0.8881066173867247, 'gp_sd': 0.01955256141041246, 'incumbent_mean': 0.8878600748902666}
+DRIFT reference after 140: J 0.859 (first 0.8594)

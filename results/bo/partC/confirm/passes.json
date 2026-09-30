@@ -1,0 +1,162 @@
+[
+ {
+  "tag": "bo1_canonical_11501_11800",
+  "ok": true,
+  "csv": "results/bo/partC/confirm/bo1_canonical_11501_11800.csv",
+  "n": 300,
+  "success": 0.97,
+  "hash": "ad228a73795f8d66",
+  "wall_s": 110.44421482086182,
+  "time": "22:14:57"
+ },
+ {
+  "tag": "bo1_randomStable_11501_11800",
+  "ok": true,
+  "csv": "results/bo/partC/confirm/bo1_randomStable_11501_11800.csv",
+  "n": 300,
+  "success": 0.7733333333333333,
+  "hash": "dc934da014f21651",
+  "wall_s": 125.52512311935425,
+  "time": "22:17:07"
+ },
+ {
+  "tag": "bo2_canonical_11501_11800",
+  "ok": true,
+  "csv": "results/bo/partC/confirm/bo2_canonical_11501_11800.csv",
+  "n": 300,
+  "success": 0.9666666666666667,
+  "hash": "348f2fa77152ab18",
+  "wall_s": 105.41007661819458,
+  "time": "22:18:57"
+ },
+ {
+  "tag": "bo2_randomStable_11501_11800",
+  "ok": true,
+  "csv": "results/bo/partC/confirm/bo2_randomStable_11501_11800.csv",
+  "n": 300,
+  "success": 0.8,
+  "hash": "01bece5b7ee4cd1d",
+  "wall_s": 110.33321523666382,
+  "time": "22:20:51"
+ },
+ {
+  "tag": "bo3_canonical_11501_11800",
+  "ok": true,
+  "csv": "results/bo/partC/confirm/bo3_canonical_11501_11800.csv",
+  "n": 300,
+  "success": 0.9866666666666667,
+  "hash": "c35705d6d3731b83",
+  "wall_s": 110.43734049797058,
+  "time": "22:22:46"
+ },
+ {
+  "tag": "bo3_randomStable_11501_11800",
+  "ok": true,
+  "csv": "results/bo/partC/confirm/bo3_randomStable_11501_11800.csv",
+  "n": 300,
+  "success": 0.7766666666666666,
+  "hash": "7f73144d7dc05d81",
+  "wall_s": 131.2495744228363,
+  "time": "22:25:02"
+ },
+ {
+  "tag": "random1_canonical_11501_11800",
+  "ok": true,
+  "csv": "results/bo/partC/confirm/random1_canonical_11501_11800.csv",
+  "n": 300,
+  "success": 0.9433333333333334,
+  "hash": "b092f12a89617701",
+  "wall_s": 105.03643131256104,
+  "time": "22:26:51"
+ },
+ {
+  "tag": "random1_randomStable_11501_11800",
+  "ok": true,
+  "csv": "results/bo/partC/confirm/random1_randomStable_11501_11800.csv",
+  "n": 300,
+  "success": 0.83,
+  "hash": "b5273933cbd95ef9",
+  "wall_s": 115.25220227241516,
+  "time": "22:28:50"
+ },
+ {
+  "tag": "random2_canonical_11501_11800",
+  "ok": true,
+  "csv": "results/bo/partC/confirm/random2_canonical_11501_11800.csv",
+  "n": 300,
+  "success": 0.9666666666666667,
+  "hash": "08816f0733a07013",
+  "wall_s": 110.4244532585144,
+  "time": "22:30:45"
+ },
+ {
+  "tag": "random2_randomStable_11501_11800",
+  "ok": true,
+  "csv": "results/bo/partC/confirm/random2_randomStable_11501_11800.csv",
+  "n": 300,
+  "success": 0.7866666666666666,
+  "hash": "94fc543fdd39bd58",
+  "wall_s": 115.50139307975769,
+  "time": "22:32:45"
+ },
+ {
+  "tag": "random3_canonical_11501_11800",
+  "ok": true,
+  "csv": "results/bo/partC/confirm/random3_canonical_11501_11800.csv",
+  "n": 300,
+  "success": 0.99,
+  "hash": "d42778bdc13a12f9",
+  "wall_s": 110.32064533233643,
+  "time": "22:34:40"
+ },
+ {
+  "tag": "random3_randomStable_11501_11800",
+  "ok": true,
+  "csv": "results/bo/partC/confirm/random3_randomStable_11501_11800.csv",
+  "n": 300,
+  "success": 0.77,
+  "hash": "d8ea955cf743d356",
+  "wall_s": 115.05783677101135,
+  "time": "22:36:39"
+ },
+ {
+  "tag": "reference_canonical_11501_11800",
+  "ok": true,
+  "csv": "results/bo/partC/confirm/reference_canonical_11501_11800.csv",
+  "n": 300,
+  "success": 0.97,
+  "hash": "4babb6ab8b4b0306",
+  "wall_s": 110.24861860275269,
+  "time": "22:38:34"
+ },
+ {
+  "tag": "reference_randomStable_11501_11800",
+  "ok": true,
+  "csv": "results/bo/partC/confirm/reference_randomStable_11501_11800.csv",
+  "n": 300,
+  "success": 0.74,
+  "hash": "b9674152b89f9b22",
+  "wall_s": 120.39377617835999,
+  "time": "22:40:39"
+ },
+ {
+  "tag": "bo1_thumbBaseOff_canonical_11501_11800",
+  "ok": true,
+  "csv": "results/bo/partC/confirm/bo1_thumbBaseOff_canonical_11501_11800.csv",
+  "n": 300,
+  "success": 0.0033333333333333335,
+  "hash": "d3a894705ec0032f",
+  "wall_s": 124.87585926055908,
+  "time": "22:42:48"
+ },
+ {
+  "tag": "bo1_thumbBaseOff_randomStable_11501_11800",
+  "ok": true,
+  "csv": "results/bo/partC/confirm/bo1_thumbBaseOff_randomStable_11501_11800.csv",
+  "n": 300,
+  "success": 0.24333333333333335,
+  "hash": "fe27bd23c7656eb1",
+  "wall_s": 167.40183019638062,
+  "time": "22:45:40"
+ }
+]

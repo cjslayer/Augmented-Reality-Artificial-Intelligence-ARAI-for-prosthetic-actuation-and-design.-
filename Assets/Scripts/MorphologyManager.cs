@@ -203,6 +203,7 @@ public class MorphologyManager : MonoBehaviour
         for (int f = 0; f < ActiveDigits; f++) lengthScale[f] = ep.GetWithDefault("morph/len_" + HandLayout.DigitNames[f], lengthScale[f]);   // DigitNames[0..4] = FingerNames
         ApplyLengthScales(lengthScale);   // rebuilds the articulation when a rig is attached (link masses use inertiaScale)
         ComputeNominalInertia();
+        float[] scaleAtBuild = HandLayout.Slots ? (float[])inertiaScale.Clone() : null;   // run 014 I-order fix (slot layout only): the scales the rebuild used
         for (int g = 0; g < nM; g++)
         {
             float I0 = NominalInertia[g] * inertiaScale[g];
@@ -212,6 +213,21 @@ public class MorphologyManager : MonoBehaviour
             CheckPlausibility(AllGroupNames[g], ref kg, ref bg, ref I);
             stiffness[g] = kg; damping[g] = bg; inertia[g] = I;
             if (NominalInertia[g] > 1e-9f) inertiaScale[g] = I / NominalInertia[g];
+        }
+        if (HandLayout.Slots && rig != null)
+        {   // run 014 I-order fix (slot layout only; the legacy path keeps the pre-014 behaviour, in which a morph/I_* override set after the rebuild never reached
+            // the link masses and the Editor harness compensated with ArticulatedGatesLate): rescale this episode's link masses to the final inertia scales,
+            // before the episode's first physics step. NominalInertia is unchanged (it divides the link mass by the same scale).
+            for (int g = 0; g < nF; g++)
+            {
+                int mg = HandLayout.MorphIndex(g); if (!GroupPresent(g) || rig.Groups[g] == null || scaleAtBuild[mg] <= 0f) continue;
+                float f = inertiaScale[mg] / scaleAtBuild[mg]; if (Mathf.Abs(f - 1f) > 1e-6f) rig.Groups[g].mass *= f;
+            }
+            foreach (var (eb, eg) in rig.ExtraLinks)
+            {
+                int mg = HandLayout.MorphIndex(eg); if (eb == null || scaleAtBuild[mg] <= 0f) continue;
+                float f = inertiaScale[mg] / scaleAtBuild[mg]; if (Mathf.Abs(f - 1f) > 1e-6f) eb.mass *= f;
+            }
         }
         for (int g = 0; g < nF; g++) mask[g] = ep.GetWithDefault("morph/mask_" + HandLayout.GroupNames[g], mask[g] ? 1f : 0f) > 0.5f;
         if (HandLayout.Slots) for (int g = 0; g < nF; g++) if (!GroupPresent(g)) mask[g] = true;   // absent groups carry no mask bit

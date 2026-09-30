@@ -803,6 +803,7 @@ public class ArticulatedGates : MonoBehaviour
     internal void LateFixedUpdate()
     {   // execution order +100: runs after the Academy stepper (whose step rebuilt the rig in OnEpisodeBegin) and before this cycle's physics step
         if (cfg == null || !cfg.thetaFixed || !massScalePending || agent == null || agent.Hand == null) return;
+        if (HandLayout.Slots) { massScalePending = false; return; }   // run 014: MorphologyManager applies morph/I_* to the link masses itself in the slot layout (I-order fix); scaling here too would apply it twice
         massScalePending = false; var h = agent.Hand;
         for (int g = 0; g < HandLayout.MaxFingerGroups; g++) if (h.Groups[g] != null && HandLayout.MorphIndex(g) < cfg.thetaInertia.Length) h.Groups[g].mass *= cfg.thetaInertia[HandLayout.MorphIndex(g)];   // legacy: MorphIndex(g) = g for g < 14
         foreach (var (eb, eg) in h.ExtraLinks) if (eb != null && HandLayout.MorphIndex(eg) < cfg.thetaInertia.Length) eb.mass *= cfg.thetaInertia[HandLayout.MorphIndex(eg)];

@@ -1,0 +1,171 @@
+[
+ {
+  "tag": "g1",
+  "ok": true,
+  "csv": "results/014/gates_slots_v2/h5/g1.csv",
+  "wall_s": 16.1,
+  "extra": {
+   "topology": "slots",
+   "digits": 5,
+   "penTrace": true
+  },
+  "error": "",
+  "time": "2026-10-01 18:07:04"
+ },
+ {
+  "tag": "g1x",
+  "ok": true,
+  "csv": "results/014/gates_slots_v2/h5/g1x.csv",
+  "wall_s": 16.1,
+  "extra": {
+   "topology": "slots",
+   "digits": 5,
+   "penTrace": true
+  },
+  "error": "",
+  "time": "2026-10-01 18:07:25"
+ },
+ {
+  "tag": "g2",
+  "ok": true,
+  "csv": "results/014/gates_slots_v2/h5/g2.csv",
+  "wall_s": 21.2,
+  "extra": {
+   "topology": "slots",
+   "digits": 5,
+   "penTrace": true
+  },
+  "error": "",
+  "time": "2026-10-01 18:07:50"
+ },
+ {
+  "tag": "g2x",
+  "ok": true,
+  "csv": "results/014/gates_slots_v2/h5/g2x.csv",
+  "wall_s": 16.2,
+  "extra": {
+   "topology": "slots",
+   "digits": 5,
+   "penTrace": true
+  },
+  "error": "",
+  "time": "2026-10-01 18:08:11"
+ },
+ {
+  "tag": "g3m",
+  "ok": true,
+  "csv": "results/014/gates_slots_v2/h5/g3m.csv",
+  "wall_s": 16.1,
+  "extra": {
+   "topology": "slots",
+   "digits": 5,
+   "penTrace": true
+  },
+  "error": "",
+  "time": "2026-10-01 18:08:31"
+ },
+ {
+  "tag": "g3mx",
+  "ok": true,
+  "csv": "results/014/gates_slots_v2/h5/g3mx.csv",
+  "wall_s": 11.2,
+  "extra": {
+   "topology": "slots",
+   "digits": 5,
+   "penTrace": true
+  },
+  "error": "",
+  "time": "2026-10-01 18:08:47"
+ },
+ {
+  "tag": "g3s",
+  "ok": true,
+  "csv": "results/014/gates_slots_v2/h5/g3s.csv",
+  "wall_s": 16.1,
+  "extra": {
+   "topology": "slots",
+   "digits": 5,
+   "penTrace": true
+  },
+  "error": "",
+  "time": "2026-10-01 18:09:07"
+ },
+ {
+  "tag": "g3x",
+  "ok": true,
+  "csv": "results/014/gates_slots_v2/h5/g3x.csv",
+  "wall_s": 16.2,
+  "extra": {
+   "topology": "slots",
+   "digits": 5,
+   "penTrace": true
+  },
+  "error": "",
+  "time": "2026-10-01 18:09:28"
+ },
+ {
+  "tag": "g4",
+  "ok": true,
+  "csv": "results/014/gates_slots_v2/h5/g4.csv",
+  "wall_s": 31.2,
+  "extra": {
+   "topology": "slots",
+   "digits": 5,
+   "penTrace": true
+  },
+  "error": "",
+  "time": "2026-10-01 18:10:04"
+ },
+ {
+  "tag": "g6_10",
+  "ok": true,
+  "csv": "results/014/gates_slots_v2/h5/g6_10.csv",
+  "wall_s": 11.1,
+  "extra": {
+   "topology": "slots",
+   "digits": 5,
+   "penTrace": true
+  },
+  "error": "",
+  "time": "2026-10-01 18:10:19"
+ },
+ {
+  "tag": "g6_20",
+  "ok": true,
+  "csv": "results/014/gates_slots_v2/h5/g6_20.csv",
+  "wall_s": 11.1,
+  "extra": {
+   "topology": "slots",
+   "digits": 5,
+   "penTrace": true
+  },
+  "error": "",
+  "time": "2026-10-01 18:10:34"
+ },
+ {
+  "tag": "g6_40",
+  "ok": true,
+  "csv": "results/014/gates_slots_v2/h5/g6_40.csv",
+  "wall_s": 11.1,
+  "extra": {
+   "topology": "slots",
+   "digits": 5,
+   "penTrace": true
+  },
+  "error": "",
+  "time": "2026-10-01 18:10:50"
+ },
+ {
+  "tag": "g6_80",
+  "ok": true,
+  "csv": "results/014/gates_slots_v2/h5/g6_80.csv",
+  "wall_s": 11.1,
+  "extra": {
+   "topology": "slots",
+   "digits": 5,
+   "penTrace": true
+  },
+  "error": "",
+  "time": "2026-10-01 18:11:05"
+ }
+]

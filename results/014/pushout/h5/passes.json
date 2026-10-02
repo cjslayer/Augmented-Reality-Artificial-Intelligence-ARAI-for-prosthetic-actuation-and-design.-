@@ -1,0 +1,16 @@
+[
+ {
+  "tag": "g6_10",
+  "ok": true,
+  "csv": "results/014/pushout/h5/g6_10.csv",
+  "wall_s": 11.1,
+  "extra": {
+   "topology": "slots",
+   "digits": 5,
+   "penTrace": true,
+   "dumpAtSlip": true
+  },
+  "error": "",
+  "time": "2026-10-01 18:26:52"
+ }
+]

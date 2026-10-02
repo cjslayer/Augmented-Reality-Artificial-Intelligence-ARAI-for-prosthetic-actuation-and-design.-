@@ -1,0 +1,74 @@
+[
+ {
+  "tag": "g6_10",
+  "ok": true,
+  "csv": "results/014/gates_slots_v2/h6b_thumb2masked/g6_10.csv",
+  "wall_s": 11.1,
+  "extra": {
+   "topology": "slots",
+   "digits": 6,
+   "digits6b": true,
+   "penTrace": true,
+   "maskGroups": [
+    "thumb2Base",
+    "thumb2End"
+   ]
+  },
+  "error": "",
+  "time": "2026-10-01 18:24:54"
+ },
+ {
+  "tag": "g6_20",
+  "ok": true,
+  "csv": "results/014/gates_slots_v2/h6b_thumb2masked/g6_20.csv",
+  "wall_s": 11.1,
+  "extra": {
+   "topology": "slots",
+   "digits": 6,
+   "digits6b": true,
+   "penTrace": true,
+   "maskGroups": [
+    "thumb2Base",
+    "thumb2End"
+   ]
+  },
+  "error": "",
+  "time": "2026-10-01 18:25:09"
+ },
+ {
+  "tag": "g6_40",
+  "ok": true,
+  "csv": "results/014/gates_slots_v2/h6b_thumb2masked/g6_40.csv",
+  "wall_s": 11.1,
+  "extra": {
+   "topology": "slots",
+   "digits": 6,
+   "digits6b": true,
+   "penTrace": true,
+   "maskGroups": [
+    "thumb2Base",
+    "thumb2End"
+   ]
+  },
+  "error": "",
+  "time": "2026-10-01 18:25:25"
+ },
+ {
+  "tag": "g6_80",
+  "ok": true,
+  "csv": "results/014/gates_slots_v2/h6b_thumb2masked/g6_80.csv",
+  "wall_s": 11.1,
+  "extra": {
+   "topology": "slots",
+   "digits": 6,
+   "digits6b": true,
+   "penTrace": true,
+   "maskGroups": [
+    "thumb2Base",
+    "thumb2End"
+   ]
+  },
+  "error": "",
+  "time": "2026-10-01 18:25:40"
+ }
+]

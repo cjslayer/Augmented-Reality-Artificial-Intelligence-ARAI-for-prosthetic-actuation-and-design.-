@@ -1,0 +1,21 @@
+[
+ {
+  "tag": "g6_10",
+  "ok": true,
+  "csv": "results/014/pushout/h6b_masked/g6_10.csv",
+  "wall_s": 11.2,
+  "extra": {
+   "topology": "slots",
+   "digits": 6,
+   "digits6b": true,
+   "penTrace": true,
+   "maskGroups": [
+    "thumb2Base",
+    "thumb2End"
+   ],
+   "dumpAtSlip": true
+  },
+  "error": "",
+  "time": "2026-10-01 18:26:35"
+ }
+]

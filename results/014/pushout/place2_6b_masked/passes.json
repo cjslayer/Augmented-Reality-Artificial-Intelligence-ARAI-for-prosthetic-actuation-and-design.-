@@ -1,0 +1,19 @@
+[
+ {
+  "tag": "g6_10",
+  "ok": true,
+  "csv": "results/014/pushout/place2_6b_masked/g6_10.csv",
+  "wall_s": 11.1,
+  "extra": {
+   "topology": "slots",
+   "digits": 6,
+   "digits6b": true,
+   "maskGroups": [
+    "thumb2Base",
+    "thumb2End"
+   ]
+  },
+  "error": "",
+  "time": "2026-10-01 18:30:02"
+ }
+]

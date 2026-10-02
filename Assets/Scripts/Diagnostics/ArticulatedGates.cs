@@ -123,6 +123,7 @@ public class ArticulatedGates : MonoBehaviour
         public int liftBudgetSteps = 0;
         public string thetaExist = "";
         public bool penTrace = false;
+        public string[] maskGroups = null;   // run 014 diagnostic: finger groups held at the neutral pose as masked joints (morph/mask_<name> = 0), e.g. thumb2Base, thumb2End
         // run 014 diagnostic overrides of the extra finger's placement (HandSpec.extraFinger; < -900 = keep the spec value): MCP along / across (m), rest abduction and flexion-plane tilt (deg), palm widening (m)
         public float xfMcpAlong = -999f, xfMcpAcross = -999f, xfAbductionDeg = -999f, xfTiltDeg = -999f, xfPalmWidening = -999f;   // run 014 diagnostic: per-step deepest link-object and link-link penetration with the link names, step and phase (note column)
     }
@@ -138,7 +139,8 @@ public class ArticulatedGates : MonoBehaviour
     int edgeHoldMax = -1; bool edgeDone; float shapingAgentAtT = float.NaN, shapingTelescopedAtT = float.NaN; bool cycled; int cycleAtStep = -1;
     // ---- run 014 penetration trace (cfg.penTrace): which link penetrates what, and when ----
     float trObj, trSelf; string trObjWhere = "", trSelfWhere = "";
-    void TraceReset() { trObj = trSelf = 0f; trObjWhere = trSelfWhere = ""; }
+    int winContacts, winPalm, winN; float placedPushedMm = float.NaN; Vector3 placedPalm;   // finger-group contacts and palm contact summed over the penetration window (run 014: penetration x contacts)
+    void TraceReset() { trObj = trSelf = 0f; trObjWhere = trSelfWhere = ""; winContacts = winPalm = winN = 0; }
     void TracePen()
     {
         var links = new List<ArticulationBody>(); foreach (var b in hand.Groups) if (b != null) links.Add(b); foreach (var (eb, _) in hand.ExtraLinks) if (eb != null) links.Add(eb);
@@ -158,7 +160,7 @@ public class ArticulatedGates : MonoBehaviour
             if (Physics.ComputePenetration(ca, ca.transform.position, ca.transform.rotation, cb, cb.transform.position, cb.transform.rotation, out _, out float d) && d > trSelf) { trSelf = d; trSelfWhere = a.name + "/" + b.name + "@" + phase + "/" + stepsInTrial; }
         }
     }
-    string TraceNote() => cfg.penTrace ? " penTrace objMax=" + (trObj * 1000f).ToString("F2") + "mm(" + trObjWhere + ") selfMax=" + (trSelf * 1000f).ToString("F2") + "mm(" + trSelfWhere + ")" : "";
+    string TraceNote() => cfg.penTrace ? " penTrace objMax=" + (trObj * 1000f).ToString("F2") + "mm(" + trObjWhere + ") selfMax=" + (trSelf * 1000f).ToString("F2") + "mm(" + trSelfWhere + ") windowContacts mean=" + (winN > 0 ? (winContacts / (float)winN).ToString("F2") : "nan") + " palm=" + (winN > 0 ? (winPalm / (float)winN).ToString("F2") : "nan") + " n=" + winN + " placedPushedOut=" + placedPushedMm.ToString("F1") + "mm placedPalm(along,out,across mm)=" + placedPalm.ToString("F0") : "";
     float CurrentPenetration()
     {   // deepest overlap (m) between any hand link (groups, extra links, palm) and the object this step
         float worst = 0f;
@@ -219,6 +221,7 @@ public class ArticulatedGates : MonoBehaviour
         else mm.randomizeByDefault = true;
         if (cfg.digits > 0) { if (!HandLayout.Slots) Debug.LogError("[Gates] digits " + cfg.digits + " requested but the layout is " + HandLayout.Selected + " (set topology: slots)"); SetEnvParam("morph/digits", cfg.digits); SetEnvParam("morph/digits6b", cfg.digits6b ? 1f : 0f); Debug.Log("[Gates] digit composition: " + cfg.digits + (cfg.digits6b ? " (second thumb)" : "")); }
         Debug.Log("[Gates] layout " + HandLayout.Describe());
+        if (cfg.maskGroups != null) foreach (var mg in cfg.maskGroups) { SetEnvParam("morph/mask_" + mg, 0f); Debug.LogWarning("[Gates] diagnostic: group " + mg + " masked (stiff hold at the neutral pose)"); }
         if (agent.Hand != null && (cfg.xfMcpAlong > -900f || cfg.xfMcpAcross > -900f || cfg.xfAbductionDeg > -900f || cfg.xfTiltDeg > -900f || cfg.xfPalmWidening > -900f))
         {   // diagnostic only: the skeleton is rebuilt from the spec every episode, so these take effect from the first counted episode
             var xf = agent.Hand.spec.extraFinger; var m = xf.mcp;
@@ -374,7 +377,7 @@ public class ArticulatedGates : MonoBehaviour
         for (int g = 0; g < HandLayout.MaxFingerGroups; g++) if (hand.Present(g)) maxAbsAngle = Mathf.Max(maxAbsAngle, Mathf.Abs(agent.GetGroupAngle(g)));
         if (agent.MaxPenetration > maxPen) maxPen = agent.MaxPenetration;
         if (cfg.penTrace && hand != null && cylCol != null) TracePen();
-        if ((cfg.mode == "lift" && phase == "hold") || (cfg.mode == "push" && (phase == "squeeze" || phase == "pushIn" || phase == "pushOut"))) penSamples.Add(CurrentPenetration());
+        if ((cfg.mode == "lift" && phase == "hold") || (cfg.mode == "push" && (phase == "squeeze" || phase == "pushIn" || phase == "pushOut"))) { penSamples.Add(CurrentPenetration()); if (cfg.penTrace) { winContacts += agent.CurrentContacts; winPalm += agent.LastPalmTouching ? 1 : 0; winN++; } }
         if (agent.LastHoldCriterionMet && gateStep < 0) gateStep = agent.StepCount;
         if (agent.Phase != ArmGraspAgent.TaskPhase.Reach && transitionStep < 0) transitionStep = agent.StepCount;
         if (cfg.debugEvery > 0 && stepsInTrial % cfg.debugEvery == 0)
@@ -446,6 +449,7 @@ public class ArticulatedGates : MonoBehaviour
         }
         float pushed = 0f; while (OverlapsHand(pos, Quaternion.identity) && pushed < 0.06f) { pos += n * 0.0005f; pushed += 0.0005f; }
         cyl.SetPositionAndRotation(pos, Quaternion.identity); Physics.SyncTransforms();
+        placedPushedMm = pushed * 1000f; placedPalm = PalmFrame(pos - palm.position) * 1000f;   // run 014 trace: the placement shift and the object's palm-frame position (mm)
         Debug.Log("[Gates] trial " + (trial + 1) + "/" + trials.Count + " " + cfg.mode + " grip=" + t.grip + " m=" + t.mass + " scale=" + t.scale + ": object at " + pos.ToString("F3") + " (pushed out " + (pushed * 1000f).ToString("F0") + " mm), palm normal " + n.ToString("F2") + " palmPos=" + palm.position.ToString("F3") + " pcen=" + pcen.ToString("F3") + " rebuilds=" + hand.RebuildCount + " arm=" + agent.GetArmAngle(0).ToString("F1") + "/" + agent.GetArmAngle(2).ToString("F1") + "/" + agent.GetArmAngle(3).ToString("F1") + "/" + agent.GetArmAngle(4).ToString("F1") + " step=" + agent.StepCount);
     }
 
@@ -687,6 +691,7 @@ public class ArticulatedGates : MonoBehaviour
     /// <summary>One G4 row (run 014: also written when the agent ends the trial early, which used to drop the row).</summary>
     void WriteStabilityRow(string endReason, string extra)
     {
+        extra += TraceNote();   // run 014: the G4 rows carry the self-penetration trace too (penTrace)
             string note = "omegaMean=" + Mean(mm.NaturalFrequency, MorphologyManager.GroupCount).ToString("F1") + " zetaMean=" + Mean(mm.DampingRatio, MorphologyManager.GroupCount).ToString("F2") + " lenMean=" + Mean(f => mm.lengthScale[f], 5).ToString("F2") + " active=" + mm.ActiveCount + " maxAbsAngle=" + maxAbsAngle.ToString("F0");
             Debug.Log("[Gates] stability draw " + (trial + 1) + ": nan=" + nanSeen + " maxJointSpeed=" + maxSpeed.ToString("F0") + " deg/s maxPen=" + (maxPen * 1000f).ToString("F1") + " mm " + note);
             sb.AppendLine((trial + 1) + ",stability,walk,0.6,0," + trial + "," + (nanSeen ? 0 : 1) + "," + endReason + "," + stepsInTrial + ",-1,-1,-1,-1,0,0,0,0," + agent.CurrentContacts + ",0,0,0," + (maxPen * 1000f).ToString("F2") + "," + maxSpeed.ToString("F0") + "," + (nanSeen ? 1 : 0) + ",0,0,0,0,0," + ScriptedSlots(false) + (note + extra).Replace(",", ";"));

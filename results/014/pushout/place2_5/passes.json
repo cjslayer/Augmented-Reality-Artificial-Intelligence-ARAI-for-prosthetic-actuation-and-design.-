@@ -1,0 +1,14 @@
+[
+ {
+  "tag": "g6_10",
+  "ok": true,
+  "csv": "results/014/pushout/place2_5/g6_10.csv",
+  "wall_s": 11.1,
+  "extra": {
+   "topology": "slots",
+   "digits": 5
+  },
+  "error": "",
+  "time": "2026-10-01 18:29:15"
+ }
+]

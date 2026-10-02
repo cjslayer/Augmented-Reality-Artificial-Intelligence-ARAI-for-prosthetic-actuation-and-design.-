@@ -1,0 +1,30 @@
+[
+ {
+  "tag": "g6_10",
+  "ok": true,
+  "csv": "results/014/pushout/place3_6b/g6_10.csv",
+  "wall_s": 11.1,
+  "extra": {
+   "topology": "slots",
+   "penTrace": true,
+   "digits": 6,
+   "digits6b": true
+  },
+  "error": "",
+  "time": "2026-10-01 18:33:11"
+ },
+ {
+  "tag": "g1",
+  "ok": true,
+  "csv": "results/014/pushout/place3_6b/g1.csv",
+  "wall_s": 16.1,
+  "extra": {
+   "topology": "slots",
+   "penTrace": true,
+   "digits": 6,
+   "digits6b": true
+  },
+  "error": "",
+  "time": "2026-10-01 18:33:32"
+ }
+]

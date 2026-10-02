@@ -150,7 +150,7 @@ the plausibility check.
 
 **Recommended: anatomical slots.** Slots 1-4 use today's table and MCP positions verbatim, so any hand with ≤ 5 digits is the 013
 hand minus its ulnar fingers, and the 5-digit hand is the 013 hand exactly (lengths, radii, masses, MCP positions, limits). Slot 5 is
-extrapolated from the radial-to-ulnar trend of the table: MCP (82, 0, −52.5) mm (along 99 / 104 / 100 / 91 → 82), rest abduction
+extrapolated from the radial-to-ulnar trend of the table: MCP (91, 0, −52.5) mm (along held at the pinky's 91 mm; the trend value 82 mm sat 22 mm inside the palm box, see "Part 3 change" below), rest abduction
 −22° (+8 / 0 / −6 / −14), tilt 18° (2 / 3 / 8 / 13), phalanges and radii copied from the pinky (31.9 / 17.1 / 14.9 mm, 8 / 7 / 6.5 mm).
 The palm widens by 21 mm on the ulnar side when slot 5 exists (106 mm; the box centre shifts −10.5 mm across; mass scales with the
 volume, 0.30 → 0.374 kg). The palm is unchanged for ≤ 5 digits.
@@ -333,3 +333,13 @@ adds the ring finger, and the only 6-digit hands are the two fixed compositions.
 specific hands, not an effect of "one more finger" in general; e.g. 3 vs 4 digits cannot separate "a third finger" from "the ring finger". The two 6-digit
 compositions (thumb + 5 fingers vs thumb + 4 fingers + second thumb) are the only within-count contrast. Separating count from identity would need
 position-randomized placement (the brief's spread-and-interpolate variant) or compositions that remove radial digits, both excluded by decision D2.
+
+## Part 3 change: the extra finger's MCP is at 91 mm along, not 82 mm (2026-09-30, commit ddd09f7)
+
+The 1b placement above extrapolated the MCP along-offset to 82 mm (99 / 104 / 100 / 91 → 82). That put the extra finger's MCP 22 mm inside the
+rectangular palm box (palm length 104 mm). When the finger flexed, its middle and distal phalanges drove into the palm: up to 19.5 mm self-penetration
+on the 6a hand and 24.7 mm on the 7-digit hand, and up to 30 mm into the object during the scripted close (`results/014/pen/`). Doubling the solver
+iterations did not remove it. **The MCP along-offset is now held at the pinky's 91 mm**: `HandSpec.extraFinger.mcp` = (91, 0, −52.5) mm. Across
+−52.5 mm, rest abduction −22°, flexion-plane tilt 18° and the 21 mm palm widening are unchanged. After the change the 6a and 7-digit hands peak at
+2.03 / 1.55 mm hand-object penetration with no self-penetration (9/9 lifts each). The real hand tapers on the ulnar side; the palm box does not, so the
+trend extrapolation was not compatible with the box. This section supersedes the 82 mm in 1b.

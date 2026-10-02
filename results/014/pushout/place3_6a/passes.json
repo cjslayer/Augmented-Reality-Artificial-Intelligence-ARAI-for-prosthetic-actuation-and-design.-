@@ -1,0 +1,28 @@
+[
+ {
+  "tag": "g6_10",
+  "ok": true,
+  "csv": "results/014/pushout/place3_6a/g6_10.csv",
+  "wall_s": 11.2,
+  "extra": {
+   "topology": "slots",
+   "penTrace": true,
+   "digits": 6
+  },
+  "error": "",
+  "time": "2026-10-01 18:32:35"
+ },
+ {
+  "tag": "g1",
+  "ok": true,
+  "csv": "results/014/pushout/place3_6a/g1.csv",
+  "wall_s": 16.1,
+  "extra": {
+   "topology": "slots",
+   "penTrace": true,
+   "digits": 6
+  },
+  "error": "",
+  "time": "2026-10-01 18:32:56"
+ }
+]

@@ -495,6 +495,30 @@ public class ArmGraspAgent : Agent
 
     /// <summary>Diagnostics hook (Editor harnesses): invoked at the top of every OnEpisodeBegin, before the episode's random draws, so an evaluation can seed each episode. No effect when nothing is subscribed.</summary>
     public static System.Action BeforeEpisodeBegin;
+    static readonly string[] k_Compositions = { "3", "4", "5", "6a", "6b", "7" };
+    /// <summary>Run 014: composition name of this episode's hand (3, 4, 5, 6a = + extra finger, 6b = + second thumb, 7).</summary>
+    string CompositionName() { if (m_Morph == null) return "?"; int n = m_Morph.DigitCount; return n == 6 ? (m_Morph.exists[6] ? "6b" : "6a") : n.ToString(); }
+    static string s_EpisodeLogPath; static bool s_EpisodeLogResolved;
+    /// <summary>Run 014 (slot layout): with the command-line argument --episodeLog DIR, one CSV row per episode in DIR/episodes_PID.csv (composition, phases,
+    /// contacts, effort). Off by default; stats only, no effect on the episode.</summary>
+    void WriteEpisodeLog(bool success, string comp)
+    {
+        if (!s_EpisodeLogResolved)
+        {
+            s_EpisodeLogResolved = true; var a = System.Environment.GetCommandLineArgs();
+            for (int i = 0; i < a.Length - 1; i++) if (a[i] == "--episodeLog") { try { System.IO.Directory.CreateDirectory(a[i + 1]); s_EpisodeLogPath = System.IO.Path.Combine(a[i + 1], "episodes_" + System.Diagnostics.Process.GetCurrentProcess().Id + ".csv"); } catch (System.Exception e) { Debug.LogWarning("[ArmGraspAgent] episode log: " + e.Message); } }
+            if (s_EpisodeLogPath != null && !System.IO.File.Exists(s_EpisodeLogPath)) System.IO.File.WriteAllText(s_EpisodeLogPath, "episode,academyStep,composition,digits,slots,success,endReason,steps,transitionStep,stepsToLift,holdSteps,holdNeeded,holdDecisions,contacts,distinctFingers,thumb,palm,effortReturn,maxPenMm,lengthScales\n");
+        }
+        if (s_EpisodeLogPath == null || m_Morph == null) return;
+        try
+        {
+            var ls = new List<string>(); for (int k = 0; k < HandLayout.MaxDigits; k++) { int d = HandLayout.SlotDigit[k]; ls.Add(m_Morph.exists[d] ? m_Morph.lengthScale[d].ToString("F3") : "0"); }
+            System.IO.File.AppendAllText(s_EpisodeLogPath, string.Join(",", new string[] { CompletedEpisodes.ToString(), Academy.Instance.StepCount.ToString(), comp, m_Morph.DigitCount.ToString(), HandLayout.SlotString(m_Morph.exists), success ? "1" : "0", m_EndReason,
+                StepCount.ToString(), m_TransitionStep.ToString(), m_StepsToLift.ToString(), m_HoldSteps.ToString(), HoldStepsNeeded().ToString(), HoldDecisions.ToString(), CurrentContacts.ToString(), LastDistinctFingers.ToString(), LastThumbTouching ? "1" : "0", LastPalmTouching ? "1" : "0",
+                m_EffortReturn.ToString("G6"), (m_MaxPenetration * 1000f).ToString("F2"), string.Join("/", ls) }) + "\n");
+        }
+        catch (System.Exception e) { Debug.LogWarning("[ArmGraspAgent] episode log: " + e.Message); }
+    }
     bool m_SensorsVerified;
     /// <summary>Run 014 (2c): the sensors ML-Agents actually created (after Initialize) must have the selected layout's shapes: this is the proof that the
     /// OnEnable configuration ran before the policy and the sensors were built (no reliance on script execution order). Fails loud like AssertLayout.</summary>
@@ -1022,6 +1046,9 @@ public class ArmGraspAgent : Agent
             rec.Add("Success/" + dk, success ? 1f : 0f); rec.Add("Gate/" + dk, m_TransitionStep >= 0 ? 1f : 0f); rec.Add("Lift/" + dk, m_StepsToLift >= 0 ? 1f : 0f);
             if (dc == 6) rec.Add("Success/Digits6" + (m_Morph.exists[6] ? "b" : "a"), success ? 1f : 0f);
             rec.Add("Morph/DigitCount", dc); rec.Add("Morph/ThumbCount", m_Morph.ThumbCount); rec.Add("Morph/PresentGroups", m_Morph.PresentGroupCount);
+            string comp = CompositionName(); foreach (var cn in k_Compositions) rec.Add("Comp/Share" + cn, cn == comp ? 1f : 0f);   // per-episode indicator: its mean is the composition's share
+            rec.Add("Effort/Digits" + (dc == 6 ? comp : dc.ToString()), m_EffortReturn);
+            WriteEpisodeLog(success, comp);
         }
         rec.Add("Grasp/StepsToFirstSixContacts", m_StepsToFirstSixContacts);
         rec.Add("Grasp/StepsToSuccess", success ? StepCount : -1);

@@ -1,0 +1,4 @@
+g6_10 ok 11 s | envelope m0.6 s0: 0/1 ends drop win 4.77 mm ep 17.13 mm c 0
+g6_20 ok 11 s | envelope m0.6 s0: 0/1 ends drop win 5.43 mm ep 17.13 mm c 0
+g6_40 ok 11 s | envelope m0.6 s0: 0/1 ends drop win 5.47 mm ep 17.13 mm c 0
+g6_80 ok 11 s | envelope m0.6 s0: 0/1 ends drop win 3.41 mm ep 17.13 mm c 0

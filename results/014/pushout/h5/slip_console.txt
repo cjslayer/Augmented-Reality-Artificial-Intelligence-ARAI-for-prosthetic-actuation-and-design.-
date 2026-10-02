@@ -1,0 +1,49 @@
+[Gates] SLIP at step 352 (phase pushIn/Lift) objV=(0.03, 0.02, -0.11) objInPalm=(0.084, 0.087, 0.055)
+
+[Gates] joint dump step=353
+indexBase: angle=-89.7 target=-90.0 vel=-35.9 drive=0.000Nm k=2 c=0.0 lim=-90/10 fmax=2.5 type=Force touch=0 mass=0.011 dof=1 pos=(-0.190, 0.692, 5.430)
+indexMiddle: angle=-100.2 target=-100.0 vel=128.1 drive=-0.008Nm k=1 c=0.0 lim=-100/5 fmax=1.5 type=Force touch=0 mass=0.005 dof=1 pos=(-0.196, 0.697, 5.468)
+indexEnd: angle=-77.4 target=-78.0 vel=-116.9 drive=0.000Nm k=0 c=0.0 lim=-80/5 fmax=0.7 type=Force touch=0 mass=0.004 dof=1 pos=(-0.216, 0.701, 5.461)
+middleBase: angle=-68.2 target=-90.0 vel=-1143.0 drive=-0.585Nm k=2 c=0.0 lim=-90/10 fmax=2.5 type=Force touch=0 mass=0.013 dof=1 pos=(-0.185, 0.671, 5.429)
+middleMiddle: angle=-75.3 target=-100.0 vel=-2543.1 drive=-0.401Nm k=1 c=0.0 lim=-100/5 fmax=1.5 type=Force touch=0 mass=0.006 dof=1 pos=(-0.176, 0.670, 5.472)
+middleEnd: angle=-65.0 target=-78.0 vel=-2515.7 drive=-0.077Nm k=0 c=0.0 lim=-80/5 fmax=0.7 type=Force touch=0 mass=0.004 dof=1 pos=(-0.199, 0.672, 5.483)
+ringBase: angle=-89.7 target=-90.0 vel=-27.7 drive=-0.001Nm k=2 c=0.0 lim=-90/10 fmax=2.5 type=Force touch=0 mass=0.011 dof=1 pos=(-0.189, 0.650, 5.427)
+ringMiddle: angle=-100.1 target=-100.0 vel=79.4 drive=-0.006Nm k=1 c=0.0 lim=-100/5 fmax=1.5 type=Force touch=0 mass=0.005 dof=1 pos=(-0.196, 0.649, 5.467)
+ringEnd: angle=-77.6 target=-78.0 vel=-82.2 drive=0.000Nm k=0 c=0.0 lim=-80/5 fmax=0.7 type=Force touch=0 mass=0.004 dof=1 pos=(-0.219, 0.654, 5.459)
+pinkyBase: angle=-90.1 target=-90.0 vel=26.6 drive=-0.006Nm k=2 c=0.0 lim=-90/10 fmax=2.5 type=Force touch=0 mass=0.007 dof=1 pos=(-0.198, 0.629, 5.424)
+pinkyMiddle: angle=-96.0 target=-100.0 vel=-818.5 drive=-0.052Nm k=1 c=0.0 lim=-100/5 fmax=1.5 type=Force touch=0 mass=0.003 dof=1 pos=(-0.204, 0.627, 5.455)
+pinkyEnd: angle=-74.0 target=-78.0 vel=-970.9 drive=-0.023Nm k=0 c=0.0 lim=-80/5 fmax=0.7 type=Force touch=0 mass=0.003 dof=1 pos=(-0.220, 0.631, 5.451)
+thumbBase: angle=40.4 target=58.5 vel=1160.3 drive=1.413Nm k=4 c=0.0 lim=-15/60 fmax=4 type=Force touch=0 mass=0.019 dof=1 pos=(-0.263, 0.693, 5.421)
+thumbEnd: angle=80.1 target=78.0 vel=-429.2 drive=-0.051Nm k=1 c=0.0 lim=-10/80 fmax=1.5 type=Force touch=0 mass=0.006 dof=1 pos=(-0.202, 0.679, 5.461)
+thumb2Base: angle=18.3 target=20.0 vel=15.6 drive=0.008Nm k=4000 c=200.0 lim=-15/60 fmax=4 type=Acceleration touch=0 mass=0.019 dof=1 pos=(-0.264, 0.629, 5.417)
+thumb2End: angle=15.8 target=20.0 vel=41.1 drive=0.000Nm k=4000 c=200.0 lim=-10/80 fmax=4 type=Acceleration touch=0 mass=0.006 dof=1 pos=(-0.218, 0.622, 5.476)
+bicep: joints=-0.2(5.7) -0.1(-0.4) 0.0(1.7)  x[Force k=2000 c=100 tv=0 f=300 lim=-40/100] y[Force tv=0] z[Force tv=0] twist=LimitedMotion swY=LockedMotion swZ=LimitedMotion mass=2.00 pos=(-0.784, 0.804, 5.420)
+forearm: joints=-0.1(3.6)  x[Force k=2000 c=100 tv=0 f=200 lim=-47/98] y[Force tv=0] z[Force tv=0] twist=LimitedMotion swY=FreeMotion swZ=FreeMotion mass=0.23 pos=(-0.580, 0.629, 5.399)
+palm: joints=-2.9(-11.4) 1.5(5.2) 0.0(8.7)  x[Force k=3.162278 c=0.1343791 tv=0 f=6 lim=-70/80] y[Force tv=0] z[Force tv=0] twist=LimitedMotion swY=LimitedMotion swZ=LockedMotion mass=0.30 pos=(-0.287, 0.662, 5.410)
+object=(-0.220, 0.711, 5.514) kin=False contacts=0 palm=False selfPenetration=2.97mm(L_middleBase/L_thumbEnd;overlappingPairs=3/122;over2mm: middleBase/thumbEnd:3.0 pinkyBase/pinkyEnd:2.1) selfContactEvents=14680
+
+[Gates] SLIP: objInPalm=(0.084, 0.087, 0.055) n=2 thumb2End p=(0.094, 0.067, -0.031) n=(-0.28, 0.96, 0.05) sep=3.2mm imp=0.000 thumb2End p=(0.090, 0.065, -0.032) n=(-0.28, 0.96, 0.05) sep=3.4mm imp=0.000
+
+[Gates] SLIP at step 4 (phase close/Lift) objV=(-0.30, 0.02, -0.19) objInPalm=(0.074, 0.033, 0.051)
+
+[Gates] joint dump step=5
+indexBase: angle=-53.1 target=-90.0 vel=-2681.0 drive=-0.887Nm k=2 c=0.0 lim=-90/10 fmax=2.5 type=Force touch=0 mass=0.011 dof=1 pos=(-0.188, 0.703, 5.418)
+indexMiddle: angle=-101.8 target=-100.0 vel=722.6 drive=0.041Nm k=1 c=0.0 lim=-100/5 fmax=1.5 type=Force touch=1 mass=0.005 dof=1 pos=(-0.164, 0.700, 5.449)
+indexEnd: angle=-83.7 target=-78.0 vel=3309.4 drive=0.217Nm k=0 c=0.0 lim=-80/5 fmax=0.7 type=Force touch=1 mass=0.004 dof=1 pos=(-0.183, 0.701, 5.459)
+middleBase: angle=-53.5 target=-90.0 vel=-2021.7 drive=-0.957Nm k=2 c=0.0 lim=-90/10 fmax=2.5 type=Force touch=0 mass=0.013 dof=1 pos=(-0.183, 0.683, 5.412)
+middleMiddle: angle=-78.9 target=-100.0 vel=-1044.4 drive=-0.451Nm k=1 c=0.0 lim=-100/5 fmax=1.5 type=Force touch=0 mass=0.006 dof=1 pos=(-0.156, 0.674, 5.445)
+middleEnd: angle=-80.4 target=-78.0 vel=1004.6 drive=0.063Nm k=0 c=0.0 lim=-80/5 fmax=0.7 type=Force touch=1 mass=0.004 dof=1 pos=(-0.173, 0.670, 5.464)
+ringBase: angle=-50.2 target=-90.0 vel=-2513.4 drive=-1.019Nm k=2 c=0.0 lim=-90/10 fmax=2.5 type=Force touch=0 mass=0.011 dof=1 pos=(-0.186, 0.662, 5.406)
+ringMiddle: angle=-82.0 target=-100.0 vel=-51.9 drive=-0.401Nm k=1 c=0.0 lim=-100/5 fmax=1.5 type=Force touch=0 mass=0.005 dof=1 pos=(-0.159, 0.652, 5.435)
+ringEnd: angle=-81.5 target=-78.0 vel=1914.2 drive=0.139Nm k=0 c=0.0 lim=-80/5 fmax=0.7 type=Force touch=1 mass=0.004 dof=1 pos=(-0.175, 0.649, 5.453)
+pinkyBase: angle=-83.6 target=-90.0 vel=-1013.6 drive=-0.018Nm k=2 c=0.0 lim=-90/10 fmax=2.5 type=Force touch=1 mass=0.007 dof=1 pos=(-0.195, 0.642, 5.400)
+pinkyMiddle: angle=-100.6 target=-100.0 vel=542.8 drive=0.395Nm k=1 c=0.0 lim=-100/5 fmax=1.5 type=Force touch=1 mass=0.003 dof=1 pos=(-0.190, 0.632, 5.430)
+pinkyEnd: angle=-68.7 target=-78.0 vel=-5222.0 drive=-0.039Nm k=0 c=0.0 lim=-80/5 fmax=0.7 type=Force touch=1 mass=0.003 dof=1 pos=(-0.207, 0.635, 5.430)
+thumbBase: angle=-12.5 target=58.5 vel=-880.6 drive=4.000Nm k=4 c=0.0 lim=-15/60 fmax=4 type=Force touch=1 mass=0.019 dof=1 pos=(-0.262, 0.699, 5.424)
+thumbEnd: angle=80.0 target=78.0 vel=0.0 drive=-0.047Nm k=1 c=0.0 lim=-10/80 fmax=1.5 type=Force touch=1 mass=0.006 dof=1 pos=(-0.235, 0.704, 5.494)
+bicep: joints=0.3(15.1) 0.0(-0.7) 0.0(-1.9)  x[Force k=2000 c=100 tv=0 f=300 lim=-40/100] y[Force tv=0] z[Force tv=0] twist=LimitedMotion swY=LockedMotion swZ=LimitedMotion mass=2.00 pos=(-0.784, 0.804, 5.420)
+forearm: joints=0.5(-25.8)  x[Force k=2000 c=100 tv=0 f=200 lim=-47/98] y[Force tv=0] z[Force tv=0] twist=LimitedMotion swY=FreeMotion swZ=FreeMotion mass=0.23 pos=(-0.578, 0.631, 5.399)
+palm: joints=9.1(235.8) 14.8(-32.7) 0.0(46.7)  x[Force k=3.162278 c=0.12996 tv=0 f=6 lim=-70/80] y[Force tv=0] z[Force tv=0] twist=LimitedMotion swY=LimitedMotion swZ=LockedMotion mass=0.30 pos=(-0.286, 0.669, 5.411)
+object=(-0.213, 0.711, 5.456) kin=False contacts=9 palm=False selfPenetration=2.53mm(L_pinkyBase/L_pinkyEnd;overlappingPairs=1/92;over2mm: pinkyBase/pinkyEnd:2.5) selfContactEvents=60
+
+[Gates] SLIP: objInPalm=(0.074, 0.033, 0.051) n=21 middleEnd p=(0.095, 0.047, 0.016) n=(-0.98, -0.18, -0.02) sep=-2.5mm imp=0.097 middleEnd p=(0.099, 0.053, 0.016) n=(-0.98, -0.18, -0.02) sep=2.5mm imp=0.097 ringEnd p=(0.096, 0.057, -0.006) n=(-0.99, 0.12, 0.07) sep=-0.1mm imp=0.117 ringEnd p=(0.093, 0.045, -0.006) n=(-0.99, 0.12, 0.07) sep=-4.1mm imp=0.117 indexEnd p=(0.099, 0.040, 0.043) n=(-0.99, 0.12, 0.07) sep=0.7mm imp=0.155 indexEnd p=(0.096, 0.029, 0.045) n=(-0.99, 0.12, 0.07) sep=-2.5mm imp=0.155 ringMiddle p=(0.098, 0.052, -0.007) n=(-0.99, 0.12, 0.07) sep=0.9mm imp=0.000 pinkyEnd p=(0.079, 0.039, -0.029) n=(-0.47, 0.84, 0.27) sep=-5.7mm imp=0.072 pinkyEnd p=(0.081, 0.027, -0.030) n=(-0.47, 0.84, 0.27) sep=6.4mm imp=0.072 indexMiddle p=(0.103, 0.036, 0.041) n=(-0.99, 0.12, 0.07) sep=3.9mm imp=0.000 pinkyMiddle p=(0.092, 0.043, -0.031) n=(-0.47, 0.84, 0.27) sep=0.8mm imp=0.239 pinkyMiddle p=(0.083, 0.039, -0.029) n=(-0.47, 0.84, 0.27) sep=-3.3mm imp=0.239 pinkyBase p=(0.087, 0.038, -0.030) n=(-0.63, 0.74, 0.24) sep=-0.4mm imp=0.000 palm p=(0.075, 0.011, 0.041) n=(-0.18, 0.94, 0.29) sep=0.0mm imp=0.000 palm p=(0.083, 0.012, 0.042) n=(-0.18, 0.94, 0.29) sep=0.9mm imp=0.000 indexBase p=(0.100, 0.019, 0.034) n=(-0.78, 0.60, 0.21) sep=6.9mm imp=0.000 thumbBase p=(0.044, 0.035, 0.045) n=(1.00, 0.05, -0.02) sep=5.0mm imp=0.000 thumbBase p=(0.044, 0.039, 0.048) n=(0.84, -0.51, -0.18) sep=6.0mm imp=0.000 thumbBase p=(0.055, 0.055, 0.053) n=(0.84, -0.51, -0.18) sep=3.8mm imp=0.000 thumbEnd p=(0.067, 0.055, 0.046) n=(0.30, -0.91, -0.28) sep=-5.2mm imp=0.501 middleMiddle p=(0.104, 0.052, 0.015) n=(-0.98, -0.18, -0.02) sep=7.0mm imp=0.000

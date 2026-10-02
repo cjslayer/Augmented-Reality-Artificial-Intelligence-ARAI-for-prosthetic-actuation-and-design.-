@@ -20,3 +20,29 @@ finger-object penetration (mm, ratio to the baseline), win = the hold / squeeze 
 | G6 push 80 N | 0/1 held 0, max 11.03, win 7.37 | 1/1 held 1, max 13.11 (1.19x), win 8.20 (1.11x) | 0/1 held 0, max 11.03 (1.00x), win 7.37 (1.00x) | 0/1 held 0, max 10.27 (0.93x), win 8.27 (1.12x) | 0/1 held 0, max 17.06 (1.55x), win 4.52 (0.61x) | 0/1 held 0, max 17.42 (1.58x), win 4.75 (0.64x) |
 
 Hands over 2x the baseline on any gate: 3-digit: g6_20, 5-digit: none, 6a-digit: none, 6b-digit: g3s, 7-digit: g3mx, g3s
+
+## Contact counts in the hold window (added 2026-10-01, `results/014/gates_slots_v2`, penTrace rerun)
+
+Mean touching finger groups in the hold / squeeze / push window (the agent's contact count), + palm contact fraction, per gate and hand, with the window
+maximum penetration of the same rerun. Penetration x contacts and the training criteria: `CRITERIA_014.md`.
+
+| gate | 3-digit: contacts + palm (window max mm) | 5-digit: contacts + palm (window max mm) | 6a-digit: contacts + palm (window max mm) | 6b-digit: contacts + palm (window max mm) | 7-digit: contacts + palm (window max mm) |
+|---|---|---|---|---|---|
+| G1 lift 0.2 / 0.6 / 1.5 kg | 3.00 + 1.00 (2.10) | 5.00 + 1.00 (2.17) | 6.00 + 1.00 (2.92) | 8.34 + 1.00 (1.31) | 9.55 + 1.00 (1.38) |
+| G1 ext 2.0 / 2.5 kg | 3.87 + 1.00 (2.91) | 6.26 + 1.00 (1.50) | 6.00 + 1.00 (1.49) | 9.01 + 1.00 (1.29) | 9.33 + 1.00 (1.30) |
+| G2 perturb 0.25-1.5 | 3.00 + 1.00 (2.17) | 5.00 + 1.00 (2.26) | 6.00 + 1.00 (2.83) | 9.44 + 1.00 (1.34) | 9.31 + 1.00 (1.52) |
+| G2 ext 2.0-4.0 | 3.07 + 0.99 (5.45) | 5.01 + 1.00 (3.86) | 6.09 + 1.00 (3.92) | 8.95 + 0.99 (2.78) | 9.68 + 1.00 (1.52) |
+| G3 pinch 0.2 / 0.6 / 1.5 kg | 3.00 + 1.00 (1.74) | 3.00 + 1.00 (2.00) | 2.00 + 1.00 (2.09) | 5.00 + 1.00 (1.11) | 4.00 + 1.00 (0.88) |
+| G3 pinch 1.0 kg | 3.00 + 1.00 (1.81) | 3.00 + 1.00 (1.88) | 2.00 + 1.00 (1.97) | 5.00 + 1.00 (1.05) | 3.67 + 1.00 (0.87) |
+| G3 pinch perturb 0.25-1.5 | 2.00 + 1.00 (2.11) | 2.00 + 1.00 (2.08) | 2.00 + 1.00 (1.90) | 3.89 + 1.00 (1.08) | 4.00 + 1.00 (0.96) |
+| G3 pinch perturb 2.0-4.0 | 2.16 + 0.99 (7.06) | 2.18 + 0.99 (5.63) | 2.20 + 0.99 (5.67) | 3.91 + 0.93 (3.40) | 4.00 + 0.92 (3.23) |
+| G6 push 10 N | 4.00 + 1.00 (7.83) | 6.07 + 1.00 (5.97) | 7.00 + 1.00 (4.37) | 0.20 + 0.09 (3.98) | 0.17 + 0.03 (1.01) |
+| G6 push 20 N | 4.00 + 1.00 (8.20) | 6.36 + 1.00 (3.89) | 6.12 + 0.69 (6.46) | 0.15 + 0.08 (3.62) | 0.14 + 0.10 (5.20) |
+| G6 push 40 N | 4.00 + 1.00 (8.20) | 6.98 + 1.00 (4.65) | 6.05 + 1.00 (6.85) | 0.10 + 0.07 (4.70) | 0.10 + 0.07 (4.76) |
+| G6 push 80 N | 4.02 + 0.96 (8.20) | 5.78 + 0.93 (7.37) | 6.24 + 0.96 (8.27) | 0.15 + 0.05 (4.52) | 0.08 + 0.05 (4.75) |
+
+## G4 seeding (note added 2026-10-01)
+
+G4 rows are not reproducible run to run: each trial's θ is drawn at the agent's episode start, before the harness seeds the random walk
+(`Random.InitState(2000 + trial x 7919 + seed)` in BeginTrial), so two runs draw different hands. Left as is (CJ, checkpoint 3); G4 comparisons across
+hands are over the 20 draws (finite count, maximum penetration), not per row.

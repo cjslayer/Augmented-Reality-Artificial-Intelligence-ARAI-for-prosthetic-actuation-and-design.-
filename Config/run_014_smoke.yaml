@@ -3,7 +3,7 @@
 # env_args --topology slots; digit compositions per episode from MorphologyManager.digitDistribution P(3, 4, 5, 6a, 6b, 7) = (0.10, 0.15, 0.45, 0.075,
 # 0.075, 0.15). Settings = the run-014 phase-A recipe: run-012 PPO hyperparameters, hold ladder 5 -> 10 -> 20 -> 50 with min_lesson_length 1000
 # episodes, canonical presentation, no perturbation, trainUniform shapes 1-64 with anchor share 0.10, lift budget 300; morph/randomize 1.
-# Fresh run id (no resume, no init_path).
+# Fresh run id (no resume, no init_path). Per-episode log (--episodeLog): results/014_smoke_episodes/episodes_<pid>.csv.
 behaviors:
   Prosthetic:
     trainer_type: ppo
@@ -35,7 +35,7 @@ behaviors:
 env_settings:
   env_path: Builds/Run014/Prosthetic.exe
   num_envs: 8
-  env_args: ["--topology", "slots"]
+  env_args: ["--topology", "slots", "--episodeLog", "C:/Users/chris/Augmented-Reality-Artificial-Intelligence/results/014_smoke_episodes"]
 
 engine_settings:
   no_graphics: true

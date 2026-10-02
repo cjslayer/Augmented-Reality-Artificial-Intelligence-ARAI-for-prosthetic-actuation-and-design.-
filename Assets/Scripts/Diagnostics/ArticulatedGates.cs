@@ -457,7 +457,7 @@ public class ArticulatedGates : MonoBehaviour
     {
         for (int g = 0; g < HandLayout.MaxFingerGroups; g++)
         {   // the thumb rests in front of the palm (palmar abduction): it is not an obstacle for placement, the object displaces it and it then lies on the object
-            var b = hand.Groups[g]; if (b == null || (cfg.contactController && HandLayout.IsThumbGroup(g))) continue;
+            var b = hand.Groups[g]; if (b == null || HandLayout.IsThumbGroup(g)) continue;   // run 014 (checkpoint 3b): thumbs exempt in every mode (was: only with the contact controller); G6 placed the object 60 mm out on the second-thumb hands
             var c = b.GetComponent<Collider>(); if (c != null && Physics.ComputePenetration(c, c.transform.position, c.transform.rotation, cylCol, pos, rot, out _, out _)) return true;
         }
         var pc = palm.GetComponent<Collider>(); if (pc != null && Physics.ComputePenetration(pc, pc.transform.position, pc.transform.rotation, cylCol, pos, rot, out _, out _)) return true;

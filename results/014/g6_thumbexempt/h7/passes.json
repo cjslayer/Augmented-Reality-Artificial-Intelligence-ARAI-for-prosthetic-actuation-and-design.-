@@ -1,0 +1,54 @@
+[
+ {
+  "tag": "g6_10",
+  "ok": true,
+  "csv": "results/014/g6_thumbexempt/h7/g6_10.csv",
+  "wall_s": 11.1,
+  "extra": {
+   "topology": "slots",
+   "penTrace": true,
+   "digits": 7
+  },
+  "error": "",
+  "time": "2026-10-02 15:25:36"
+ },
+ {
+  "tag": "g6_20",
+  "ok": true,
+  "csv": "results/014/g6_thumbexempt/h7/g6_20.csv",
+  "wall_s": 11.1,
+  "extra": {
+   "topology": "slots",
+   "penTrace": true,
+   "digits": 7
+  },
+  "error": "",
+  "time": "2026-10-02 15:25:52"
+ },
+ {
+  "tag": "g6_40",
+  "ok": true,
+  "csv": "results/014/g6_thumbexempt/h7/g6_40.csv",
+  "wall_s": 11.1,
+  "extra": {
+   "topology": "slots",
+   "penTrace": true,
+   "digits": 7
+  },
+  "error": "",
+  "time": "2026-10-02 15:26:07"
+ },
+ {
+  "tag": "g6_80",
+  "ok": true,
+  "csv": "results/014/g6_thumbexempt/h7/g6_80.csv",
+  "wall_s": 11.1,
+  "extra": {
+   "topology": "slots",
+   "penTrace": true,
+   "digits": 7
+  },
+  "error": "",
+  "time": "2026-10-02 15:26:22"
+ }
+]

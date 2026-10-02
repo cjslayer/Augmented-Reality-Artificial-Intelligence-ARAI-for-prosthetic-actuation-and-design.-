@@ -496,6 +496,7 @@ public class ArmGraspAgent : Agent
     /// <summary>Diagnostics hook (Editor harnesses): invoked at the top of every OnEpisodeBegin, before the episode's random draws, so an evaluation can seed each episode. No effect when nothing is subscribed.</summary>
     public static System.Action BeforeEpisodeBegin;
     static readonly string[] k_Compositions = { "3", "4", "5", "6a", "6b", "7" };
+    int m_SpawnTested, m_SpawnOverlapRejects; bool m_SpawnFallback;   // reach-accepted spawn candidates, of which rejected by the open-hand overlap filter; no candidate accepted
     /// <summary>Run 014: composition name of this episode's hand (3, 4, 5, 6a = + extra finger, 6b = + second thumb, 7).</summary>
     string CompositionName() { if (m_Morph == null) return "?"; int n = m_Morph.DigitCount; return n == 6 ? (m_Morph.exists[6] ? "6b" : "6a") : n.ToString(); }
     static string s_EpisodeLogPath; static bool s_EpisodeLogResolved;
@@ -507,7 +508,7 @@ public class ArmGraspAgent : Agent
         {
             s_EpisodeLogResolved = true; var a = System.Environment.GetCommandLineArgs();
             for (int i = 0; i < a.Length - 1; i++) if (a[i] == "--episodeLog") { try { System.IO.Directory.CreateDirectory(a[i + 1]); s_EpisodeLogPath = System.IO.Path.Combine(a[i + 1], "episodes_" + System.Diagnostics.Process.GetCurrentProcess().Id + ".csv"); } catch (System.Exception e) { Debug.LogWarning("[ArmGraspAgent] episode log: " + e.Message); } }
-            if (s_EpisodeLogPath != null && !System.IO.File.Exists(s_EpisodeLogPath)) System.IO.File.WriteAllText(s_EpisodeLogPath, "episode,academyStep,composition,digits,slots,success,endReason,steps,transitionStep,stepsToLift,holdSteps,holdNeeded,holdDecisions,contacts,distinctFingers,thumb,palm,effortReturn,maxPenMm,lengthScales\n");
+            if (s_EpisodeLogPath != null && !System.IO.File.Exists(s_EpisodeLogPath)) System.IO.File.WriteAllText(s_EpisodeLogPath, "episode,academyStep,composition,digits,slots,success,endReason,steps,transitionStep,stepsToLift,holdSteps,holdNeeded,holdDecisions,contacts,distinctFingers,thumb,palm,effortReturn,maxPenMm,lengthScales,spawnTested,spawnOverlapRejects,spawnFallback\n");
         }
         if (s_EpisodeLogPath == null || m_Morph == null) return;
         try
@@ -515,7 +516,7 @@ public class ArmGraspAgent : Agent
             var ls = new List<string>(); for (int k = 0; k < HandLayout.MaxDigits; k++) { int d = HandLayout.SlotDigit[k]; ls.Add(m_Morph.exists[d] ? m_Morph.lengthScale[d].ToString("F3") : "0"); }
             System.IO.File.AppendAllText(s_EpisodeLogPath, string.Join(",", new string[] { CompletedEpisodes.ToString(), Academy.Instance.StepCount.ToString(), comp, m_Morph.DigitCount.ToString(), HandLayout.SlotString(m_Morph.exists), success ? "1" : "0", m_EndReason,
                 StepCount.ToString(), m_TransitionStep.ToString(), m_StepsToLift.ToString(), m_HoldSteps.ToString(), HoldStepsNeeded().ToString(), HoldDecisions.ToString(), CurrentContacts.ToString(), LastDistinctFingers.ToString(), LastThumbTouching ? "1" : "0", LastPalmTouching ? "1" : "0",
-                m_EffortReturn.ToString("G6"), (m_MaxPenetration * 1000f).ToString("F2"), string.Join("/", ls) }) + "\n");
+                m_EffortReturn.ToString("G6"), (m_MaxPenetration * 1000f).ToString("F2"), string.Join("/", ls), m_SpawnTested.ToString(), m_SpawnOverlapRejects.ToString(), m_SpawnFallback ? "1" : "0" }) + "\n");
         }
         catch (System.Exception e) { Debug.LogWarning("[ArmGraspAgent] episode log: " + e.Message); }
     }
@@ -616,7 +617,7 @@ public class ArmGraspAgent : Agent
         // per episode: canonical = the scene's upright pose, randomStable = a settled rest pose of the shape drawn from the episode's stream), never
         // from the object's current rotation, so nothing of the previous episode's end pose carries into this one; the yaw is drawn below.
         Quaternion baseRot = SpawnBaseRotation;
-        Quaternion chosenRot = baseRot; LastSpawnYawDeg = -1f;
+        Quaternion chosenRot = baseRot; LastSpawnYawDeg = -1f; m_SpawnTested = 0; m_SpawnOverlapRejects = 0; m_SpawnFallback = true;   // run 014 spawn statistics (counters only; no draw changes)
         for (int attempt = 0; attempt < Mathf.Max(1, spawnAttempts); attempt++)
         {
             Vector2 disk = Random.insideUnitCircle * radius;
@@ -625,8 +626,9 @@ public class ArmGraspAgent : Agent
             if (reach < reachRange.x || reach > reachRange.y) continue;
             float yaw = randomizeYaw ? Random.Range(0f, 360f) : 0f;
             Quaternion rot = randomizeYaw ? Quaternion.Euler(0f, yaw, 0f) * baseRot : baseRot;
-            if (OverlapsHand(candidate, rot)) continue;
-            chosen = candidate; chosenRot = rot; LastSpawnYawDeg = yaw;
+            m_SpawnTested++;
+            if (OverlapsHand(candidate, rot)) { m_SpawnOverlapRejects++; continue; }
+            chosen = candidate; chosenRot = rot; LastSpawnYawDeg = yaw; m_SpawnFallback = false;
             break;
         }
         cylinderTransform.SetPositionAndRotation(chosen, chosenRot);
@@ -1048,6 +1050,8 @@ public class ArmGraspAgent : Agent
             rec.Add("Morph/DigitCount", dc); rec.Add("Morph/ThumbCount", m_Morph.ThumbCount); rec.Add("Morph/PresentGroups", m_Morph.PresentGroupCount);
             string comp = CompositionName(); foreach (var cn in k_Compositions) rec.Add("Comp/Share" + cn, cn == comp ? 1f : 0f);   // per-episode indicator: its mean is the composition's share
             rec.Add("Effort/Digits" + (dc == 6 ? comp : dc.ToString()), m_EffortReturn);
+            if (m_SpawnTested > 0) rec.Add("Spawn/OverlapRejectRate" + comp, m_SpawnOverlapRejects / (float)m_SpawnTested);
+            rec.Add("Spawn/Fallback" + comp, m_SpawnFallback ? 1f : 0f);
             WriteEpisodeLog(success, comp);
         }
         rec.Add("Grasp/StepsToFirstSixContacts", m_StepsToFirstSixContacts);

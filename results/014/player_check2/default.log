@@ -1,0 +1,52 @@
+Mono path[0] = 'C:/Users/chris/Augmented-Reality-Artificial-Intelligence/Builds/Run014/Prosthetic_Data/Managed'
+Mono config path = 'C:/Users/chris/Augmented-Reality-Artificial-Intelligence/Builds/Run014/MonoBleedingEdge/etc'
+Input System module state changed to: Initialized.
+[Physics::Module] Initialized fallback backend.
+[Physics::Module] Id: 0xdecafbad
+Initialize engine version: 6000.3.18f1 (5ebeb53e4c07)
+[Subsystems] Discovering subsystems at path C:/Users/chris/Augmented-Reality-Artificial-Intelligence/Builds/Run014/Prosthetic_Data/UnitySubsystems
+Forcing GfxDevice: Null
+GfxDevice: creating device client; kGfxThreadingModeNonThreaded
+NullGfxDevice:
+    Version:  NULL 1.0 [1.0]
+    Renderer: Null Device
+    Vendor:   Unity Technologies
+Begin MonoManager ReloadAssembly
+- Loaded All Assemblies, in  0.115 seconds
+- Finished resetting the current domain, in  0.002 seconds
+[Physics::Module] Selected backend.
+[Physics::Module] Name: PhysX
+[Physics::Module] Id: 0xf2b8ea05
+[Physics::Module] SDK Version: 4.1.2
+[Physics::Module] Integration Version: 1.0.0
+[Physics::Module] Threading Mode: Multi-Threaded
+Microsoft Media Foundation video decoding to texture disabled: graphics device is Null, only Direct3D 11 and Direct3D 12 (only on desktop) are supported for hardware-accelerated video decoding.
+The referenced script on this Behaviour (Game Object 'MixedRealitySceneContent') is missing!
+The referenced script on this Behaviour (Game Object 'Main Camera') is missing!
+The referenced script on this Behaviour (Game Object 'Main Camera') is missing!
+The referenced script on this Behaviour (Game Object 'MixedRealityToolkit') is missing!
+UnloadTime: 0.452000 ms
+Registered Communicator in Agent.
+[ArticulatedHand] HandSpec (m, deg; palm frame along/out/across from the wrist pivot)
+index: phalanges 39.2/21.3/15.3 mm, MCP (99.0, 0.0, 31.5) mm, rest abduction 8, flexion-plane tilt 2, limits MCP (-90.00, 10.00) PIP (-100.00, 5.00) DIP (-80.00, 5.00), radii 9/8/7.5 mm
+middle: phalanges 43.6/25.8/16.2 mm, MCP (104.0, 0.0, 10.5) mm, rest abduction 0, flexion-plane tilt 3, limits MCP (-90.00, 10.00) PIP (-100.00, 5.00) DIP (-80.00, 5.00), radii 9.5/8.5/7.5 mm
+ring: phalanges 41/24.5/16.6 mm, MCP (100.0, 0.0, -10.5) mm, rest abduction -6, flexion-plane tilt 8, limits MCP (-90.00, 10.00) PIP (-100.00, 5.00) DIP (-80.00, 5.00), radii 9/8/7.5 mm
+pinky: phalanges 31.9/17.1/14.9 mm, MCP (91.0, 0.0, -31.5) mm, rest abduction -14, flexion-plane tilt 13, limits MCP (-90.00, 10.00) PIP (-100.00, 5.00) DIP (-80.00, 5.00), radii 8/7/6.5 mm
+thumb: CMC (25.0, 5.0, 32.0) mm, MC1/PP/DP 46/30/21 mm, rest palmar/radial abduction 60/35, MCP fixed 20, opposition target (80.0, 62.0, 40.0) mm, limits CMC (-15.00, 60.00) IP (-10.00, 80.00), radii 11/9.5/8.5 mm
+palm: width 85 length 104 thickness 28 faceOffset 10 mm, mass 0.3 kg
+palmarFleshOffset 10 mm, tipPad 4 mm, density 1000
+anthropometrics: modelScale(armature)=0.36 specPalmWidth=85mm thumbCMCaxis(palm)=(0.33, -0.43, 0.84) oppositionAngle=31.1 meshFollowDev(mm idx/mid/ring/pnk/thb)=19/18/6/42/54 handLength=194.1mm (palm->middleBase 104.5) palmWidth=80.5mm forearm=294.4mm handMass=0.411kg (palm 0.300) forearmMass=0.234 bicepMass=2.00 links(mm,r mm,g): indexBase=39.2/9.0/10.7 indexMiddle=21.3/8.0/4.8 indexEnd=19.3/7.5/3.9 middleBase=43.6/9.5/13.3 middleMiddle=25.8/8.5/6.5 middleEnd=20.2/7.5/4.0 ringBase=41.0/9.0/11.2 ringMiddle=24.5/8.0/5.5 ringEnd=20.6/7.5/4.1 pinkyBase=31.9/8.0/7.0 pinkyMiddle=17.1/7.0/3.0 pinkyEnd=18.9/6.5/2.8 thumbBase=46.0/11.0/18.9 thumbEnd=25.0/8.5/6.3
+[ArmGraspAgent] layout check passed: Legacy (vector 24, tokens 16 x 13, ray sensors 10, actions 19)
+ThalmicHub failed to initialize.
+[ObjectBank] loaded 81 entries (seed 13013) from C:/Users/chris/Augmented-Reality-Artificial-Intelligence/Builds/Run014/Prosthetic_Data/StreamingAssets\ObjectBank; anchor mesh 'Cylinder' scale (0.050, 0.140, 0.050) canonical rotation (0.0, 0.0, 0.0)
+[ObjectBank] stable poses: 317 settled poses for 81 shapes (21 unsettled candidates kept in the cache, 0 shapes without a settled pose); pose classes per shape: 1 classes: 40 shapes, 2 classes: 33 shapes, 3 classes: 7 shapes, 4 classes: 1 shapes; from C:/Users/chris/Augmented-Reality-Artificial-Intelligence/Builds/Run014/Prosthetic_Data/StreamingAssets\ObjectBank\stable_poses.json
+[ObjectBank] bank ready: 81 shapes, 131 pose classes over 81 shapes, seed 13013, dir C:/Users/chris/Augmented-Reality-Artificial-Intelligence/Builds/Run014/Prosthetic_Data/StreamingAssets\ObjectBank (player)
+[ArmGraspAgent] created sensors (Legacy): JointTokens[16,13] RayMiddleend[3] RayMiddlemiddle[3] RayPinkyend[3] RayPinkymiddle[3] RayPointerend[3] RayPointermiddle[3] RayRingend[2] RayRingmiddle[3] RayThumbend[3] RayThumbmiddle[3] VectorSensor_size24[24] -> OK
+Setting linear velocity of a kinematic body is not supported.
+Setting angular velocity of a kinematic body is not supported.
+Setting linear velocity of a kinematic body is not supported.
+Setting angular velocity of a kinematic body is not supported.
+Setting linear velocity of a kinematic body is not supported.
+Setting angular velocity of a kinematic body is not supported.
+Setting linear velocity of a kinematic body is not supported.
+Setting angular velocity of a kinematic body is not supported.

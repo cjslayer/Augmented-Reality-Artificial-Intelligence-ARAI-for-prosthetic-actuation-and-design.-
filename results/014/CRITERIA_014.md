@@ -50,3 +50,35 @@ Window penetration (mean over the load's trials of the window maximum, and of th
 | G6 push 80 N | 40.8 / 26.2 | 49.5 / 24.2 | 59.5 / 35.1 | 0.9 / 0.0 | 0.6 / 0.0 | 96.43 | nan |
 
 **Penetration x contacts roughly constant across hands (max / min <= 2 at every load, window-maximum based): NO**
+
+## Checkpoint 3b decisions (CJ, 2026-10-02; added as new lines)
+
+- **Gate: criterion (ii), hold-window penetration ≤ 3 mm absolute at task loads.** It passes on all five hands: 1.23–2.92 mm (section (ii) above).
+- **The penetration × contacts check is retired.** At task loads the normal force at a contact is the driver's squeeze per finger, not the object's
+  weight shared over the contacts. A per-hand constant penetration is therefore what the corrected model predicts, which is what the table above
+  shows. The "NO" above no longer gates training.
+- **Criterion (i), no self-penetration, applies to G1 / G2 / G3 only.** It passes on all five hands: 0.00 mm on every lift and pinch trial.
+- **G4 and G6 self-penetration are reported, not gated.**
+
+  | hand | G4 random walk | G6 force-limit close |
+  |---|---|---|
+  | 3 | 20.3 mm | 4.2 mm |
+  | 5 | 20.5 mm | 12.1 mm |
+  | 6a | 18.3 mm | 9.1 mm |
+  | 6b | 16.8 mm | 10.7 mm |
+  | 7 | 22.5 mm | 10.7 mm |
+
+  The unchanged 013 (5-digit) hand shows it too.
+- **G6 placement now exempts the thumbs in every mode**, as the contact-controller gates already did. Rerun with the corrected placement
+  (`results/014/g6_thumbexempt/`):
+
+  | hand | 10 N | 20 N | 40 N | 80 N | window penetration | window contacts |
+  |---|---|---|---|---|---|---|
+  | 6b | held | held | held | held | 5.3–6.8 mm | 8.7–9.4 |
+  | 7 | held | held | held | held | 5.4–8.1 mm | 10.3–11.0 |
+  | 5 | held | held | held | pushed out | as before | as before |
+
+  Both pass ("holds to 40 N like the 5-digit hand"), and both also hold at 80 N.
+- **The change is a no-op on the 5-digit hand.** Its placement is unchanged (1.0 mm shift). The 20 / 40 / 80 N rows are identical in every numeric
+  column to the previous run. The 10 N row, the first gate of the sequence, differs at the first-run reproducibility level already seen in G1
+  (window 6.00 vs 5.97 mm).

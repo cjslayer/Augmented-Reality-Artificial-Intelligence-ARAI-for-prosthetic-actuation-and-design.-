@@ -544,7 +544,7 @@ public class ArmGraspAgent : Agent
         {
             s_EpisodeLogResolved = true; var a = System.Environment.GetCommandLineArgs();
             for (int i = 0; i < a.Length - 1; i++) if (a[i] == "--episodeLog") { try { System.IO.Directory.CreateDirectory(a[i + 1]); s_EpisodeLogPath = System.IO.Path.Combine(a[i + 1], "episodes_" + System.Diagnostics.Process.GetCurrentProcess().Id + ".csv"); } catch (System.Exception e) { Debug.LogWarning("[ArmGraspAgent] episode log: " + e.Message); } }
-            if (s_EpisodeLogPath != null && !System.IO.File.Exists(s_EpisodeLogPath)) System.IO.File.WriteAllText(s_EpisodeLogPath, "episode,academyStep,composition,digits,slots,success,endReason,steps,transitionStep,stepsToLift,holdSteps,holdNeeded,holdDecisions,contacts,distinctFingers,thumb,palm,effortReturn,maxPenMm,lengthScales,spawnTested,spawnOverlapRejects,spawnFallback\n");
+            if (s_EpisodeLogPath != null && !System.IO.File.Exists(s_EpisodeLogPath)) System.IO.File.WriteAllText(s_EpisodeLogPath, "episode,academyStep,composition,digits,slots,success,endReason,steps,transitionStep,stepsToLift,holdSteps,holdNeeded,holdDecisions,contacts,distinctFingers,thumb,palm,effortReturn,maxPenMm,lengthScales,spawnTested,spawnOverlapRejects,spawnFallback,pose,objIndex\n");
         }
         if (s_EpisodeLogPath == null || m_Morph == null) return;
         try
@@ -552,7 +552,8 @@ public class ArmGraspAgent : Agent
             var ls = new List<string>(); for (int k = 0; k < HandLayout.MaxDigits; k++) { int d = HandLayout.SlotDigit[k]; ls.Add(m_Morph.exists[d] ? m_Morph.lengthScale[d].ToString("F3") : "0"); }
             System.IO.File.AppendAllText(s_EpisodeLogPath, string.Join(",", new string[] { CompletedEpisodes.ToString(), Academy.Instance.StepCount.ToString(), comp, m_Morph.DigitCount.ToString(), HandLayout.SlotString(m_Morph.exists), success ? "1" : "0", m_EndReason,
                 StepCount.ToString(), m_TransitionStep.ToString(), m_StepsToLift.ToString(), m_HoldSteps.ToString(), HoldStepsNeeded().ToString(), HoldDecisions.ToString(), CurrentContacts.ToString(), LastDistinctFingers.ToString(), LastThumbTouching ? "1" : "0", LastPalmTouching ? "1" : "0",
-                m_EffortReturn.ToString("G6"), (m_MaxPenetration * 1000f).ToString("F2"), string.Join("/", ls), m_SpawnTested.ToString(), m_SpawnOverlapRejects.ToString(), m_SpawnFallback ? "1" : "0" }) + "\n");
+                m_EffortReturn.ToString("G6"), (m_MaxPenetration * 1000f).ToString("F2"), string.Join("/", ls), m_SpawnTested.ToString(), m_SpawnOverlapRejects.ToString(), m_SpawnFallback ? "1" : "0",
+                ObjectBank.Instance == null ? "canonical" : ObjectBank.Instance.CurrentPoseMode.ToString(), ObjectBank.Instance == null ? "-1" : ObjectBank.Instance.CurrentIndex.ToString() }) + "\n");   // pose, objIndex: run 014 attempt 2 (upright vs lying per composition)
         }
         catch (System.Exception e) { Debug.LogWarning("[ArmGraspAgent] episode log: " + e.Message); }
     }

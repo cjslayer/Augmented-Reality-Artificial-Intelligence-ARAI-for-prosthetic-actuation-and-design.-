@@ -1,0 +1,49 @@
+# Run 014 attempt 2, PHASE A2: within-lineage resume of run id 014_r2 from the A1 switch checkpoint. Fixed parameters, no lessons.
+# A2 = upright only, hold K = 50, perturbation 0: run 013 kept perturbation at 0 through every upright K = 50 stage (013A's Hold50 lesson and 013B's
+# Canon100 lesson) and first introduced it in phase C (ladder 0.25 -> 0.5 -> 1.0, on random-stable poses only). Lift budget 300, cylinder 10 %, digit mix unchanged.
+# Switch to B: pooled upright success >= 0.5 over >= 200k steps after A2 began, or at 8M total steps, whichever is first.
+# Stop rule: pooled lift rate falls across two consecutive 500k windows -> stop and report.
+behaviors:
+  Prosthetic:
+    trainer_type: ppo
+    hyperparameters:
+      batch_size: 2048
+      buffer_size: 20480
+      learning_rate: 0.0003
+      beta: 0.005
+      epsilon: 0.2
+      lambd: 0.95
+      num_epoch: 3
+      learning_rate_schedule: linear
+    network_settings:
+      normalize: true
+      hidden_units: 128
+      num_layers: 2
+      vis_encode_type: simple
+    reward_signals:
+      extrinsic:
+        gamma: 0.99
+        strength: 1.0
+    keep_checkpoints: 120
+    checkpoint_interval: 250000
+    max_steps: 24000000
+    time_horizon: 128
+    summary_freq: 10000
+    threaded: true
+
+env_settings:
+  env_path: Builds/Run014/Prosthetic.exe
+  num_envs: 8
+  env_args: ["--topology", "slots", "--episodeLog", "C:/Users/chris/Augmented-Reality-Artificial-Intelligence/results/014_r2_episodes/A2"]
+
+engine_settings:
+  no_graphics: true
+
+environment_parameters:
+  morph/randomize: 1.0
+  object/mode: 1.0
+  object/anchorShare: 0.1
+  pose/canonicalFraction: 1.0
+  hold/decisions: 50.0
+  perturb/scale: 0.0
+  task/liftBudgetSteps: 300.0

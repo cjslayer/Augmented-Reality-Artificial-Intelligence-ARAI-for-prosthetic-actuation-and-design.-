@@ -1,0 +1,54 @@
+# SMOKE of Config/run_014_phaseA1.yaml (CJ smoke rule 2026-10-05): identical to it except the episode-log directory; run id 014_r2_smokeA1b, stopped by hand at 300k steps (second smoke: 6b had no lift in the 100k smoke).
+# Run 014 attempt 2, PHASE A1 (CJ 2026-10-05): run id 014_r2, from scratch (no init_path, no resume). The phases are within-lineage resumes of
+# run id 014_r2 with FIXED environment parameters per phase file (013's mechanism); no curriculum block and no reward-threshold lessons anywhere.
+# A1 = upright only (pose/canonicalFraction 1.0), perturbation 0, hold K = 5 (013A's first lesson, Hold5), lift budget 300, cylinder 10 %
+# (object/anchorShare 0.1 over trainUniform 1-64), full digit mix from step 0 (MorphologyManager.digitDistribution 0.10/0.15/0.45/0.075/0.075/0.15).
+# Switch to A2: pooled sampled-head lift rate >= 0.5 over a window of >= 200k steps after A1 began, or at 4M, whichever is first.
+# Stop rule: pooled lift rate falls across two consecutive 500k windows -> stop and report.
+# PPO = attempt 1 (runs 012 / 013). max_steps 24M in every phase file so the linear LR schedule is one schedule across the resumes.
+# Checkpoints every 250k in A1 / A2 so a switch stops at a checkpoint close to the criterion (B: every 1M). Episode log per phase directory.
+# Player Builds/Run014/Prosthetic.exe, Assembly-CSharp d489cd2bcd9e0f03 (episode log gains pose, objIndex), slot layout via --topology slots.
+behaviors:
+  Prosthetic:
+    trainer_type: ppo
+    hyperparameters:
+      batch_size: 2048
+      buffer_size: 20480
+      learning_rate: 0.0003
+      beta: 0.005
+      epsilon: 0.2
+      lambd: 0.95
+      num_epoch: 3
+      learning_rate_schedule: linear
+    network_settings:
+      normalize: true
+      hidden_units: 128
+      num_layers: 2
+      vis_encode_type: simple
+    reward_signals:
+      extrinsic:
+        gamma: 0.99
+        strength: 1.0
+    keep_checkpoints: 120
+    checkpoint_interval: 250000
+    max_steps: 24000000
+    time_horizon: 128
+    summary_freq: 10000
+    threaded: true
+
+env_settings:
+  env_path: Builds/Run014/Prosthetic.exe
+  num_envs: 8
+  env_args: ["--topology", "slots", "--episodeLog", "C:/Users/chris/Augmented-Reality-Artificial-Intelligence/results/014_r2_smokeA1b_episodes"]
+
+engine_settings:
+  no_graphics: true
+
+environment_parameters:
+  morph/randomize: 1.0
+  object/mode: 1.0
+  object/anchorShare: 0.1
+  pose/canonicalFraction: 1.0
+  hold/decisions: 5.0
+  perturb/scale: 0.0
+  task/liftBudgetSteps: 300.0

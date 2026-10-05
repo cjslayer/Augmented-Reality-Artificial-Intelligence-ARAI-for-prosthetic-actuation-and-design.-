@@ -123,6 +123,7 @@ public class ArticulatedGates : MonoBehaviour
         public int liftBudgetSteps = 0;
         public string thetaExist = "";
         public bool penTrace = false;
+        public int spawnResets = 0;   // mode spawnstats (run 014): training-style resets to run (each records both spawn filters on the same candidates)
         public string[] maskGroups = null;   // run 014 diagnostic: finger groups held at the neutral pose as masked joints (morph/mask_<name> = 0), e.g. thumb2Base, thumb2End
         // run 014 diagnostic overrides of the extra finger's placement (HandSpec.extraFinger; < -900 = keep the spec value): MCP along / across (m), rest abduction and flexion-plane tilt (deg), palm widening (m)
         public float xfMcpAlong = -999f, xfMcpAcross = -999f, xfAbductionDeg = -999f, xfTiltDeg = -999f, xfPalmWidening = -999f;   // run 014 diagnostic: per-step deepest link-object and link-link penetration with the link names, step and phase (note column)
@@ -238,6 +239,12 @@ public class ArticulatedGates : MonoBehaviour
         if (cfg.mode == "eval") { trials.Clear(); for (int sd = cfg.seedFrom; sd <= cfg.seedTo; sd++) trials.Add(new Trial { mass = 0f, scale = cfg.evalPerturbScale, grip = "policy", seed = sd }); EvalSetup(); }
         if (cfg.mode == "eval" && cfg.liftBudgetSteps > 0) { SetEnvParam("task/liftBudgetSteps", cfg.liftBudgetSteps); Debug.Log("[Gates] eval: lift budget " + cfg.liftBudgetSteps + " steps (task/liftBudgetSteps)"); }
         if (cfg.mode == "layout") { trials.Clear(); trials.Add(new Trial { mass = 0.6f, scale = 0f, grip = "layout", seed = 0 }); }
+        if (cfg.mode == "spawnstats")
+        {   // training-style resets: trainUniform shapes 1-64 + anchor 10 %, presentation 50/50, randomized theta and composition (the run-014 mixture)
+            trials.Clear(); trials.Add(new Trial { mass = 0.6f, scale = 0f, grip = "spawnstats", seed = 0 }); mm.randomizeByDefault = true; SetEnvParam("morph/randomize", 1f);
+            SetEnvParam("object/mode", 1f); SetEnvParam("object/anchorShare", 0.1f); SetEnvParam("pose/canonicalFraction", 0.5f); ArmGraspAgent.DiagCompareSpawnFilters = true;
+            sb.Length = 0; sb.AppendLine("reset,composition,tested,envelopeRejects,handRejects,fallback");
+        }
         if (cfg.massMin > 0f && cfg.massMax > 0f) { SetEnvParam("mass/min", cfg.massMin); SetEnvParam("mass/max", cfg.massMax); Debug.Log("[Gates] mass range " + cfg.massMin + "-" + cfg.massMax + " kg (environment parameters)"); }
         if (ObjectColumns)
         {   // object bank plumbing: mode code to the environment parameters (ObjectBank reads them in ApplyForEpisode); stratified assignment sets object/index per episode in the hook
@@ -353,8 +360,20 @@ public class ArticulatedGates : MonoBehaviour
         Flush();
     }
 
+    int spawnDone;
     void FixedUpdate()
     {
+        if (cfg.mode == "spawnstats")
+        {   // 25 resets per physics step; each reset's spawn counters are read right after it (EndEpisode resets synchronously)
+            if (warmup > 0) { warmup--; return; }
+            for (int i = 0; i < 25 && spawnDone < cfg.spawnResets; i++)
+            {
+                agent.EndEpisode(); var st = agent.LastSpawnStats; spawnDone++;
+                sb.AppendLine(spawnDone + "," + agent.CompositionNow + "," + st.tested + "," + st.envelopeRejects + "," + st.handRejects + "," + (st.fallback ? 1 : 0));
+            }
+            if (spawnDone >= cfg.spawnResets) { ArmGraspAgent.DiagCompareSpawnFilters = false; Finish(); }
+            return;
+        }
         if (cfg.mode == "eval")
         {
             if (!evalReady) return;
@@ -433,7 +452,7 @@ public class ArticulatedGates : MonoBehaviour
 
     void PlaceObject(Trial t)
     {
-        var pb = palm.GetComponent<BoxCollider>(); Vector3 pcen = palm.TransformPoint(pb.center); float half = 0.5f * pb.size.x; float r = objRadius;   // not the AABB: a tumbled object's AABB is its tilted extent
+        var pb = palm.GetComponent<BoxCollider>(); Vector3 pcen = palm.TransformPoint(new Vector3(pb.center.x, pb.center.y, 0f)); float half = 0.5f * pb.size.x; float r = objRadius;   // run 014: the reference palm's across centre (0), not the widened box's (-10.5 mm): placement independent of the palm width; unchanged for <= 5 digits   // not the AABB: a tumbled object's AABB is its tilted extent
         Vector3 n = palm.right; Vector3 pos = pcen + n * (half + r + cfg.palmGap);
         if (cfg.placeUp > 0f) { Vector3 alongFingers = palm.up; alongFingers.y = 0f; alongFingers.Normalize(); pos += alongFingers * (cfg.placeUp - Vector3.Dot(pcen - palm.position, palm.up)); }
         pos.y = restY;

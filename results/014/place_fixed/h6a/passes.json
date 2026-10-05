@@ -1,0 +1,15 @@
+[
+ {
+  "tag": "g1",
+  "ok": true,
+  "csv": "results/014/place_fixed/h6a/g1.csv",
+  "wall_s": 16.1,
+  "extra": {
+   "topology": "slots",
+   "penTrace": true,
+   "digits": 6
+  },
+  "error": "",
+  "time": "2026-10-02 16:21:30"
+ }
+]

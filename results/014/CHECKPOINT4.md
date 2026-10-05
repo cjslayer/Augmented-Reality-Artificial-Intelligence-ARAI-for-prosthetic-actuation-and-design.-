@@ -73,3 +73,36 @@ Player check without a trainer (`player_check2/`):
 - **Episode-log analysis.** An episode ending at MaxStep is logged after ML-Agents has reset the step count, so its `steps` reads 0.
   `tools/eval/smoke_014.py` counts every ended episode. A first version dropped them, which hid the reach failures and biased the shares.
 - **Commits** are local; nothing pushed.
+
+## Checkpoint-4 fix (2026-10-04): composition-independent spawn envelope
+
+- **Filter.** In the slot layout the spawn overlap filter now tests one fixed envelope: copies of every link collider of the largest open hand
+  θ can draw (all 7 digits at length scale 1.2, widened palm 106 mm, forearm), 23 colliders held as hidden triggers at y = −1000 and posed on the
+  current palm. The legacy layout keeps its own-hand filter. Thumbs stay exempt in the harness placement check as before.
+- **Equality check (paired, `spawnstats/spawnstats_20000.csv`).** 20,000 training-style resets (run-014 mixture), 31,257 reach-accepted
+  candidates; on every candidate both the envelope and the old own-hand filter were evaluated. No fallbacks.
+
+  | composition | resets | candidates | envelope rate | old own-hand rate |
+  |---|---|---|---|---|
+  | 3 | 2024 | 3193 | 0.366 | 0.270 |
+  | 4 | 3020 | 4736 | 0.362 | 0.263 |
+  | 5 | 8919 | 13932 | 0.360 | 0.267 |
+  | 6a | 1557 | 2392 | 0.349 | 0.318 |
+  | 6b | 1537 | 2374 | 0.353 | 0.287 |
+  | 7 | 2943 | 4630 | 0.364 | 0.359 |
+
+  Envelope rates agree within 1.1 points (6a −1.1 ± 1.1, sampling). The envelope rejects 9.3 points more than the 5-digit hand's own filter on the
+  same candidates. **CJ decision: accepted** (013E comparability lives at eval, not in the training spawn distribution); the envelope stays at
+  the 7-digit hand, scale 1.2, because it must cover the largest hand θ can draw. The 100k training-path run is a sanity check only.
+- **Why the 3-digit hand rejected more than the 5-digit hand in the smoke (0.406 vs 0.385):** sampling. 628 candidates give SE ≈ 2 points; on
+  paired candidates the old 3- and 5-digit filters agree (0.270 vs 0.267), and the 3-digit hand's colliders are a subset of the 5-digit hand's.
+- **"Object never reached" (smoke, reach failure):** the episode ended at MaxStep with the contact gate never firing (transitionStep −1). There is no
+  distance threshold; every MaxStep end in the smoke had no gate.
+
+## Harness fixes before eval (item 6)
+
+- **Lift budget.** The harness reads `task/liftBudgetSteps` (gates.json `liftBudgetSteps`). 013E anchor 7001–7100 at 200: 0.910, the recorded pass
+  0.910, identical end-reason counts (`harness_check/anchor_7001_7100_lb200.csv`). At 300 one lift completed 202 steps after the gate and
+  lift-budget ends fell from 25 to 21 (`..._lb300.csv`).
+- **Placement hand-independent.** Scripted placement uses the reference palm's across-centre (0), not the widened box centre. The 5-, 6a- and 7-digit
+  hands place at the same palm-frame position with a 1.0 mm push, 9 / 9 lifts each (`place_fixed/`). Unchanged for hands with at most 5 digits.

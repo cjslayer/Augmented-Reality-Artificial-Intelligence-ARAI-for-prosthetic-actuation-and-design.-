@@ -1,0 +1,53 @@
+# Run 014: one policy over digit counts 3-7 (docs/design/014_topology.md), from scratch, one config (checkpoint-4 decision).
+# Player Builds/Run014/Prosthetic.exe (Assembly-CSharp ca9975df68f543b7; Dynamic_Scene_Train, default layout untouched), slot layout via env_args
+# --topology slots; per-episode log --episodeLog results/014_run_episodes (composition, phases, effort, spawn counters). 8 headless envs.
+# PPO hyperparameters = run 012 / 013. max_steps 24M with ONE linear learning-rate schedule (no phases, no resume). Checkpoints every 1M, all kept.
+# Fixed mixture, no curriculum and no reward-threshold lessons: presentation 50/50 canonical / random stable (pose/canonicalFraction 0.5), cylinder 10 %
+# of the train-shape draws (object/anchorShare 0.1, trainUniform 1-64), lift budget 300, hold K = 50, perturbation 1.0 (the 013E fixed values),
+# digit-count shares P(3, 4, 5, 6a, 6b, 7) = 0.10 / 0.15 / 0.45 / 0.075 / 0.075 / 0.15 (MorphologyManager.digitDistribution, the player default),
+# morph/randomize 1 (per-episode θ, mask bits as before), mass log-uniform 0.2-1.5 kg and mu 1.0 (scene defaults). Run id 014_run (results/014 holds the
+# run-014 reports, so the trainer's run folder is results/014_run).
+behaviors:
+  Prosthetic:
+    trainer_type: ppo
+    hyperparameters:
+      batch_size: 2048
+      buffer_size: 20480
+      learning_rate: 0.0003
+      beta: 0.005
+      epsilon: 0.2
+      lambd: 0.95
+      num_epoch: 3
+      learning_rate_schedule: linear
+    network_settings:
+      normalize: true
+      hidden_units: 128
+      num_layers: 2
+      vis_encode_type: simple
+    reward_signals:
+      extrinsic:
+        gamma: 0.99
+        strength: 1.0
+    keep_checkpoints: 30
+    checkpoint_interval: 1000000
+    max_steps: 24000000
+    time_horizon: 128
+    summary_freq: 10000
+    threaded: true
+
+env_settings:
+  env_path: Builds/Run014/Prosthetic.exe
+  num_envs: 8
+  env_args: ["--topology", "slots", "--episodeLog", "C:/Users/chris/Augmented-Reality-Artificial-Intelligence/results/014_run_episodes"]
+
+engine_settings:
+  no_graphics: true
+
+environment_parameters:
+  morph/randomize: 1.0
+  object/mode: 1.0
+  object/anchorShare: 0.1
+  pose/canonicalFraction: 0.5
+  hold/decisions: 50.0
+  perturb/scale: 1.0
+  task/liftBudgetSteps: 300.0

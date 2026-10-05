@@ -432,6 +432,7 @@ public class ArmGraspAgent : Agent
         // build the skeleton at the reference morphology, then let the morphology manager capture it and take over rebuilds
         m_Hand.CaptureBones();
         BindTipRays();   // slot layout only (the list is empty in the legacy layout)
+        BuildSpawnEnvelope();   // slot layout only: the fixed spawn-rejection envelope (largest open hand)
         m_Hand.Rebuild(null, null);
         CacheLinks();
         if (m_Morph != null)
@@ -496,7 +497,39 @@ public class ArmGraspAgent : Agent
     /// <summary>Diagnostics hook (Editor harnesses): invoked at the top of every OnEpisodeBegin, before the episode's random draws, so an evaluation can seed each episode. No effect when nothing is subscribed.</summary>
     public static System.Action BeforeEpisodeBegin;
     static readonly string[] k_Compositions = { "3", "4", "5", "6a", "6b", "7" };
-    int m_SpawnTested, m_SpawnOverlapRejects; bool m_SpawnFallback;   // reach-accepted spawn candidates, of which rejected by the open-hand overlap filter; no candidate accepted
+    /// <summary>Run 014 spawn-rejection envelope (slot layout): copies of every link collider of the largest open hand (all 7 digits at the top of the
+    /// length-scale range, widened palm, forearm) with their poses relative to the palm. They live as hidden triggers far below the scene; the overlap
+    /// filter poses them on the current palm, so the accepted spawn region is the same for every composition.</summary>
+    readonly List<(Collider col, Vector3 relPos, Quaternion relRot)> m_Envelope = new List<(Collider, Vector3, Quaternion)>();
+    GameObject m_EnvelopeRoot;
+    void BuildSpawnEnvelope()
+    {
+        m_Envelope.Clear(); if (!HandLayout.Slots || m_Hand == null) return;
+        float big = m_Morph != null ? m_Morph.lengthScaleRange.y : 1.2f; var ls = new float[HandLayout.MaxDigits]; var ex = new bool[HandLayout.MaxDigits];
+        for (int d = 0; d < HandLayout.MaxDigits; d++) { ls[d] = big; ex[d] = true; }
+        m_Hand.Rebuild(ls, null, ex);
+        var palm = m_Hand.PalmLink; var qi = Quaternion.Inverse(palm.rotation);
+        if (m_EnvelopeRoot != null) Destroy(m_EnvelopeRoot);
+        m_EnvelopeRoot = new GameObject("SpawnEnvelope (run 014)"); m_EnvelopeRoot.transform.position = new Vector3(0f, -1000f, 0f);
+        var links = new List<ArticulationBody> { m_Hand.Forearm, m_Hand.Palm }; foreach (var b in m_Hand.Groups) if (b != null) links.Add(b); foreach (var (eb, _) in m_Hand.ExtraLinks) if (eb != null) links.Add(eb);
+        foreach (var b in links)
+        {
+            var src = b.GetComponent<Collider>(); if (src == null) continue;
+            var go = new GameObject("env_" + b.name); go.transform.SetParent(m_EnvelopeRoot.transform, false); go.transform.localRotation = Quaternion.identity;
+            Collider c = null;
+            if (src is CapsuleCollider sc) { var k = go.AddComponent<CapsuleCollider>(); k.center = sc.center; k.radius = sc.radius; k.height = sc.height; k.direction = sc.direction; c = k; }
+            else if (src is BoxCollider sb) { var k = go.AddComponent<BoxCollider>(); k.center = sb.center; k.size = sb.size; c = k; }
+            if (c == null) { Destroy(go); continue; }
+            c.isTrigger = true;
+            m_Envelope.Add((c, qi * (b.transform.position - palm.position), qi * b.transform.rotation));
+        }
+        Debug.Log("[ArmGraspAgent] spawn envelope: " + m_Envelope.Count + " link colliders of the 7-digit hand at length scale " + big + " (palm width " + (m_Hand.PalmWidth * 1000f).ToString("F0") + " mm)");
+    }
+    int m_SpawnTested, m_SpawnOverlapRejects, m_SpawnRejectsHandFilter; bool m_SpawnFallback;
+    /// <summary>Diagnostics (Editor harness, mode spawnstats): also evaluate the pre-fix filter (this episode's own hand) on every reach-accepted candidate.</summary>
+    public static bool DiagCompareSpawnFilters;
+    public (int tested, int envelopeRejects, int handRejects, bool fallback) LastSpawnStats => (m_SpawnTested, m_SpawnOverlapRejects, m_SpawnRejectsHandFilter, m_SpawnFallback);
+    public string CompositionNow => CompositionName();   // reach-accepted spawn candidates, of which rejected by the open-hand overlap filter; no candidate accepted
     /// <summary>Run 014: composition name of this episode's hand (3, 4, 5, 6a = + extra finger, 6b = + second thumb, 7).</summary>
     string CompositionName() { if (m_Morph == null) return "?"; int n = m_Morph.DigitCount; return n == 6 ? (m_Morph.exists[6] ? "6b" : "6a") : n.ToString(); }
     static string s_EpisodeLogPath; static bool s_EpisodeLogResolved;
@@ -617,7 +650,7 @@ public class ArmGraspAgent : Agent
         // per episode: canonical = the scene's upright pose, randomStable = a settled rest pose of the shape drawn from the episode's stream), never
         // from the object's current rotation, so nothing of the previous episode's end pose carries into this one; the yaw is drawn below.
         Quaternion baseRot = SpawnBaseRotation;
-        Quaternion chosenRot = baseRot; LastSpawnYawDeg = -1f; m_SpawnTested = 0; m_SpawnOverlapRejects = 0; m_SpawnFallback = true;   // run 014 spawn statistics (counters only; no draw changes)
+        Quaternion chosenRot = baseRot; LastSpawnYawDeg = -1f; m_SpawnTested = 0; m_SpawnOverlapRejects = 0; m_SpawnRejectsHandFilter = 0; m_SpawnFallback = true;   // run 014 spawn statistics (counters only; no draw changes)
         for (int attempt = 0; attempt < Mathf.Max(1, spawnAttempts); attempt++)
         {
             Vector2 disk = Random.insideUnitCircle * radius;
@@ -627,6 +660,7 @@ public class ArmGraspAgent : Agent
             float yaw = randomizeYaw ? Random.Range(0f, 360f) : 0f;
             Quaternion rot = randomizeYaw ? Quaternion.Euler(0f, yaw, 0f) * baseRot : baseRot;
             m_SpawnTested++;
+            if (DiagCompareSpawnFilters && HandLayout.Slots && OverlapsCurrentHand(candidate, rot)) m_SpawnRejectsHandFilter++;   // diagnostic only: the pre-fix filter on the same candidate (no effect on the choice)
             if (OverlapsHand(candidate, rot)) { m_SpawnOverlapRejects++; continue; }
             chosen = candidate; chosenRot = rot; LastSpawnYawDeg = yaw; m_SpawnFallback = false;
             break;
@@ -640,8 +674,22 @@ public class ArmGraspAgent : Agent
     /// <summary>Yaw (deg) drawn for this episode's spawn; -1 if no candidate passed the reach / overlap checks (the fallback pose has no yaw).</summary>
     public float LastSpawnYawDeg { get; private set; } = -1f;
 
+    /// <summary>The pre-fix filter: this episode's forearm, palm and finger-group colliders (the legacy layout's filter).</summary>
+    bool OverlapsCurrentHand(Vector3 position, Quaternion rotation)
+    {
+        foreach (var col in armColliders) if (Physics.ComputePenetration(col, col.transform.position, col.transform.rotation, cylinderCollider, position, rotation, out _, out _)) return true;
+        foreach (var col in segmentColliders) if (Physics.ComputePenetration(col, col.transform.position, col.transform.rotation, cylinderCollider, position, rotation, out _, out _)) return true;
+        return false;
+    }
     private bool OverlapsHand(Vector3 position, Quaternion rotation)
     {
+        if (HandLayout.Slots && m_Envelope.Count > 0 && m_Palm != null)
+        {   // run 014 (checkpoint 4 fix): one composition-independent volume, the largest open hand, posed on the current palm
+            Quaternion pr = m_Palm.rotation; Vector3 pp = m_Palm.position;
+            foreach (var (col, rp, rr) in m_Envelope)
+                if (Physics.ComputePenetration(col, pp + pr * rp, pr * rr, cylinderCollider, position, rotation, out _, out _)) return true;
+            return false;
+        }
         foreach (var col in armColliders)
             if (Physics.ComputePenetration(col, col.transform.position, col.transform.rotation, cylinderCollider, position, rotation, out _, out _)) return true;
         foreach (var col in segmentColliders)

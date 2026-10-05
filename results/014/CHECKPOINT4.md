@@ -132,3 +132,10 @@ Player check without a trainer (`player_check2/`):
   - For every seed the spawn position is identical across the six compositions, in both poses.
   - Note for the 014 vs 013E pairing: the 5-digit hand's own-hand filter (013E's legacy filter) would have chosen a different spawn attempt in
     4 / 300 canonical, 44 / 300 randomStable and 5 / 300 anchor rows. In those rows a legacy-layout 013E pass places the object elsewhere.
+- **Final player** (rebuilt after the spawnCheck diagnostic commit 7f8e88d, so the training binary matches the committed source): Assembly-CSharp
+  **`d558617ea7a174ea`**. The diagnostic is flag-gated and does not change the training path.
+  - 100k sanity again (`Config/run_014_probe4.yaml`, run id 014_probe4): no crash, layout check passed in 8 / 8 players, 231 episodes, rejection
+    **0.372** (137 / 368), no fallbacks, 100k in 217.0 s.
+  - The player now contains the OpenXR package (before the manifest fix the 2.0.0 pin never resolved, so it was absent). The player log shows
+    subsystem discovery only, with no XR loader initialisation; throughput is unchanged. Unity's edits to ProjectSettings / OpenXR settings stay
+    uncommitted as Editor noise.

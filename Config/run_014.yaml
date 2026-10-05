@@ -1,5 +1,5 @@
 # Run 014: one policy over digit counts 3-7 (docs/design/014_topology.md), from scratch, one config (checkpoint-4 decision).
-# Player Builds/Run014/Prosthetic.exe (Assembly-CSharp ca9975df68f543b7; Dynamic_Scene_Train, default layout untouched), slot layout via env_args
+# Player Builds/Run014/Prosthetic.exe (Assembly-CSharp 10af3fe9673909dd; Dynamic_Scene_Train, default layout untouched), slot layout via env_args
 # --topology slots; per-episode log --episodeLog results/014_run_episodes (composition, phases, effort, spawn counters). 8 headless envs.
 # PPO hyperparameters = run 012 / 013. max_steps 24M with ONE linear learning-rate schedule (no phases, no resume). Checkpoints every 1M, all kept.
 # Fixed mixture, no curriculum and no reward-threshold lessons: presentation 50/50 canonical / random stable (pose/canonicalFraction 0.5), cylinder 10 %

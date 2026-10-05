@@ -123,6 +123,7 @@ public class ArticulatedGates : MonoBehaviour
         public int liftBudgetSteps = 0;
         public string thetaExist = "";
         public bool penTrace = false;
+        public bool spawnCheck = false;   // eval mode (run 014 eval-position check): each seeded eval reset records its spawn (both filters) and ends at once; the policy never acts
         public int spawnResets = 0;   // mode spawnstats (run 014): training-style resets to run (each records both spawn filters on the same candidates)
         public string[] maskGroups = null;   // run 014 diagnostic: finger groups held at the neutral pose as masked joints (morph/mask_<name> = 0), e.g. thumb2Base, thumb2End
         // run 014 diagnostic overrides of the extra finger's placement (HandSpec.extraFinger; < -900 = keep the spec value): MCP along / across (m), rest abduction and flexion-plane tilt (deg), palm widening (m)
@@ -344,6 +345,7 @@ public class ArticulatedGates : MonoBehaviour
             if (!LayoutGuard.ModelMatches(asset, out string why)) { Debug.LogError("[Gates] eval: REFUSED " + cfg.modelPath + ": " + why); sb.Length = 0; sb.AppendLine("REFUSED " + why.Replace(',', ';')); Flush(); UnityEditor.EditorApplication.isPlaying = false; return; }   // run 014 shape guard
             bp.DeterministicInference = cfg.headMode == "deterministic";   // read when the policy is created below (harness switch only; the scene keeps its serialized value)
             agent.SetModel(bp.BehaviorName, asset, Unity.MLAgents.Policies.InferenceDevice.Default); bp.BehaviorType = BehaviorType.InferenceOnly;
+            if (cfg.spawnCheck) { ArmGraspAgent.DiagCompareSpawnFilters = true; sb.Length = 0; sb.AppendLine("seed,ordinal,composition,objIndex,pose,tested,envelopeRejects,handRejects,handFirst,chosen,fallback,x,y,z"); }
             evalReady = true; Debug.Log("[Gates] eval: model " + cfg.modelPath + " seeds " + cfg.seedFrom + "-" + cfg.seedTo + " mu=" + agent.objectFriction + " perturb=" + cfg.evalPerturbScale + " K=" + cfg.evalHoldDecisions + " head=" + cfg.headMode + " passIndex=" + cfg.passIndex + " deterministicInference=" + bp.DeterministicInference + " legacyNoReseed=" + cfg.legacyNoReseed);
         }
         catch (System.Exception e) { Debug.LogError("[Gates] eval: " + e.Message); }
@@ -379,6 +381,17 @@ public class ArticulatedGates : MonoBehaviour
             if (!evalReady) return;
             // hook: Random.InitState seeds every harness/agent draw; InferenceEngine.Random.SetSeed seeds the policy's sampled head (RandomNormalLike without a seed attribute draws from the package's static stream; 0 would mean 'default seed')
             if (warmup > 0) { warmup--; PreApplyTheta(); if (warmup == 0) { lastCompleted = agent.CompletedEpisodes; ArmGraspAgent.BeforeEpisodeBegin = () => { SnapshotTheta(); SnapshotPhase(); SnapshotObject(); ApplyFixedTheta(); evalIndex++; if (evalIndex >= 0 && evalIndex < trials.Count) { if (cfg.legacyNoReseed) Random.InitState(trials[evalIndex].seed); else { int d = DerivedSeed(trials[evalIndex].seed, cfg.passIndex); Random.InitState(d); Unity.InferenceEngine.Random.SetSeed(d != 0 ? d : 1); } if (!string.IsNullOrEmpty(cfg.objectStratify)) SetEnvParam("object/index", StratifiedObjectIndex(evalIndex)); } }; agent.EndEpisode(); } return; }   // the initial (unseeded) episode is discarded; the hook, installed just before the reset, seeds every following one
+            if (cfg.spawnCheck)
+            {   // the current episode was reset by the eval hook (seeded exactly as an eval episode): record its spawn, then reset to the next seed
+                for (int i = 0; i < 25 && evalIndex < trials.Count; i++)
+                {
+                    var st = agent.LastSpawnStats; var pk = agent.LastSpawnPick;
+                    sb.AppendLine(trials[evalIndex].seed + "," + evalIndex + "," + agent.CompositionNow + "," + (string.IsNullOrEmpty(cfg.objectStratify) ? -1 : StratifiedObjectIndex(evalIndex)) + "," + cfg.objectPose + "," + st.tested + "," + st.envelopeRejects + "," + st.handRejects + "," + pk.handFirst + "," + pk.chosen + "," + (st.fallback ? 1 : 0) + "," + pk.pos.x.ToString("F5") + "," + pk.pos.y.ToString("F5") + "," + pk.pos.z.ToString("F5"));
+                    agent.EndEpisode();
+                }
+                if (evalIndex >= trials.Count) { ArmGraspAgent.BeforeEpisodeBegin = null; ArmGraspAgent.DiagCompareSpawnFilters = false; Finish(); }
+                return;
+            }
             int done = agent.CompletedEpisodes;
             if (done != lastCompleted) { lastCompleted = done; EvalRow(); if (evalIndex >= trials.Count) { ArmGraspAgent.BeforeEpisodeBegin = null; Finish(); } }
             return;

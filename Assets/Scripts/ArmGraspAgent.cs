@@ -529,7 +529,10 @@ public class ArmGraspAgent : Agent
     /// <summary>Diagnostics (Editor harness, mode spawnstats): also evaluate the pre-fix filter (this episode's own hand) on every reach-accepted candidate.</summary>
     public static bool DiagCompareSpawnFilters;
     public (int tested, int envelopeRejects, int handRejects, bool fallback) LastSpawnStats => (m_SpawnTested, m_SpawnOverlapRejects, m_SpawnRejectsHandFilter, m_SpawnFallback);
-    public string CompositionNow => CompositionName();   // reach-accepted spawn candidates, of which rejected by the open-hand overlap filter; no candidate accepted
+    public string CompositionNow => CompositionName();
+    int m_SpawnHandFirst = -1, m_SpawnChosen = -1;
+    /// <summary>Diagnostics (DiagCompareSpawnFilters): attempt index the own-hand filter would have accepted first (-1 = none up to the chosen one), the attempt the envelope accepted (-1 = fallback), the spawn position.</summary>
+    public (int handFirst, int chosen, Vector3 pos) LastSpawnPick => (m_SpawnHandFirst, m_SpawnChosen, cylinderTransform != null ? cylinderTransform.position : Vector3.zero);   // reach-accepted spawn candidates, of which rejected by the open-hand overlap filter; no candidate accepted
     /// <summary>Run 014: composition name of this episode's hand (3, 4, 5, 6a = + extra finger, 6b = + second thumb, 7).</summary>
     string CompositionName() { if (m_Morph == null) return "?"; int n = m_Morph.DigitCount; return n == 6 ? (m_Morph.exists[6] ? "6b" : "6a") : n.ToString(); }
     static string s_EpisodeLogPath; static bool s_EpisodeLogResolved;
@@ -650,7 +653,7 @@ public class ArmGraspAgent : Agent
         // per episode: canonical = the scene's upright pose, randomStable = a settled rest pose of the shape drawn from the episode's stream), never
         // from the object's current rotation, so nothing of the previous episode's end pose carries into this one; the yaw is drawn below.
         Quaternion baseRot = SpawnBaseRotation;
-        Quaternion chosenRot = baseRot; LastSpawnYawDeg = -1f; m_SpawnTested = 0; m_SpawnOverlapRejects = 0; m_SpawnRejectsHandFilter = 0; m_SpawnFallback = true;   // run 014 spawn statistics (counters only; no draw changes)
+        Quaternion chosenRot = baseRot; LastSpawnYawDeg = -1f; m_SpawnTested = 0; m_SpawnOverlapRejects = 0; m_SpawnRejectsHandFilter = 0; m_SpawnFallback = true; m_SpawnHandFirst = -1; m_SpawnChosen = -1;   // run 014 spawn statistics (counters only; no draw changes)
         for (int attempt = 0; attempt < Mathf.Max(1, spawnAttempts); attempt++)
         {
             Vector2 disk = Random.insideUnitCircle * radius;
@@ -660,9 +663,9 @@ public class ArmGraspAgent : Agent
             float yaw = randomizeYaw ? Random.Range(0f, 360f) : 0f;
             Quaternion rot = randomizeYaw ? Quaternion.Euler(0f, yaw, 0f) * baseRot : baseRot;
             m_SpawnTested++;
-            if (DiagCompareSpawnFilters && HandLayout.Slots && OverlapsCurrentHand(candidate, rot)) m_SpawnRejectsHandFilter++;   // diagnostic only: the pre-fix filter on the same candidate (no effect on the choice)
+            if (DiagCompareSpawnFilters && HandLayout.Slots) { if (OverlapsCurrentHand(candidate, rot)) m_SpawnRejectsHandFilter++; else if (m_SpawnHandFirst < 0) m_SpawnHandFirst = attempt; }   // diagnostic only: the pre-fix filter on the same candidate (no effect on the choice); first attempt it would have accepted
             if (OverlapsHand(candidate, rot)) { m_SpawnOverlapRejects++; continue; }
-            chosen = candidate; chosenRot = rot; LastSpawnYawDeg = yaw; m_SpawnFallback = false;
+            chosen = candidate; chosenRot = rot; LastSpawnYawDeg = yaw; m_SpawnFallback = false; m_SpawnChosen = attempt;
             break;
         }
         cylinderTransform.SetPositionAndRotation(chosen, chosenRot);

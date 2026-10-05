@@ -114,3 +114,21 @@ Player check without a trainer (`player_check2/`):
   The first rebuild in the slot layout is the spawn envelope (7 digits, scale 1.2), which had overwritten the file; it was restored with git checkout.
 - Verification: `git diff --stat -- results/011_artic2/handspec_reference.txt` is empty; blob b5b5df4b1ab5 equals HEAD's
   (sha256 4e65b216e419b70a).
+
+## Before launch (2026-10-04)
+
+- **CJ decisions:** envelope stays at the 7-digit hand, scale 1.2, and the 9.3-point rise on the 5-digit hand is accepted. The 2-point limit is withdrawn.
+  `com.unity.xr.openxr` is pinned to 1.16.1, in its own commit; the reference-dump guard is above.
+- **Manifest (727b6d8 + lock d9d22ef).** The next Editor launch resolved packages in **7.95 s** (was about 400 s per launch). No package dialog: the Editor's only
+  visible window was the main one. The lock gained openxr's XR dependencies (core-utils 2.6.0, legacyinputhelpers 2.1.13, management 4.5.4).
+- **Player rebuild** after the envelope, harness and guard commits: Assembly-CSharp `10af3fe9673909dd`, bank 84 files.
+- **100k sanity** (`Config/run_014_probe3.yaml` = run_014.yaml at 100k, run id 014_probe3): no crash; layout check passed and sensors OK in all 8
+  players; 232 episodes; spawn rejection **0.378** (141 / 373 candidates, in the 0.35–0.40 band); no fallbacks; 100k in 212.8 s (470 steps/s).
+- **Eval-position check** (`spawncheck/`, `tools/eval/spawncheck_014.py`). Harness mode eval with `spawnCheck`: each reset is seeded exactly as an eval
+  episode and ended before the policy acts; spawn draws only, no success measured.
+  - Coverage: held-out shapes 65–80 stratified, seeds 12101–12400, canonical and randomStable, compositions 3 / 4 / 5 / 6a / 6b / 7, plus the
+    anchor cylinder 7001–7300 (canonical, 5-digit).
+  - **3900 / 3900 eval spawn positions pass the envelope filter; 0 fallbacks** (a fallback would be a position the filter never passed).
+  - For every seed the spawn position is identical across the six compositions, in both poses.
+  - Note for the 014 vs 013E pairing: the 5-digit hand's own-hand filter (013E's legacy filter) would have chosen a different spawn attempt in
+    4 / 300 canonical, 44 / 300 randomStable and 5 / 300 anchor rows. In those rows a legacy-layout 013E pass places the object elsewhere.

@@ -106,3 +106,11 @@ Player check without a trainer (`player_check2/`):
   lift-budget ends fell from 25 to 21 (`..._lb300.csv`).
 - **Placement hand-independent.** Scripted placement uses the reference palm's across-centre (0), not the widened box centre. The 5-, 6a- and 7-digit
   hands place at the same palm-frame position with a 1.0 mm push, 9 / 9 lifts each (`place_fixed/`). Unchanged for hands with at most 5 digits.
+
+## Reference-dump guard (2026-10-04)
+
+- `ArticulatedHand.Rebuild` writes `results/011_artic2/handspec_reference.txt` only on an explicit request: the static flag
+  `ArticulatedHand.DumpReferenceSpec` or the command-line flag `--dumpHandspecReference` (Editor only, as before). An ordinary build never writes it.
+  The first rebuild in the slot layout is the spawn envelope (7 digits, scale 1.2), which had overwritten the file; it was restored with git checkout.
+- Verification: `git diff --stat -- results/011_artic2/handspec_reference.txt` is empty; blob b5b5df4b1ab5 equals HEAD's
+  (sha256 4e65b216e419b70a).

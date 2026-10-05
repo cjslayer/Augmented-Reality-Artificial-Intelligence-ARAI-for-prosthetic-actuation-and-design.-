@@ -267,6 +267,8 @@ public class ArticulatedHand : MonoBehaviour
     public Transform ShoulderLink => Bicep != null ? Bicep.transform : null;
     public bool Built => Root != null;
     public int RebuildCount { get; private set; }
+    /// <summary>Editor only: write results/011_artic2/handspec_reference.txt on the first rebuild. Off by default (protected file).</summary>
+    public static bool DumpReferenceSpec;
 
     // bone capture (unscaled reference, taken once at the open pose)
     class BoneInfo { public Transform bone; public Vector3 worldPos; public Quaternion worldRot; public CapsuleCollider capsule; public BoxCollider box; public float capRadiusW, capHeightW; public Vector3 capCenterW, boxSizeW, boxCenterW; }
@@ -488,7 +490,9 @@ public class ArticulatedHand : MonoBehaviour
         {
             Debug.Log("[ArticulatedHand] " + spec.Dump() + Anthropometrics());
 #if UNITY_EDITOR
-            try { System.IO.Directory.CreateDirectory("results/011_artic2"); System.IO.File.WriteAllText("results/011_artic2/handspec_reference.txt", spec.Dump() + Anthropometrics() + "\n"); } catch (System.Exception e) { Debug.LogWarning(e.Message); }
+            // the protected reference dump is written only on an explicit request (static flag or --dumpHandspecReference), never on an ordinary build (run 014: the first rebuild can be the spawn envelope)
+            if (DumpReferenceSpec || System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "--dumpHandspecReference") >= 0)
+                try { System.IO.Directory.CreateDirectory("results/011_artic2"); System.IO.File.WriteAllText("results/011_artic2/handspec_reference.txt", spec.Dump() + Anthropometrics() + "\n"); } catch (System.Exception e) { Debug.LogWarning(e.Message); }
 #endif
         }
     }

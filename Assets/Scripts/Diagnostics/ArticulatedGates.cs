@@ -123,7 +123,10 @@ public class ArticulatedGates : MonoBehaviour
         public int liftBudgetSteps = 0;
         public string thetaExist = "";
         public bool penTrace = false;
-        public bool spawnCheck = false;   // eval mode (run 014 eval-position check): each seeded eval reset records its spawn (both filters) and ends at once; the policy never acts
+        public bool spawnCheck = false;
+        public bool spawnStream = false;      // eval (run 014 eval): reseed UnityEngine.Random right before the object / spawn draw with DerivedSeed(seed, passIndex) ^ 0x5A17, so placements pair across layouts
+        public float containmentMm = 0f;      // spawnCheck: > 0 also tests the current hand inside the spawn envelope on a grid of this step (mm)
+        public bool forceSpawnEnvelope = false;   // read by HandLayout.Resolve (legacy layout uses the envelope filter)   // eval mode (run 014 eval-position check): each seeded eval reset records its spawn (both filters) and ends at once; the policy never acts
         public int spawnResets = 0;   // mode spawnstats (run 014): training-style resets to run (each records both spawn filters on the same candidates)
         public string[] maskGroups = null;   // run 014 diagnostic: finger groups held at the neutral pose as masked joints (morph/mask_<name> = 0), e.g. thumb2Base, thumb2End
         // run 014 diagnostic overrides of the extra finger's placement (HandSpec.extraFinger; < -900 = keep the spec value): MCP along / across (m), rest abduction and flexion-plane tilt (deg), palm widening (m)
@@ -380,20 +383,21 @@ public class ArticulatedGates : MonoBehaviour
         {
             if (!evalReady) return;
             // hook: Random.InitState seeds every harness/agent draw; InferenceEngine.Random.SetSeed seeds the policy's sampled head (RandomNormalLike without a seed attribute draws from the package's static stream; 0 would mean 'default seed')
-            if (warmup > 0) { warmup--; PreApplyTheta(); if (warmup == 0) { lastCompleted = agent.CompletedEpisodes; ArmGraspAgent.BeforeEpisodeBegin = () => { SnapshotTheta(); SnapshotPhase(); SnapshotObject(); ApplyFixedTheta(); evalIndex++; if (evalIndex >= 0 && evalIndex < trials.Count) { if (cfg.legacyNoReseed) Random.InitState(trials[evalIndex].seed); else { int d = DerivedSeed(trials[evalIndex].seed, cfg.passIndex); Random.InitState(d); Unity.InferenceEngine.Random.SetSeed(d != 0 ? d : 1); } if (!string.IsNullOrEmpty(cfg.objectStratify)) SetEnvParam("object/index", StratifiedObjectIndex(evalIndex)); } }; agent.EndEpisode(); } return; }   // the initial (unseeded) episode is discarded; the hook, installed just before the reset, seeds every following one
+            if (warmup > 0) { warmup--; PreApplyTheta(); if (warmup == 0) { lastCompleted = agent.CompletedEpisodes; ArmGraspAgent.BeforeEpisodeBegin = () => { SnapshotTheta(); SnapshotPhase(); SnapshotObject(); ApplyFixedTheta(); evalIndex++; if (evalIndex >= 0 && evalIndex < trials.Count) { if (cfg.legacyNoReseed) Random.InitState(trials[evalIndex].seed); else { int d = DerivedSeed(trials[evalIndex].seed, cfg.passIndex); Random.InitState(d); Unity.InferenceEngine.Random.SetSeed(d != 0 ? d : 1); } if (!string.IsNullOrEmpty(cfg.objectStratify)) SetEnvParam("object/index", StratifiedObjectIndex(evalIndex)); } }; if (cfg.spawnStream) ArmGraspAgent.BeforeObjectSpawn = () => { if (evalIndex >= 0 && evalIndex < trials.Count) Random.InitState(DerivedSeed(trials[evalIndex].seed, cfg.passIndex) ^ 0x5A17); }; agent.EndEpisode(); } return; }   // the initial (unseeded) episode is discarded; the hook, installed just before the reset, seeds every following one
             if (cfg.spawnCheck)
             {   // the current episode was reset by the eval hook (seeded exactly as an eval episode): record its spawn, then reset to the next seed
                 for (int i = 0; i < 25 && evalIndex < trials.Count; i++)
                 {
                     var st = agent.LastSpawnStats; var pk = agent.LastSpawnPick;
-                    sb.AppendLine(trials[evalIndex].seed + "," + evalIndex + "," + agent.CompositionNow + "," + (string.IsNullOrEmpty(cfg.objectStratify) ? -1 : StratifiedObjectIndex(evalIndex)) + "," + cfg.objectPose + "," + st.tested + "," + st.envelopeRejects + "," + st.handRejects + "," + pk.handFirst + "," + pk.chosen + "," + (st.fallback ? 1 : 0) + "," + pk.pos.x.ToString("F5") + "," + pk.pos.y.ToString("F5") + "," + pk.pos.z.ToString("F5"));
+                    string cont = ""; if (cfg.containmentMm > 0f) { var ci = agent.HandInsideEnvelope(cfg.containmentMm); cont = "," + ci.points + "," + ci.outside + "," + ci.maxOutMm.ToString("F3") + "," + ci.worst; }
+                    sb.AppendLine(trials[evalIndex].seed + "," + evalIndex + "," + agent.CompositionNow + "," + (string.IsNullOrEmpty(cfg.objectStratify) ? -1 : StratifiedObjectIndex(evalIndex)) + "," + cfg.objectPose + "," + st.tested + "," + st.envelopeRejects + "," + st.handRejects + "," + pk.handFirst + "," + pk.chosen + "," + (st.fallback ? 1 : 0) + "," + pk.pos.x.ToString("F5") + "," + pk.pos.y.ToString("F5") + "," + pk.pos.z.ToString("F5") + cont);
                     agent.EndEpisode();
                 }
-                if (evalIndex >= trials.Count) { ArmGraspAgent.BeforeEpisodeBegin = null; ArmGraspAgent.DiagCompareSpawnFilters = false; Finish(); }
+                if (evalIndex >= trials.Count) { ArmGraspAgent.BeforeEpisodeBegin = null; ArmGraspAgent.BeforeObjectSpawn = null; ArmGraspAgent.DiagCompareSpawnFilters = false; Finish(); }
                 return;
             }
             int done = agent.CompletedEpisodes;
-            if (done != lastCompleted) { lastCompleted = done; EvalRow(); if (evalIndex >= trials.Count) { ArmGraspAgent.BeforeEpisodeBegin = null; Finish(); } }
+            if (done != lastCompleted) { lastCompleted = done; EvalRow(); if (evalIndex >= trials.Count) { ArmGraspAgent.BeforeEpisodeBegin = null; ArmGraspAgent.BeforeObjectSpawn = null; Finish(); } }
             return;
         }
         if (warmup > 0) { warmup--; PreApplyTheta(); if (warmup == 0) { hand = agent.Hand; palm = hand.PalmLink; float halfH = cyl.position.y - cylCol.bounds.min.y; restY = agent.PlatformTop + halfH + agent.restClearance; objRadius = 0.5f * cylCol.bounds.size.x; /* upright object at warmup */ lastCompleted = agent.CompletedEpisodes; lastSuccess = agent.SuccessCount; agent.EndEpisode(); } return; }
@@ -922,7 +926,7 @@ public class ArticulatedGates : MonoBehaviour
         Debug.Log("[Gates] done: " + cfg.csv); phase = "idle"; enabled = false; Time.timeScale = 1f;
         UnityEditor.EditorApplication.isPlaying = false;
     }
-    void OnDestroy() { Time.timeScale = 1f; if (cfg != null && cfg.thetaFixed) ArmGraspAgent.BeforeEpisodeBegin = null; if (jobWorkers0 >= 0) { Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobWorkerCount = jobWorkers0; jobWorkers0 = -1; } }   // the worker count persists across Play sessions in the Editor: always restore
+    void OnDestroy() { ArmGraspAgent.BeforeObjectSpawn = null; Time.timeScale = 1f; if (cfg != null && cfg.thetaFixed) ArmGraspAgent.BeforeEpisodeBegin = null; if (jobWorkers0 >= 0) { Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobWorkerCount = jobWorkers0; jobWorkers0 = -1; } }   // the worker count persists across Play sessions in the Editor: always restore
 }
 [DefaultExecutionOrder(100)]
 public class ArticulatedGatesLate : MonoBehaviour { void FixedUpdate() { if (ArticulatedGates.Instance != null) ArticulatedGates.Instance.LateFixedUpdate(); } }   // after the Academy stepper, before the physics step: scales the rebuilt rig's link masses for a fixed theta

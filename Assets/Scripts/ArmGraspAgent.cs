@@ -496,6 +496,34 @@ public class ArmGraspAgent : Agent
 
     /// <summary>Diagnostics hook (Editor harnesses): invoked at the top of every OnEpisodeBegin, before the episode's random draws, so an evaluation can seed each episode. No effect when nothing is subscribed.</summary>
     public static System.Action BeforeEpisodeBegin;
+    /// <summary>Editor harness hook (run 014 eval): invoked right before the object draw (ObjectBank pose / index) and the spawn draw, after the
+    /// morphology draw. The harness reseeds there so placements do not depend on how many draws the layout's theta sampling consumed.</summary>
+    public static System.Action BeforeObjectSpawn;
+    /// <summary>Diagnostics (run 014 eval): is the current hand (forearm, palm and present finger-group colliders: the own-hand filter's set) inside the
+    /// spawn envelope posed on the palm? Grid of stepMm inside each collider's bounds; a point counts as inside a collider within 0.05 mm.</summary>
+    public (int points, int outside, float maxOutMm, string worst) HandInsideEnvelope(float stepMm)
+    {
+        int pts = 0, outside = 0; float maxOut = 0f; string worst = ""; float h = stepMm * 0.001f; const float tol = 5e-5f;
+        if (m_Envelope.Count == 0 || m_Palm == null) return (0, -1, -1f, "no envelope");
+        Quaternion pr = m_Palm.rotation; Vector3 pp = m_Palm.position;
+        var cols = new List<Collider>(armColliders); cols.AddRange(segmentColliders);
+        foreach (var col in cols)
+        {
+            if (col == null || !col.enabled || !col.gameObject.activeInHierarchy) continue;
+            var b = col.bounds; Vector3 cp = col.transform.position; Quaternion cr = col.transform.rotation;
+            for (float x = b.min.x; x <= b.max.x + 1e-6f; x += h)
+            for (float y = b.min.y; y <= b.max.y + 1e-6f; y += h)
+            for (float z = b.min.z; z <= b.max.z + 1e-6f; z += h)
+            {
+                var p = new Vector3(x, y, z);
+                if ((Physics.ClosestPoint(p, col, cp, cr) - p).sqrMagnitude > tol * tol) continue;   // not inside this hand collider
+                pts++; float best = float.MaxValue;
+                foreach (var (ec, rp, rr) in m_Envelope) { float d = (Physics.ClosestPoint(p, ec, pp + pr * rp, pr * rr) - p).magnitude; if (d < best) best = d; if (best <= tol) break; }
+                if (best > tol) { outside++; if (best > maxOut) { maxOut = best; worst = col.name; } }
+            }
+        }
+        return (pts, outside, maxOut * 1000f, worst);
+    }
     static readonly string[] k_Compositions = { "3", "4", "5", "6a", "6b", "7" };
     /// <summary>Run 014 spawn-rejection envelope (slot layout): copies of every link collider of the largest open hand (all 7 digits at the top of the
     /// length-scale range, widened palm, forearm) with their poses relative to the palm. They live as hidden triggers far below the scene; the overlap
@@ -504,7 +532,7 @@ public class ArmGraspAgent : Agent
     GameObject m_EnvelopeRoot;
     void BuildSpawnEnvelope()
     {
-        m_Envelope.Clear(); if (!HandLayout.Slots || m_Hand == null) return;
+        m_Envelope.Clear(); if (!(HandLayout.Slots || HandLayout.ForceEnvelope) || m_Hand == null) return;
         float big = m_Morph != null ? m_Morph.lengthScaleRange.y : 1.2f; var ls = new float[HandLayout.MaxDigits]; var ex = new bool[HandLayout.MaxDigits];
         for (int d = 0; d < HandLayout.MaxDigits; d++) { ls[d] = big; ex[d] = true; }
         m_Hand.Rebuild(ls, null, ex);
@@ -616,6 +644,7 @@ public class ArmGraspAgent : Agent
         m_Hand.ClearContacts();
         m_LimitEvents = m_SaturationEvents = 0; m_EpisodeSaturationEvents = m_EpisodeLimitEvents = 0; m_EffortReturn = m_SafetyReturn = 0f;
 
+        BeforeObjectSpawn?.Invoke();   // Editor harness hook (run 014 eval spawn stream); null in training
         if (ObjectBank.Instance != null) ObjectBank.Instance.ApplyForEpisode(this);   // object bank (run 013 prep): swaps the object's mesh + convex collider and the rest half-height per the object/mode environment parameter; the default anchorOnly mode touches nothing
         SpawnCylinder();
 
@@ -687,7 +716,7 @@ public class ArmGraspAgent : Agent
     }
     private bool OverlapsHand(Vector3 position, Quaternion rotation)
     {
-        if (HandLayout.Slots && m_Envelope.Count > 0 && m_Palm != null)
+        if ((HandLayout.Slots || HandLayout.ForceEnvelope) && m_Envelope.Count > 0 && m_Palm != null)
         {   // run 014 (checkpoint 4 fix): one composition-independent volume, the largest open hand, posed on the current palm
             Quaternion pr = m_Palm.rotation; Vector3 pp = m_Palm.position;
             foreach (var (col, rp, rr) in m_Envelope)

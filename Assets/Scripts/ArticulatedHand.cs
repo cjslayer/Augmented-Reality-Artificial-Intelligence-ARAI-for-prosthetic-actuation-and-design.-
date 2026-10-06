@@ -167,15 +167,17 @@ public static class HandLayout
     static Layout s_Layout; static bool s_Resolved;
     public static Layout Selected { get { if (!s_Resolved) Resolve(); return s_Layout; } }
     public static bool Slots => Selected == Layout.Slots;
-    [System.Serializable] class HarnessTopologyCfg { public string topology = ""; }
+    [System.Serializable] class HarnessTopologyCfg { public string topology = ""; public bool forceSpawnEnvelope = false; }
+    /// <summary>Editor harness only (run 014 eval): build and use the slot layout's spawn envelope in the legacy layout too (gates.json forceSpawnEnvelope).</summary>
+    public static bool ForceEnvelope { get; private set; }
     /// <summary>(Re)resolve the layout; the agent calls this in OnEnable, before ML-Agents creates the policy and the sensors.</summary>
     public static void Resolve()
     {
-        s_Layout = Layout.Legacy; s_Resolved = true;
+        s_Layout = Layout.Legacy; s_Resolved = true; ForceEnvelope = false;
         var args = System.Environment.GetCommandLineArgs();
         for (int i = 0; i < args.Length - 1; i++) if ((args[i] == "--topology" || args[i] == "-topology") && args[i + 1].ToLowerInvariant() == "slots") s_Layout = Layout.Slots;
 #if UNITY_EDITOR
-        try { if (System.IO.File.Exists("Temp/gates.json")) { var c = JsonUtility.FromJson<HarnessTopologyCfg>(System.IO.File.ReadAllText("Temp/gates.json")); if (c != null && c.topology != null && c.topology.ToLowerInvariant() == "slots") s_Layout = Layout.Slots; } }
+        try { if (System.IO.File.Exists("Temp/gates.json")) { var c = JsonUtility.FromJson<HarnessTopologyCfg>(System.IO.File.ReadAllText("Temp/gates.json")); if (c != null && c.topology != null && c.topology.ToLowerInvariant() == "slots") s_Layout = Layout.Slots; if (c != null && c.forceSpawnEnvelope) { ForceEnvelope = true; Debug.Log("[HandLayout] harness: spawn envelope forced"); } } }
         catch (System.Exception ex) { Debug.LogWarning("[HandLayout] harness config not readable: " + ex.Message); }
 #endif
     }

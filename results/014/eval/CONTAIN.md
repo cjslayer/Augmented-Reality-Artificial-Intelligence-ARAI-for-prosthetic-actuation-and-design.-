@@ -36,3 +36,28 @@ violations are small next to the candidates' clearance in these draws, but that 
 
 Files: `contain_legacy013E.csv`, `contain_slots5_014.csv`. Columns: seed, ordinal, composition, objIndex, pose, tested, envelopeRejects, handRejects,
 handFirst, chosen, fallback, x, y, z, points, outside, maxOutMm, worst collider.
+
+## CJ decision (2026-10-08) and backlog
+
+- The pairing needs **decision agreement on the rows actually used**, not geometric containment. With a frozen-pose envelope the containment
+  test fails by construction. Before any policy pass, every row of the paired cells (5-digit upright 300, lying 300, anchor 7001–7300) is checked
+  with both filters on that row's candidates: the envelope and 013E's own-hand filter in the legacy layout. Requirement: every placement the
+  envelope accepts is also accepted by 013E's own filter. Disagreeing rows, if any, are excluded from the 014 − 013E paired comparison only.
+- Seeds 12401–12700 were used here for resets only (no policy outcome observed) and stay valid for the eval.
+- **Backlog (not fixed now):** the envelope is captured once, in a static pose. Reset poses differ by about 1 mm (forearm up to 12.9 mm), so the
+  training filter's guarantee is approximate. For future runs: pose the envelope per reset (each copy following its link) or add a measured margin.
+
+## Decision agreement on the paired rows (2026-10-08; `pair_*.csv`, spawnCheck, resets only)
+
+Legacy layout, 013E, envelope forced, with both filters evaluated on every candidate of every row; spawnStream on (seeds 12401–12700
+held-out, 7001–7300 anchor).
+
+| cell | rows | envelope accepted, own filter rejected (disagreements) | fallbacks | placement identical to 014 slot 5-digit | own filter picks the same attempt (matched rows) |
+|---|---|---|---|---|---|
+| 5-digit upright | 300 | **0** | 0 | 300 / 300 | 299 / 300 |
+| 5-digit lying | 300 | **0** | 0 | 300 / 300 | 245 / 300 |
+| anchor | 300 | **0** | 0 | 300 / 300 | 295 / 300 |
+
+- **0 disagreements**, so the forced-envelope pairing uses all 300 rows per cell as the headline.
+- Spawn positions and objects are also identical across the six slot compositions (300 / 300 in both poses), so composition comparisons pair by row.
+- Matched rows (013E on its own filter places identically) are 299 / 245 / 295. These feed the sensitivity line.

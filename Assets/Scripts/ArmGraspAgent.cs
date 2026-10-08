@@ -693,7 +693,7 @@ public class ArmGraspAgent : Agent
             float yaw = randomizeYaw ? Random.Range(0f, 360f) : 0f;
             Quaternion rot = randomizeYaw ? Quaternion.Euler(0f, yaw, 0f) * baseRot : baseRot;
             m_SpawnTested++;
-            if (DiagCompareSpawnFilters && HandLayout.Slots) { if (OverlapsCurrentHand(candidate, rot)) m_SpawnRejectsHandFilter++; else if (m_SpawnHandFirst < 0) m_SpawnHandFirst = attempt; }   // diagnostic only: the pre-fix filter on the same candidate (no effect on the choice); first attempt it would have accepted
+            if (DiagCompareSpawnFilters && (HandLayout.Slots || HandLayout.ForceEnvelope)) { if (OverlapsCurrentHand(candidate, rot)) m_SpawnRejectsHandFilter++; else if (m_SpawnHandFirst < 0) m_SpawnHandFirst = attempt; }   // diagnostic only: the pre-fix filter on the same candidate (no effect on the choice); first attempt it would have accepted
             if (OverlapsHand(candidate, rot)) { m_SpawnOverlapRejects++; continue; }
             chosen = candidate; chosenRot = rot; LastSpawnYawDeg = yaw; m_SpawnFallback = false; m_SpawnChosen = attempt;
             break;

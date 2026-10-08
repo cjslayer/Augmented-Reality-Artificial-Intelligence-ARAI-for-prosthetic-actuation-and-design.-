@@ -70,10 +70,13 @@ def stage(name):
                 t = f"b2_013E_h5_{pose}_det_lb{lb}"; run(t, cfg(M013E, HELD, f"{OUT}/{t}.csv", pose=pose, lb=lb, legacy=True))
         for pose in ("canonical", "randomStable"):
             t = f"b1_014_h5_{pose}_det_lb200"; run(t, cfg(M014, HELD, f"{OUT}/{t}.csv", pose=pose, lb=200, digits=C5))
+        for pose in ("canonical", "randomStable"):   # sensitivity: 013E on its own-hand filter (no forced envelope), for the matched-rows pairing
+            t = f"b2_013E_h5_{pose}_det_lb300_ownfilter"; c = cfg(M013E, HELD, f"{OUT}/{t}.csv", pose=pose, legacy=True); c.pop("forceSpawnEnvelope"); run(t, c)
     if name == "block3":
         for lb in (300, 200):
             t = f"b3_anchor_014_h5_det_lb{lb}"; run(t, cfg(M014, ANCHOR, f"{OUT}/{t}.csv", lb=lb, digits=C5, anchor=True))
             t = f"b3_anchor_013E_h5_det_lb{lb}"; run(t, cfg(M013E, ANCHOR, f"{OUT}/{t}.csv", lb=lb, legacy=True, anchor=True))
+        t = "b3_anchor_013E_h5_det_lb300_ownfilter"; c = cfg(M013E, ANCHOR, f"{OUT}/{t}.csv", legacy=True, anchor=True); c.pop("forceSpawnEnvelope"); run(t, c)
     if name == "block4":
         for n, d, b in COMPS:
             t = f"b4_014_h{n}_randomStable_det_lb300_perturb0"; run(t, cfg(M014, HELD, f"{OUT}/{t}.csv", pose="randomStable", perturb=0.0, digits=(n, d, b)))

@@ -98,3 +98,21 @@ Where 014 differs from 013:
 - The pooled numbers match B's last-1M lying stats (lift 0.435, success 0.099).
 
 **Check tool.** `results/014/CD/cd_check.py` (new; it reads via `tools/eval/phase_monitor_014`) implements the brief's C and D criteria and appends to `C_CHECKS.md` / `D_CHECKS.md`. The C stop rule's "two consecutive falls" uses B's last-1M lying lift (0.435) as the reference before the first C window.
+
+## Step 2: phase C launch (2026-10-08 14:26:20)
+
+- **Command:** `mlagents-learn Config/run_014_phaseC.yaml --run-id=014_r2 --results-dir=results --resume`, with the Run014 player (`--topology slots` via env_args) and 8 envs.
+- **Logs:** `results/014_logs/r2_C.*`. Episodes go to `results/014_r2_episodes/C`, which was empty at launch.
+- **checkpoint.pt** at launch: sha 70b2573a…, the same as the backup `checkpoint_Bend_24000187.pt`.
+- **Trainer:** "Resuming training from step 24000187". Every parameter is fixed: canonicalFraction 0.0, perturb 1.0, hold 50, lift budget 300, anchorShare 0.1.
+- **Layout check:** passed in 8 / 8 players.
+- **Schedules** (TensorBoard), in line with step 0:
+
+  | | first summary (24.03M) | 24.19M |
+  |---|---|---|
+  | learning rate | 9.983e-5 | 9.846e-5 |
+  | epsilon | 0.1333 | 0.1328 |
+  | beta | 1.670e-3 | 1.648e-3 |
+
+- `Task/PerturbScale` is 1.0 throughout. No non-finite scalar.
+- **Throughput:** 24.01M → 24.20M in 435 s = **437 steps/s**. C+8M (32M) would therefore be about 5.1 h after launch.

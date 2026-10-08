@@ -61,3 +61,40 @@ Where 014 differs from 013:
 - 33.3 % is above the brief's 10 % floor, so the run continues.
 - For comparison, 013 C ran at lr 2.55e-4 → 9.75e-5 (steps 3.0M → 13.5M of max 20M), so 014 C starts at about 40 % of 013 C's starting LR.
 - Changing max_steps is the only hyperparameter change allowed.
+
+## Step 1: phase C / D configs and smoke (2026-10-08)
+
+**Configs.**
+- `Config/run_014_phaseC.yaml` = `run_014_phaseB.yaml` with:
+  - pose/canonicalFraction 0.0;
+  - max_steps 36000000;
+  - checkpoint_interval 500000;
+  - keep_checkpoints 200 (the run folder holds 50 checkpoints, and C + D add at most 24);
+  - the episode-log directory changed to `results/014_r2_episodes/C`, so no window crosses a phase switch, as in B.
+- Everything else matches B: perturbation 1.0, K 50, lift budget 300, anchorShare 0.10, design digit shares (player default). There is no curriculum block.
+- `Config/run_014_phaseD.yaml` = `run_014_phaseB.yaml` with max_steps 36000000, checkpoint_interval 500000, keep_checkpoints 200 and episode directory `results/014_r2_episodes/D`. All env params are identical to B.
+
+**Smoke** (run id `014_smokeC`, `--initialize-from=014_r2`, so 014_r2 was not resumed). It ran on the exact phase C yaml. Launched 14:21:45; reached 100k at 14:25:38 (224 s); then hard-stopped, and 0 trainer, player or Python processes remained.
+- The yaml writes its episode log to `results/014_r2_episodes/C`. The smoke's 8 files were moved to `results/014_smokeC_episodes/` afterwards, so the C directory was empty when C launched.
+- The smoke folder `results/014_smokeC` is left in place. Logs: `results/014_logs/smokeC.*`.
+- The trainer reports every parameter as fixed: perturb/scale 1.0, canonicalFraction 0.0, hold 50, lift budget 300, anchorShare 0.1, morph 1.0, object/mode 1.0.
+- Every one of the 10 summaries has `Task/PerturbScale` = 1.0.
+- The layout check passed in all 8 players (Slots: vector 28, tokens 21 × 20, actions 24).
+- The smoke LR was 3.0e-4, since `--initialize-from` starts at step 0. The resume will start at 1.0e-4.
+
+| composition | episodes | gate | lift | hold | success | end drop | end liftBudget | end maxStep |
+|---|---|---|---|---|---|---|---|---|
+| 3 | 149 | 0.799 | 0.275 | 0.221 | 0.020 | 0.356 | 0.409 | 0.208 |
+| 4 | 223 | 0.987 | 0.377 | 0.350 | 0.103 | 0.390 | 0.484 | 0.018 |
+| 5 | 660 | 0.995 | 0.518 | 0.480 | 0.118 | 0.483 | 0.383 | 0.005 |
+| 6a | 110 | 0.991 | 0.436 | 0.427 | 0.109 | 0.445 | 0.436 | 0.009 |
+| 6b | 111 | 0.973 | 0.495 | 0.468 | 0.099 | 0.559 | 0.306 | 0.027 |
+| 7 | 227 | 0.982 | 0.436 | 0.423 | 0.084 | 0.471 | 0.419 | 0.018 |
+| all | 1480 | 0.970 | 0.452 | 0.421 | 0.099 | 0.457 | 0.405 | 0.031 |
+
+**Smoke result:**
+- 1480 / 1480 episodes are randomStable (lying) at K 50, and 10.0 % drew the cylinder.
+- All six compositions were drawn, and gate, lift and hold fire on all six.
+- The pooled numbers match B's last-1M lying stats (lift 0.435, success 0.099).
+
+**Check tool.** `results/014/CD/cd_check.py` (new; it reads via `tools/eval/phase_monitor_014`) implements the brief's C and D criteria and appends to `C_CHECKS.md` / `D_CHECKS.md`. The C stop rule's "two consecutive falls" uses B's last-1M lying lift (0.435) as the reference before the first C window.

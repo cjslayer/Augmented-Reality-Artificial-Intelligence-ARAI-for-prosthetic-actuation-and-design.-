@@ -1,0 +1,49 @@
+# Run 014 C/D (brief 2026-10-08), PHASE C: within-lineage resume of run id 014_r2 from the 24M checkpoint (Prosthetic-24000187), lying only.
+# = run_014_phaseB.yaml with pose/canonicalFraction 0.0, max_steps 36M (linear LR restarts at 3e-4 x (1 - 24/36) = 1.0e-4), checkpoints every 500k.
+# Perturbation fixed at 1.0 (013C's 0.25 -> 0.5 -> 1.0 ladder is not replicated), K = 50, lift budget 300, cylinder 10 %, digit shares unchanged.
+# No curriculum block. Switch to D: pooled lying success >= 0.40 over >= 500k post-switch steps, or at step 32M. Stop: pooled lying lift falls in two
+# consecutive 1M windows AND is below 0.35. Upright degradation is expected and is not a stop condition.
+behaviors:
+  Prosthetic:
+    trainer_type: ppo
+    hyperparameters:
+      batch_size: 2048
+      buffer_size: 20480
+      learning_rate: 0.0003
+      beta: 0.005
+      epsilon: 0.2
+      lambd: 0.95
+      num_epoch: 3
+      learning_rate_schedule: linear
+    network_settings:
+      normalize: true
+      hidden_units: 128
+      num_layers: 2
+      vis_encode_type: simple
+    reward_signals:
+      extrinsic:
+        gamma: 0.99
+        strength: 1.0
+    keep_checkpoints: 200
+    checkpoint_interval: 500000
+    max_steps: 36000000
+    time_horizon: 128
+    summary_freq: 10000
+    threaded: true
+
+env_settings:
+  env_path: Builds/Run014/Prosthetic.exe
+  num_envs: 8
+  env_args: ["--topology", "slots", "--episodeLog", "C:/Users/chris/Augmented-Reality-Artificial-Intelligence/results/014_r2_episodes/C"]
+
+engine_settings:
+  no_graphics: true
+
+environment_parameters:
+  morph/randomize: 1.0
+  object/mode: 1.0
+  object/anchorShare: 0.1
+  pose/canonicalFraction: 0.0
+  hold/decisions: 50.0
+  perturb/scale: 1.0
+  task/liftBudgetSteps: 300.0

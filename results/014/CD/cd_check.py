@@ -25,7 +25,7 @@ def row(R):
 
 def windows(R, start, now, w, pose, key):
     out = []; b = start
-    while b + w <= now:
+    while b + w <= now + 10000:   # windows are anchored at the resume step (e.g. 24000187); allow one 10k summary of slack
         W = [r for r in R if b <= r["_step"] < b + w and r.get("pose") == pose]; x = M.rates(W)
         out.append((b + w, x[key] if x else float("nan"), len(W))); b += w
     return out

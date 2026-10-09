@@ -116,3 +116,54 @@ Where 014 differs from 013:
 
 - `Task/PerturbScale` is 1.0 throughout. No non-finite scalar.
 - **Throughput:** 24.01M → 24.20M in 435 s = **437 steps/s**. C+8M (32M) would therefore be about 5.1 h after launch.
+
+## Phase C: report marks and switch (2026-10-08)
+
+All checks are in `C_CHECKS.md`; there was one check every 500k from C+0.5M to C+7.0M. Throughput held at 437–439 steps/s. There were no NaN values and no crash.
+
+| mark | lying success, trailing 500k | lying lift, last 1M | lying success, last 1M | end drop | end liftBudget | end maxStep |
+|---|---|---|---|---|---|---|
+| C+1M (25.0M) | 0.160 | 0.468 | 0.133 | 0.432 | 0.402 | 0.028 |
+| C+2M (26.0M) | 0.268 | 0.501 | 0.247 | 0.348 | 0.371 | 0.027 |
+| C+4M (28.0M) | 0.366 | 0.551 | 0.359 | 0.289 | 0.322 | 0.024 |
+| C+6M (30.0M) | 0.387 | 0.576 | 0.387 | 0.289 | 0.297 | 0.023 |
+| **C+7M (31.0M), switch** | **0.402** (n 6869) | 0.581 | 0.398 | 0.281 | 0.294 | 0.022 |
+
+**Pooled lying success per 500k window:**
+
+| window end | 24.5M | 25.0M | 25.5M | 26.0M | 26.5M | 27.0M | 27.5M |
+|---|---|---|---|---|---|---|---|
+| success | 0.106 | 0.159 | 0.227 | 0.267 | 0.303 | 0.331 | 0.352 |
+
+| window end | 28.0M | 28.5M | 29.0M | 29.5M | 30.0M | 30.5M | 31.0M |
+|---|---|---|---|---|---|---|---|
+| success | 0.367 | 0.357 | 0.378 | 0.385 | 0.388 | 0.393 | **0.402** |
+
+**Pooled lying lift per 1M window:**
+
+| window end | 25M | 26M | 27M | 28M | 29M | 30M | 31M |
+|---|---|---|---|---|---|---|---|
+| lift | 0.467 | 0.502 | 0.538 | 0.550 | 0.558 | 0.575 | 0.581 |
+
+Lift never fell, so the stop rule was never near firing.
+
+**Lying at the switch, last 1M (30.0M–31.0M):**
+
+| composition | episodes | gate | lift | hold | success | end drop | end liftBudget | end maxStep |
+|---|---|---|---|---|---|---|---|---|
+| 3 | 1371 | 0.881 | 0.458 | 0.430 | 0.306 | 0.301 | 0.268 | 0.124 |
+| 4 | 2009 | 0.980 | 0.557 | 0.541 | 0.401 | 0.274 | 0.301 | 0.021 |
+| 5 | 6047 | 0.992 | 0.612 | 0.592 | 0.434 | 0.269 | 0.284 | 0.008 |
+| 6a | 1025 | 0.987 | 0.583 | 0.559 | 0.411 | 0.258 | 0.312 | 0.014 |
+| 6b | 979 | 0.995 | 0.607 | 0.581 | 0.341 | 0.356 | 0.292 | 0.005 |
+| 7 | 2065 | 0.990 | 0.579 | 0.552 | 0.369 | 0.283 | 0.328 | 0.010 |
+| all | 13496 | 0.979 | 0.580 | 0.558 | 0.398 | 0.281 | 0.294 | 0.022 |
+
+**Switch decision.**
+- At the C+7.0M check (log step 31,000,000, 18:53:28), the trailing 500k pooled lying success was **0.402 ≥ 0.40** (n 6869). The window is 30.5M–31.0M, all of it after C began.
+- C ran 7.0M steps (24.0M → 31.0M), against 013 C's 10.5M.
+
+**Stopping C.**
+- Hard stop at 18:53:43. The trainer, the 8 players and the 8 env-worker Python processes (venv command line, base-interpreter executable path) were killed. 0 processes remained.
+- `checkpoint.pt` = Prosthetic-30999947 (step 30999947, written 18:53:16, all tensors equal). It is backed up as **`checkpoint_Cend_30999947.pt`** (sha 412c30fa…). The C-end onnx is Prosthetic-30999947.onnx (abe7b9cc…).
+- The status file was not rewritten by the hard stop. Every parameter is at lesson 0, so that is harmless here.

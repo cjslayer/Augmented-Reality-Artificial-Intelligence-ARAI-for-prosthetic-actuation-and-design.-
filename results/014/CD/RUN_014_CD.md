@@ -167,3 +167,13 @@ Lift never fell, so the stop rule was never near firing.
 - Hard stop at 18:53:43. The trainer, the 8 players and the 8 env-worker Python processes (venv command line, base-interpreter executable path) were killed. 0 processes remained.
 - `checkpoint.pt` = Prosthetic-30999947 (step 30999947, written 18:53:16, all tensors equal). It is backed up as **`checkpoint_Cend_30999947.pt`** (sha 412c30fa…). The C-end onnx is Prosthetic-30999947.onnx (abe7b9cc…).
 - The status file was not rewritten by the hard stop. Every parameter is at lesson 0, so that is harmless here.
+
+## Step 3: phase D launch (2026-10-08 18:54:26)
+
+- **Command:** `mlagents-learn Config/run_014_phaseD.yaml --run-id=014_r2 --results-dir=results --resume`.
+- **Logs:** `results/014_logs/r2_D.*`. Episodes go to `results/014_r2_episodes/D`, which was empty at launch.
+- **Trainer:** "Resuming training from step 30999947". Every parameter is fixed: canonicalFraction 0.5, perturb 1.0, hold 50, lift budget 300, anchorShare 0.1.
+- **Layout check:** passed in 8 / 8 players.
+- **LR at the D start:** 3e-4 × (1 − 30999947 / 36e6) = 4.17e-5, decaying to 0 at 36M.
+- **D+6M would be 37.0M, beyond max_steps.** So D ends at the end criterion or at 36M (D+5.0M), whichever comes first.
+- **Report marks:** D+0.5M (31.5M), D+1M (32M), D+2M (33M), then every 1M (34M, 35M, 36M). The recovery rule applies at D+3M (34M).

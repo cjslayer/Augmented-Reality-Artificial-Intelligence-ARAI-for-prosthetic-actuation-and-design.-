@@ -15,6 +15,13 @@ Stages:
   block3      anchor 7001-7300, 5-digit: 014 and 013E (forced envelope), deterministic, lift budget 300 and 200
   block4      pulse test: 014 lying, all compositions, perturbation 0 (deterministic), the perturbation-1.0 pair is block 1
 
+C/D evaluation (brief 2026-10-08; model 014CD = results/014/CD/Prosthetic_CD.onnx; fresh held-out seeds 12701-13000, anchor 7001-7300):
+  cdpair      spawnCheck (resets only), both poses: 013E legacy + forced envelope and the six slot compositions; anchor 013E vs slot 5-digit
+  cd1         014CD, compositions x pose, deterministic and sampled, lift budget 300; 5-digit also at 200 (deterministic)
+  cd2         014 r2 (24M), compositions x pose, deterministic, lift budget 300 (pairs with cd1: what C / D did)
+  cd3         013E 5-digit legacy + forced envelope, both poses, deterministic, lift budget 300 and 200 (pairs with cd1 5-digit)
+  cd4         anchor 7001-7300, 5-digit, deterministic: 014CD (300, 200), 014 r2 (300), 013E forced envelope (300)
+
 usage: python -m tools.eval.eval_014 STAGE [STAGE ...]   (results/014/eval/, log results/014/eval/passes.json)
 """
 import json, os, sys, time
@@ -24,6 +31,7 @@ from tools.bo.gates_runner import run_pass, pass_hash
 OUT = "results/014/eval"; LOG = os.path.join(REPO, OUT, "passes.json")
 M014, M013E = "results/014/Prosthetic.onnx", "results/013/013E/Prosthetic.onnx"
 HELD = (12401, 12700); ANCHOR = (7001, 7300)
+MCD, HELD2 = "results/014/CD/Prosthetic_CD.onnx", (12701, 13000)
 COMPS = [("3", 3, False), ("4", 4, False), ("5", 5, False), ("6a", 6, False), ("6b", 6, True), ("7", 7, False)]
 log = json.load(open(LOG)) if os.path.exists(LOG) else []; done = {e["tag"] for e in log if e.get("ok")}
 
@@ -80,6 +88,33 @@ def stage(name):
     if name == "block4":
         for n, d, b in COMPS:
             t = f"b4_014_h{n}_randomStable_det_lb300_perturb0"; run(t, cfg(M014, HELD, f"{OUT}/{t}.csv", pose="randomStable", perturb=0.0, digits=(n, d, b)))
+
+    if name == "cdpair":
+        for pose in ("canonical", "randomStable"):
+            run(f"cdpair_{pose}_013E", cfg(M013E, HELD2, f"{OUT}/cdpair_{pose}_013E.csv", pose=pose, legacy=True, spawnCheck=True, timeScale=1))
+            for n, d, b in COMPS: run(f"cdpair_{pose}_slots_h{n}", cfg(MCD, HELD2, f"{OUT}/cdpair_{pose}_slots_h{n}.csv", pose=pose, digits=(n, d, b), spawnCheck=True, timeScale=1))
+        run("cdpair_anchor_013E", cfg(M013E, ANCHOR, f"{OUT}/cdpair_anchor_013E.csv", legacy=True, anchor=True, spawnCheck=True, timeScale=1))
+        run("cdpair_anchor_slots_h5", cfg(MCD, ANCHOR, f"{OUT}/cdpair_anchor_slots_h5.csv", digits=C5, anchor=True, spawnCheck=True, timeScale=1))
+    if name == "cd1":
+        for head in ("deterministic", "sampled"):
+            for pose in ("canonical", "randomStable"):
+                for n, d, b in COMPS:
+                    t = f"cd1_014CD_h{n}_{pose}_{head[:3]}_lb300"; run(t, cfg(MCD, HELD2, f"{OUT}/{t}.csv", pose=pose, head=head, digits=(n, d, b)))
+        for pose in ("canonical", "randomStable"):
+            t = f"cd1_014CD_h5_{pose}_det_lb200"; run(t, cfg(MCD, HELD2, f"{OUT}/{t}.csv", pose=pose, lb=200, digits=C5))
+    if name == "cd2":
+        for pose in ("canonical", "randomStable"):
+            for n, d, b in COMPS:
+                t = f"cd2_014r2_h{n}_{pose}_det_lb300"; run(t, cfg(M014, HELD2, f"{OUT}/{t}.csv", pose=pose, digits=(n, d, b)))
+    if name == "cd3":
+        for lb in (300, 200):
+            for pose in ("canonical", "randomStable"):
+                t = f"cd3_013E_h5_{pose}_det_lb{lb}"; run(t, cfg(M013E, HELD2, f"{OUT}/{t}.csv", pose=pose, lb=lb, legacy=True))
+    if name == "cd4":
+        for lb in (300, 200):
+            t = f"cd4_anchor_014CD_h5_det_lb{lb}"; run(t, cfg(MCD, ANCHOR, f"{OUT}/{t}.csv", lb=lb, digits=C5, anchor=True))
+        t = "cd4_anchor_014r2_h5_det_lb300"; run(t, cfg(M014, ANCHOR, f"{OUT}/{t}.csv", digits=C5, anchor=True))
+        t = "cd4_anchor_013E_h5_det_lb300"; run(t, cfg(M013E, ANCHOR, f"{OUT}/{t}.csv", legacy=True, anchor=True))
 
 
 if __name__ == "__main__":

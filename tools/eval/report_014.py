@@ -112,5 +112,61 @@ def main():
     sys.stdout.buffer.write(("\n".join(md) + "\n").encode("utf-8"))
 
 
+def main_cd():
+    """C/D evaluation (brief 2026-10-08): 014CD tables, 014CD - 014 r2, 014CD - 013E, anchor, placement check, lying curve from training logs."""
+    md = []; mism = []
+    def chk(A, B, lab):
+        nn, bad = same_rows(A, B); mism.append((lab, nn, len(bad))); return nn - len(bad), nn
+    for pose, lab in POSES:
+        md += [f"\n### 014CD, {lab} (held-out shapes 65–80, seeds 12701–13000, lift budget 300, perturbation 1.0)", "",
+               "| composition | n | success, deterministic [95 % Wilson] | gate | lift | hold entered | end success | end drop | end liftBudget | end taskBudget | end maxStep | success, sampled [95 %] |",
+               "|---|---|---|---|---|---|---|---|---|---|---|---|"]
+        R5 = rows(f"cd1_014CD_h5_{pose}_det_lb300")
+        for c in COMPS:
+            R = rows(f"cd1_014CD_h{c}_{pose}_det_lb300"); S = rows(f"cd1_014CD_h{c}_{pose}_sam_lb300")
+            if R is None: md.append(f"| {c} | missing |"); continue
+            chk(R, R5, f"cd1 {pose} h{c} det vs h5")
+            if S: chk(S, R5, f"cd1 {pose} h{c} sam vs h5")
+            s_ = cell(S) if S else None
+            md.append(f"| {c} | " + fmt_cell(cell(R)) + (f" | {s_[1]:.3f} [{s_[2]:.3f}, {s_[3]:.3f}] |" if s_ else " | - |"))
+    md += ["\n### 014CD: composition minus 5-digit, paired by row (deterministic, lift budget 300)", "", "| pose | composition | n | d success [95 %] | b / c | McNemar p |", "|---|---|---|---|---|---|"]
+    for pose, lab in POSES:
+        R5 = rows(f"cd1_014CD_h5_{pose}_det_lb300")
+        for c in COMPS:
+            if c == "5": continue
+            R = rows(f"cd1_014CD_h{c}_{pose}_det_lb300")
+            if R and R5: n, m, lo, hi, b, cc, p = paired(R, R5); md.append(f"| {lab} | {c} | {n} | {m:+.3f} [{lo:+.3f}, {hi:+.3f}] | {b} / {cc} | {p:.3g} |")
+    md += ["\n### 014CD − 014 r2 (24M), paired by row (deterministic, lift budget 300): what C / D did", "",
+           "| pose | composition | n | 014CD success [95 %] | 014 r2 success [95 %] | d (CD − r2) [95 % paired] | b / c | McNemar p | 014CD lift | 014 r2 lift | 014CD drop | 014 r2 drop |", "|---|---|---|---|---|---|---|---|---|---|---|---|"]
+    for pose, lab in POSES:
+        for c in COMPS:
+            A, B = rows(f"cd1_014CD_h{c}_{pose}_det_lb300"), rows(f"cd2_014r2_h{c}_{pose}_det_lb300")
+            if not A or not B: md.append(f"| {lab} | {c} | missing |"); continue
+            chk(A, B, f"cd2 {pose} h{c}"); n, m, lo, hi, b, cc, p = paired(A, B); ca, cb = cell(A), cell(B)
+            md.append(f"| {lab} | {c} | {n} | {ca[1]:.3f} [{ca[2]:.3f}, {ca[3]:.3f}] | {cb[1]:.3f} [{cb[2]:.3f}, {cb[3]:.3f}] | **{m:+.3f}** [{lo:+.3f}, {hi:+.3f}] | {b} / {cc} | {p:.3g} | {ca[5]:.3f} | {cb[5]:.3f} | {ca[7]['drop']:.3f} | {cb[7]['drop']:.3f} |")
+    md += ["\n### 014CD − 013E on the 5-digit hand, paired by row (deterministic; 013E legacy layout with the envelope filter forced, all rows)", "",
+           "| cell | lift budget | n | 014CD success [95 %] | 013E success [95 %] | d (CD − 013E) [95 % paired] | b / c | McNemar p | rows identical |", "|---|---|---|---|---|---|---|---|---|"]
+    for pose, lab in POSES:
+        for lb in (300, 200):
+            A, B = rows(f"cd1_014CD_h5_{pose}_det_lb{lb}"), rows(f"cd3_013E_h5_{pose}_det_lb{lb}")
+            if not A or not B: md.append(f"| {lab} | {lb} | missing |"); continue
+            k, nn = chk(A, B, f"cd3 {pose} lb{lb}"); n, m, lo, hi, b, cc, p = paired(A, B); ca, cb = cell(A), cell(B)
+            md.append(f"| {lab} | {lb} | {n} | {ca[1]:.3f} [{ca[2]:.3f}, {ca[3]:.3f}] | {cb[1]:.3f} [{cb[2]:.3f}, {cb[3]:.3f}] | **{m:+.3f}** [{lo:+.3f}, {hi:+.3f}] | {b} / {cc} | {p:.3g} | {k} / {nn} |")
+    md += ["\n### Anchor cylinder 7001–7300, 5-digit hand, deterministic", "", "| model | lift budget | n | success [95 %] | gate | lift | hold | end drop | end maxStep |", "|---|---|---|---|---|---|---|---|---|"]
+    AN = {k: rows(t) for k, t in [("014CD 300", "cd4_anchor_014CD_h5_det_lb300"), ("014CD 200", "cd4_anchor_014CD_h5_det_lb200"), ("014 r2 300", "cd4_anchor_014r2_h5_det_lb300"), ("013E 300", "cd4_anchor_013E_h5_det_lb300")]}
+    for k, R in AN.items():
+        if not R: md.append(f"| {k} | missing |"); continue
+        c_ = cell(R); md.append(f"| {k.rsplit(' ', 1)[0]} | {k.rsplit(' ', 1)[1]} | {c_[0]} | {c_[1]:.3f} [{c_[2]:.3f}, {c_[3]:.3f}] | {c_[4]:.3f} | {c_[5]:.3f} | {c_[6]:.3f} | {c_[7]['drop']:.3f} | {c_[7]['maxStep']:.3f} |")
+    md += ["", "| paired (lift budget 300) | n | d [95 % paired] | b / c | McNemar p |", "|---|---|---|---|---|"]
+    for lab, a, b_ in [("014CD − 014 r2", "014CD 300", "014 r2 300"), ("014CD − 013E", "014CD 300", "013E 300"), ("014 r2 − 013E", "014 r2 300", "013E 300")]:
+        A, B = AN[a], AN[b_]
+        if A and B: chk(A, B, f"anchor {lab}"); n, m, lo, hi, b, cc, p = paired(A, B); md.append(f"| {lab} | {n} | **{m:+.3f}** [{lo:+.3f}, {hi:+.3f}] | {b} / {cc} | {p:.3g} |")
+    tot = sum(x[2] for x in mism)
+    md += ["\n### Placement check (object index, pose mode, rest-pose index, spawn yaw; every paired pass)", "", f"{len(mism)} pass pairs compared, **{tot} mismatched rows** in total."]
+    md += [f"- {lab}: {nn - bad} / {nn} identical" for lab, nn, bad in mism if bad]
+    sys.stdout.buffer.write(("\n".join(md) + "\n").encode("utf-8"))
+
+
 if __name__ == "__main__":
-    main()
+    if sys.argv[1:] == ["cd"]: main_cd()
+    else: main()

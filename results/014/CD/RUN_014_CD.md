@@ -238,3 +238,17 @@ Lying:
 | 013E | 24.0M | 013 A 1.08M, B 1.92M, C 10.5M (lying only), D 6.5M, E 4.0M |
 
 **Protected models re-verified after D:** results/014/Prosthetic.onnx 164d4273…, results/013/Prosthetic.onnx and 013D 96ac32e6…, 013E 8a3097a9… all match step 0. The scene model Assets/Models/Prosthetic.onnx is unchanged (9bda654f…).
+
+## Addendum after the eval (2026-10-08): missed LR-floor stop
+
+**What happened:**
+- The brief's stop list includes "LR < 10 % of initial".
+- LR = 3e-4 × (1 − step/36M) reaches 3.0e-5 at step 32.4M.
+- The D+1.5M check (32.5M, about 9.7 %) and the D+2M report (33.0M, 8.3 %) did not stop on it, because the floor was checked only at each resume (C 33.3 %, D 13.9 %).
+- D ended at 33.0M on the end criterion. Its last ~0.6M steps ran below the floor.
+
+**Checkpoints for a re-evaluation, if CJ wants one:**
+- Prosthetic-31999953 at 32.0M (11.1 %) is the last one above the floor.
+- Prosthetic-32499940 is at 32.5M (9.7 %).
+
+This is disclosed in REPORT_CD.md.

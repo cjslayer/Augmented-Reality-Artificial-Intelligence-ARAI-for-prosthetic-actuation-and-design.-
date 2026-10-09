@@ -177,3 +177,64 @@ Lift never fell, so the stop rule was never near firing.
 - **LR at the D start:** 3e-4 × (1 − 30999947 / 36e6) = 4.17e-5, decaying to 0 at 36M.
 - **D+6M would be 37.0M, beyond max_steps.** So D ends at the end criterion or at 36M (D+5.0M), whichever comes first.
 - **Report marks:** D+0.5M (31.5M), D+1M (32M), D+2M (33M), then every 1M (34M, 35M, 36M). The recovery rule applies at D+3M (34M).
+
+## Phase D: report marks and end (2026-10-08)
+
+All checks are in `D_CHECKS.md`. Throughput was 434–439 steps/s. There were no NaN values and no crash.
+
+| mark | upright success, trailing 500k | lying success, trailing 500k | upright success, last 1M | lying success, last 1M |
+|---|---|---|---|---|
+| D+0.5M (31.5M) | 0.679 | 0.382 | 0.678 | 0.381 |
+| D+1M (32.0M) | 0.707 | 0.391 | 0.692 | 0.386 |
+| D+1.5M check (32.5M) | 0.716 | 0.390 | – | – |
+| **D+2M (33.0M), end** | **0.733** (n 3708) | **0.388** (n 3726) | 0.724 | 0.389 |
+
+**Phase C did not erase the upright grasp.**
+- Upright success was 0.678 in the first 500k of D. Before C (B's last 1M) it was 0.753.
+- In 013, phase C took canonical success down to 0.026.
+- The recovery rule (upright ≥ 0.65 by D+3M) was never in question.
+
+**At the end, last 1M (32.0M–33.0M):**
+
+Upright:
+
+| composition | episodes | gate | lift | hold | success | end drop | end liftBudget | end maxStep |
+|---|---|---|---|---|---|---|---|---|
+| 3 | 778 | 0.932 | 0.801 | 0.785 | 0.626 | 0.288 | 0.015 | 0.068 |
+| 4 | 1182 | 0.997 | 0.878 | 0.873 | 0.729 | 0.256 | 0.011 | 0.003 |
+| 5 | 3322 | 0.997 | 0.892 | 0.883 | 0.752 | 0.238 | 0.007 | 0.003 |
+| 6a | 581 | 0.997 | 0.852 | 0.850 | 0.738 | 0.246 | 0.012 | 0.003 |
+| 6b | 547 | 1.000 | 0.907 | 0.899 | 0.737 | 0.252 | 0.011 | 0.000 |
+| 7 | 1182 | 0.998 | 0.843 | 0.838 | 0.693 | 0.272 | 0.032 | 0.003 |
+| all | 7592 | 0.991 | 0.871 | 0.863 | 0.724 | 0.253 | 0.013 | 0.009 |
+
+Lying:
+
+| composition | episodes | gate | lift | hold | success | end drop | end liftBudget | end maxStep |
+|---|---|---|---|---|---|---|---|---|
+| 3 | 720 | 0.908 | 0.483 | 0.463 | 0.328 | 0.263 | 0.308 | 0.099 |
+| 4 | 1124 | 0.981 | 0.536 | 0.526 | 0.370 | 0.277 | 0.331 | 0.020 |
+| 5 | 3426 | 0.991 | 0.614 | 0.600 | 0.429 | 0.276 | 0.282 | 0.009 |
+| 6a | 547 | 0.982 | 0.590 | 0.572 | 0.410 | 0.276 | 0.291 | 0.020 |
+| 6b | 573 | 0.998 | 0.576 | 0.555 | 0.309 | 0.380 | 0.300 | 0.002 |
+| 7 | 1152 | 0.991 | 0.564 | 0.547 | 0.353 | 0.299 | 0.334 | 0.009 |
+| all | 7542 | 0.982 | 0.578 | 0.562 | 0.389 | 0.286 | 0.302 | 0.019 |
+
+**End decision.**
+- At the D+2.0M report (log step 33,010,000, 20:11:55), the same trailing 500k window gave upright **0.733 ≥ 0.72** and lying **0.388 ≥ 0.30**. The end criterion is met.
+- D ran 2.0M steps (31.0M → 33.0M).
+
+**Stopping D.**
+- Hard stop at 20:12:09. 0 trainer, player or Python processes remained.
+- `checkpoint.pt` = step 32999885 (= Prosthetic-32999885, written 20:11:26). It is backed up as `checkpoint_Dend_32999885.pt` (sha 5cf798c6…).
+
+**Final model:** `results/014/CD/Prosthetic_CD.onnx` = Prosthetic-32999885.onnx, sha256 **68d86b813cc8ab671696f297c53a7e7f08ad2c091a3f0203d4ddbbfdaea8a9cf**.
+
+**Step totals.**
+
+| model | total steps | breakdown |
+|---|---|---|
+| 014CD | 33.0M | A1 2.0M, A2 0.25M, B 21.75M, C 7.0M (lying only), D 2.0M |
+| 013E | 24.0M | 013 A 1.08M, B 1.92M, C 10.5M (lying only), D 6.5M, E 4.0M |
+
+**Protected models re-verified after D:** results/014/Prosthetic.onnx 164d4273…, results/013/Prosthetic.onnx and 013D 96ac32e6…, 013E 8a3097a9… all match step 0. The scene model Assets/Models/Prosthetic.onnx is unchanged (9bda654f…).

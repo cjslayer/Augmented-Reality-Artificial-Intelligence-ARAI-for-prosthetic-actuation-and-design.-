@@ -1,1 +1,2 @@
 2026-10-13 15:03:03 5-digit all-on det J 0.898 (upright 0.984, lying 0.812) outside (0.6, 0.75)
+2026-10-13 18:38:58 A_c3_allon_canonical_sam: harness pass failed: EditorError('pass did not complete (rc=4, 32 s): []')

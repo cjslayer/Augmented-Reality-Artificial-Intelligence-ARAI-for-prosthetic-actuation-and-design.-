@@ -1,0 +1,12 @@
+3 canonical: B 558b767ab41ab12f C 558b767ab41ab12f match
+3 randomStable: B 2685f552290dec54 C 52914de102f10ad8 MISMATCH
+4 canonical: B 6a59cdf0b295fbdd C 6a59cdf0b295fbdd match
+4 randomStable: B 6c63a451c6ea3c2a C 6c63a451c6ea3c2a match
+5 canonical: B 62ecc3d8be93a1c2 C 62ecc3d8be93a1c2 match
+5 randomStable: B 4f3780c99f894566 C 4f3780c99f894566 match
+6a canonical: B 5f689b641b7e1a10 C cbf78ed775ba68b0 MISMATCH
+6a randomStable: B 0cb64ceabac88607 C 0cb64ceabac88607 match
+6b canonical: B 6bc5de17f38bcf5b C 6bc5de17f38bcf5b match
+6b randomStable: B 4649eb7d32c449c1 C 4649eb7d32c449c1 match
+7 canonical: B 244c3cbfb60a42b9 C 3bf2108cbfdd7c12 MISMATCH
+7 randomStable: B 9ebd60799977e93a C 9ebd60799977e93a match

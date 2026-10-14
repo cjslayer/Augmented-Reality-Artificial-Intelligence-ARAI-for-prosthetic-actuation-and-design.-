@@ -1,0 +1,43 @@
+[
+ {
+  "tag": "throwaway_20261013_150126",
+  "ok": true,
+  "throwaway": true,
+  "csv": "results/bo/discrete/passes/throwaway_20261013_150126.csv",
+  "hash": "f60c75609cc493ba",
+  "wall_s": 16,
+  "time": "2026-10-13 15:01:46"
+ },
+ {
+  "tag": "A_c5_allon_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/A_c5_allon_canonical_det.csv",
+  "hash": "a1e657296d576a81",
+  "wall_s": 31,
+  "time": "2026-10-13 15:02:21",
+  "block": "canonical_13001_13064",
+  "comp": "5",
+  "off": [],
+  "n_on": 14,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 63
+ },
+ {
+  "tag": "A_c5_allon_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/A_c5_allon_randomStable_det.csv",
+  "hash": "28360ce073fb58c6",
+  "wall_s": 37,
+  "time": "2026-10-13 15:03:03",
+  "block": "randomStable_13065_13128",
+  "comp": "5",
+  "off": [],
+  "n_on": 14,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 52
+ }
+]

@@ -1,0 +1,6 @@
+protected hashes OK (start)
+Editor up
+throwaway_20261013_150126: 16 s (discarded)
+A_c5_allon_canonical_det: 63/64 = 0.984  (31 s)
+A_c5_allon_randomStable_det: 52/64 = 0.812  (37 s)
+STOP: 5-digit all-on det J 0.898 (upright 0.984, lying 0.812) outside (0.6, 0.75)

@@ -39,5 +39,3629 @@
   "head": "deterministic",
   "n": 64,
   "k": 52
+ },
+ {
+  "tag": "throwaway_20261013_183451",
+  "ok": true,
+  "throwaway": true,
+  "csv": "results/bo/discrete/passes/throwaway_20261013_183451.csv",
+  "hash": "f60c75609cc493ba",
+  "wall_s": 16,
+  "time": "2026-10-13 18:35:11"
+ },
+ {
+  "tag": "A_c5_allon_canonical_sam",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/A_c5_allon_canonical_sam.csv",
+  "hash": "2c187ccf59318405",
+  "wall_s": 31,
+  "time": "2026-10-13 18:35:46",
+  "block": "canonical_13001_13064",
+  "comp": "5",
+  "off": [],
+  "n_on": 14,
+  "pose": "canonical",
+  "head": "sampled",
+  "n": 64,
+  "k": 56
+ },
+ {
+  "tag": "A_c5_allon_randomStable_sam",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/A_c5_allon_randomStable_sam.csv",
+  "hash": "8ee925dc8b9e4a80",
+  "wall_s": 31,
+  "time": "2026-10-13 18:36:22",
+  "block": "randomStable_13065_13128",
+  "comp": "5",
+  "off": [],
+  "n_on": 14,
+  "pose": "randomStable",
+  "head": "sampled",
+  "n": 64,
+  "k": 39
+ },
+ {
+  "tag": "A_c3_allon_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/A_c3_allon_canonical_det.csv",
+  "hash": "9ca837852e957625",
+  "wall_s": 42,
+  "time": "2026-10-13 18:37:09",
+  "block": "canonical_13001_13064",
+  "comp": "3",
+  "off": [],
+  "n_on": 8,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 57
+ },
+ {
+  "tag": "A_c3_allon_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/A_c3_allon_randomStable_det.csv",
+  "hash": "3baf4fa41930897e",
+  "wall_s": 68,
+  "time": "2026-10-13 18:38:22",
+  "block": "randomStable_13065_13128",
+  "comp": "3",
+  "off": [],
+  "n_on": 8,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 25
+ },
+ {
+  "tag": "A_c3_allon_canonical_sam",
+  "ok": false,
+  "error": "EditorError('pass did not complete (rc=4, 32 s): []')",
+  "time": "2026-10-13 18:38:58"
+ },
+ {
+  "tag": "A_c3_allon_canonical_sam",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/A_c3_allon_canonical_sam.csv",
+  "hash": "69991ccbe4ec1e82",
+  "wall_s": 35,
+  "time": "2026-10-13 18:40:15",
+  "block": "canonical_13001_13064",
+  "comp": "3",
+  "off": [],
+  "n_on": 8,
+  "pose": "canonical",
+  "head": "sampled",
+  "n": 64,
+  "k": 48,
+  "runner_race": true
+ },
+ {
+  "tag": "A_c3_allon_randomStable_sam",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/A_c3_allon_randomStable_sam.csv",
+  "hash": "b17c318d08d647a7",
+  "wall_s": 52,
+  "time": "2026-10-13 18:41:12",
+  "block": "randomStable_13065_13128",
+  "comp": "3",
+  "off": [],
+  "n_on": 8,
+  "pose": "randomStable",
+  "head": "sampled",
+  "n": 64,
+  "k": 30,
+  "runner_race": false
+ },
+ {
+  "tag": "A_c4_allon_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/A_c4_allon_canonical_det.csv",
+  "hash": "15d642e7ef643cef",
+  "wall_s": 31,
+  "time": "2026-10-13 18:41:48",
+  "block": "canonical_13001_13064",
+  "comp": "4",
+  "off": [],
+  "n_on": 11,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 62,
+  "runner_race": false
+ },
+ {
+  "tag": "A_c4_allon_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/A_c4_allon_randomStable_det.csv",
+  "hash": "5d69eecced1d534d",
+  "wall_s": 47,
+  "time": "2026-10-13 18:42:41",
+  "block": "randomStable_13065_13128",
+  "comp": "4",
+  "off": [],
+  "n_on": 11,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 43,
+  "runner_race": false
+ },
+ {
+  "tag": "A_c4_allon_canonical_sam",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/A_c4_allon_canonical_sam.csv",
+  "hash": "9e554f91080790b9",
+  "wall_s": 31,
+  "time": "2026-10-13 18:43:17",
+  "block": "canonical_13001_13064",
+  "comp": "4",
+  "off": [],
+  "n_on": 11,
+  "pose": "canonical",
+  "head": "sampled",
+  "n": 64,
+  "k": 58,
+  "runner_race": false
+ },
+ {
+  "tag": "A_c4_allon_randomStable_sam",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/A_c4_allon_randomStable_sam.csv",
+  "hash": "d7ab716a11475ef6",
+  "wall_s": 35,
+  "time": "2026-10-13 18:43:53",
+  "block": "randomStable_13065_13128",
+  "comp": "4",
+  "off": [],
+  "n_on": 11,
+  "pose": "randomStable",
+  "head": "sampled",
+  "n": 64,
+  "k": 38,
+  "runner_race": true
+ },
+ {
+  "tag": "A_c6a_allon_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/A_c6a_allon_canonical_det.csv",
+  "hash": "e70300b907c0bb05",
+  "wall_s": 31,
+  "time": "2026-10-13 18:44:29",
+  "block": "canonical_13001_13064",
+  "comp": "6a",
+  "off": [],
+  "n_on": 17,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 60,
+  "runner_race": false
+ },
+ {
+  "tag": "A_c6a_allon_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/A_c6a_allon_randomStable_det.csv",
+  "hash": "9c9e6c9bf7604f77",
+  "wall_s": 42,
+  "time": "2026-10-13 18:45:16",
+  "block": "randomStable_13065_13128",
+  "comp": "6a",
+  "off": [],
+  "n_on": 17,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 49,
+  "runner_race": false
+ },
+ {
+  "tag": "A_c6a_allon_canonical_sam",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/A_c6a_allon_canonical_sam.csv",
+  "hash": "5995ccee69dd465e",
+  "wall_s": 31,
+  "time": "2026-10-13 18:45:52",
+  "block": "canonical_13001_13064",
+  "comp": "6a",
+  "off": [],
+  "n_on": 17,
+  "pose": "canonical",
+  "head": "sampled",
+  "n": 64,
+  "k": 56,
+  "runner_race": false
+ },
+ {
+  "tag": "A_c6a_allon_randomStable_sam",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/A_c6a_allon_randomStable_sam.csv",
+  "hash": "fa7a1d18f4e1598b",
+  "wall_s": 35,
+  "time": "2026-10-13 18:46:28",
+  "block": "randomStable_13065_13128",
+  "comp": "6a",
+  "off": [],
+  "n_on": 17,
+  "pose": "randomStable",
+  "head": "sampled",
+  "n": 64,
+  "k": 42,
+  "runner_race": true
+ },
+ {
+  "tag": "A_c6b_allon_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/A_c6b_allon_canonical_det.csv",
+  "hash": "53f37e4bf464b7a4",
+  "wall_s": 36,
+  "time": "2026-10-13 18:47:05",
+  "block": "canonical_13001_13064",
+  "comp": "6b",
+  "off": [],
+  "n_on": 16,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 59,
+  "runner_race": true
+ },
+ {
+  "tag": "A_c6b_allon_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/A_c6b_allon_randomStable_det.csv",
+  "hash": "30266442d975d608",
+  "wall_s": 42,
+  "time": "2026-10-13 18:47:52",
+  "block": "randomStable_13065_13128",
+  "comp": "6b",
+  "off": [],
+  "n_on": 16,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 49,
+  "runner_race": false
+ },
+ {
+  "tag": "A_c6b_allon_canonical_sam",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/A_c6b_allon_canonical_sam.csv",
+  "hash": "2b06e4ae73f3f006",
+  "wall_s": 31,
+  "time": "2026-10-13 18:48:28",
+  "block": "canonical_13001_13064",
+  "comp": "6b",
+  "off": [],
+  "n_on": 16,
+  "pose": "canonical",
+  "head": "sampled",
+  "n": 64,
+  "k": 53,
+  "runner_race": false
+ },
+ {
+  "tag": "A_c6b_allon_randomStable_sam",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/A_c6b_allon_randomStable_sam.csv",
+  "hash": "efa42f98618254ff",
+  "wall_s": 36,
+  "time": "2026-10-13 18:49:05",
+  "block": "randomStable_13065_13128",
+  "comp": "6b",
+  "off": [],
+  "n_on": 16,
+  "pose": "randomStable",
+  "head": "sampled",
+  "n": 64,
+  "k": 39,
+  "runner_race": true
+ },
+ {
+  "tag": "A_c7_allon_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/A_c7_allon_canonical_det.csv",
+  "hash": "f0251916b0c52953",
+  "wall_s": 37,
+  "time": "2026-10-13 18:49:47",
+  "block": "canonical_13001_13064",
+  "comp": "7",
+  "off": [],
+  "n_on": 19,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 57,
+  "runner_race": false
+ },
+ {
+  "tag": "A_c7_allon_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/A_c7_allon_randomStable_det.csv",
+  "hash": "e44c5af2f188c22f",
+  "wall_s": 48,
+  "time": "2026-10-13 18:50:40",
+  "block": "randomStable_13065_13128",
+  "comp": "7",
+  "off": [],
+  "n_on": 19,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 43,
+  "runner_race": false
+ },
+ {
+  "tag": "A_c7_allon_canonical_sam",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/A_c7_allon_canonical_sam.csv",
+  "hash": "8fed60ebc713a153",
+  "wall_s": 37,
+  "time": "2026-10-13 18:51:22",
+  "block": "canonical_13001_13064",
+  "comp": "7",
+  "off": [],
+  "n_on": 19,
+  "pose": "canonical",
+  "head": "sampled",
+  "n": 64,
+  "k": 48,
+  "runner_race": false
+ },
+ {
+  "tag": "A_c7_allon_randomStable_sam",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/A_c7_allon_randomStable_sam.csv",
+  "hash": "6709421104707104",
+  "wall_s": 42,
+  "time": "2026-10-13 18:52:09",
+  "block": "randomStable_13065_13128",
+  "comp": "7",
+  "off": [],
+  "n_on": 19,
+  "pose": "randomStable",
+  "head": "sampled",
+  "n": 64,
+  "k": 34,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c3_off0_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c3_off0_canonical_det.csv",
+  "hash": "a8a232690c16ad0b",
+  "wall_s": 83,
+  "time": "2026-10-13 18:53:38",
+  "block": "canonical_13001_13064",
+  "comp": "3",
+  "off": [
+   "indexBase"
+  ],
+  "n_on": 7,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 38,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c3_off0_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c3_off0_randomStable_det.csv",
+  "hash": "184fb5fb1133fbbb",
+  "wall_s": 73,
+  "time": "2026-10-13 18:54:56",
+  "block": "randomStable_13065_13128",
+  "comp": "3",
+  "off": [
+   "indexBase"
+  ],
+  "n_on": 7,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 21,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c3_off1_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c3_off1_canonical_det.csv",
+  "hash": "558b767ab41ab12f",
+  "wall_s": 52,
+  "time": "2026-10-13 18:55:53",
+  "block": "canonical_13001_13064",
+  "comp": "3",
+  "off": [
+   "indexMiddle"
+  ],
+  "n_on": 7,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 50,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c3_off1_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c3_off1_randomStable_det.csv",
+  "hash": "2685f552290dec54",
+  "wall_s": 68,
+  "time": "2026-10-13 18:57:06",
+  "block": "randomStable_13065_13128",
+  "comp": "3",
+  "off": [
+   "indexMiddle"
+  ],
+  "n_on": 7,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 33,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c3_off2_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c3_off2_canonical_det.csv",
+  "hash": "e68961ad75940fe4",
+  "wall_s": 42,
+  "time": "2026-10-13 18:57:53",
+  "block": "canonical_13001_13064",
+  "comp": "3",
+  "off": [
+   "indexEnd"
+  ],
+  "n_on": 7,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 52,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c3_off2_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c3_off2_randomStable_det.csv",
+  "hash": "317c28be6662391b",
+  "wall_s": 78,
+  "time": "2026-10-13 18:59:16",
+  "block": "randomStable_13065_13128",
+  "comp": "3",
+  "off": [
+   "indexEnd"
+  ],
+  "n_on": 7,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 29,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c3_off3_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c3_off3_canonical_det.csv",
+  "hash": "5368360420809886",
+  "wall_s": 114,
+  "time": "2026-10-13 19:01:15",
+  "block": "canonical_13001_13064",
+  "comp": "3",
+  "off": [
+   "middleBase"
+  ],
+  "n_on": 7,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 23,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c3_off3_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c3_off3_randomStable_det.csv",
+  "hash": "c7e96284a6d3993e",
+  "wall_s": 83,
+  "time": "2026-10-13 19:02:43",
+  "block": "randomStable_13065_13128",
+  "comp": "3",
+  "off": [
+   "middleBase"
+  ],
+  "n_on": 7,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 16,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c3_off4_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c3_off4_canonical_det.csv",
+  "hash": "c49ce4e95bc4133c",
+  "wall_s": 42,
+  "time": "2026-10-13 19:03:30",
+  "block": "canonical_13001_13064",
+  "comp": "3",
+  "off": [
+   "middleMiddle"
+  ],
+  "n_on": 7,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 51,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c3_off4_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c3_off4_randomStable_det.csv",
+  "hash": "272d5233d11c7056",
+  "wall_s": 68,
+  "time": "2026-10-13 19:04:43",
+  "block": "randomStable_13065_13128",
+  "comp": "3",
+  "off": [
+   "middleMiddle"
+  ],
+  "n_on": 7,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 18,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c3_off5_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c3_off5_canonical_det.csv",
+  "hash": "0abe94829948c516",
+  "wall_s": 37,
+  "time": "2026-10-13 19:05:25",
+  "block": "canonical_13001_13064",
+  "comp": "3",
+  "off": [
+   "middleEnd"
+  ],
+  "n_on": 7,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 49,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c3_off5_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c3_off5_randomStable_det.csv",
+  "hash": "b0417cc36d69452d",
+  "wall_s": 68,
+  "time": "2026-10-13 19:06:38",
+  "block": "randomStable_13065_13128",
+  "comp": "3",
+  "off": [
+   "middleEnd"
+  ],
+  "n_on": 7,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 23,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c3_off12_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c3_off12_canonical_det.csv",
+  "hash": "dc1b5323984d1416",
+  "wall_s": 31,
+  "time": "2026-10-13 19:07:13",
+  "block": "canonical_13001_13064",
+  "comp": "3",
+  "off": [
+   "thumbBase"
+  ],
+  "n_on": 7,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 44,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c3_off12_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c3_off12_randomStable_det.csv",
+  "hash": "46156595a19be265",
+  "wall_s": 104,
+  "time": "2026-10-13 19:09:02",
+  "block": "randomStable_13065_13128",
+  "comp": "3",
+  "off": [
+   "thumbBase"
+  ],
+  "n_on": 7,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 7,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c3_off13_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c3_off13_canonical_det.csv",
+  "hash": "24af54b5f634bbbb",
+  "wall_s": 47,
+  "time": "2026-10-13 19:09:54",
+  "block": "canonical_13001_13064",
+  "comp": "3",
+  "off": [
+   "thumbEnd"
+  ],
+  "n_on": 7,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 50,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c3_off13_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c3_off13_randomStable_det.csv",
+  "hash": "d227cd5f3741f0a8",
+  "wall_s": 62,
+  "time": "2026-10-13 19:11:01",
+  "block": "randomStable_13065_13128",
+  "comp": "3",
+  "off": [
+   "thumbEnd"
+  ],
+  "n_on": 7,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 28,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c4_off0_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c4_off0_canonical_det.csv",
+  "hash": "7c56d9d4883010e7",
+  "wall_s": 37,
+  "time": "2026-10-13 19:11:43",
+  "block": "canonical_13001_13064",
+  "comp": "4",
+  "off": [
+   "indexBase"
+  ],
+  "n_on": 10,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 59,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c4_off0_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c4_off0_randomStable_det.csv",
+  "hash": "374f2a09b33f98a4",
+  "wall_s": 37,
+  "time": "2026-10-13 19:12:25",
+  "block": "randomStable_13065_13128",
+  "comp": "4",
+  "off": [
+   "indexBase"
+  ],
+  "n_on": 10,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 43,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c4_off1_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c4_off1_canonical_det.csv",
+  "hash": "6a59cdf0b295fbdd",
+  "wall_s": 31,
+  "time": "2026-10-13 19:13:01",
+  "block": "canonical_13001_13064",
+  "comp": "4",
+  "off": [
+   "indexMiddle"
+  ],
+  "n_on": 10,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 63,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c4_off1_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c4_off1_randomStable_det.csv",
+  "hash": "6c63a451c6ea3c2a",
+  "wall_s": 42,
+  "time": "2026-10-13 19:13:48",
+  "block": "randomStable_13065_13128",
+  "comp": "4",
+  "off": [
+   "indexMiddle"
+  ],
+  "n_on": 10,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 45,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c4_off2_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c4_off2_canonical_det.csv",
+  "hash": "5252893d11e3bf5d",
+  "wall_s": 31,
+  "time": "2026-10-13 19:14:24",
+  "block": "canonical_13001_13064",
+  "comp": "4",
+  "off": [
+   "indexEnd"
+  ],
+  "n_on": 10,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 62,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c4_off2_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c4_off2_randomStable_det.csv",
+  "hash": "ee5cd0238f04a0d5",
+  "wall_s": 47,
+  "time": "2026-10-13 19:15:16",
+  "block": "randomStable_13065_13128",
+  "comp": "4",
+  "off": [
+   "indexEnd"
+  ],
+  "n_on": 10,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 45,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c4_off3_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c4_off3_canonical_det.csv",
+  "hash": "b0b25504f85eff65",
+  "wall_s": 37,
+  "time": "2026-10-13 19:15:58",
+  "block": "canonical_13001_13064",
+  "comp": "4",
+  "off": [
+   "middleBase"
+  ],
+  "n_on": 10,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 54,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c4_off3_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c4_off3_randomStable_det.csv",
+  "hash": "6406bb3f4f017c6e",
+  "wall_s": 47,
+  "time": "2026-10-13 19:16:50",
+  "block": "randomStable_13065_13128",
+  "comp": "4",
+  "off": [
+   "middleBase"
+  ],
+  "n_on": 10,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 44,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c4_off4_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c4_off4_canonical_det.csv",
+  "hash": "ba95787f22f60af7",
+  "wall_s": 31,
+  "time": "2026-10-13 19:17:25",
+  "block": "canonical_13001_13064",
+  "comp": "4",
+  "off": [
+   "middleMiddle"
+  ],
+  "n_on": 10,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 61,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c4_off4_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c4_off4_randomStable_det.csv",
+  "hash": "1cdaf018c998e8c2",
+  "wall_s": 37,
+  "time": "2026-10-13 19:18:07",
+  "block": "randomStable_13065_13128",
+  "comp": "4",
+  "off": [
+   "middleMiddle"
+  ],
+  "n_on": 10,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 43,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c4_off5_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c4_off5_canonical_det.csv",
+  "hash": "8c76ca94b16005f1",
+  "wall_s": 31,
+  "time": "2026-10-13 19:18:43",
+  "block": "canonical_13001_13064",
+  "comp": "4",
+  "off": [
+   "middleEnd"
+  ],
+  "n_on": 10,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 59,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c4_off5_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c4_off5_randomStable_det.csv",
+  "hash": "1910dc25490f0dcb",
+  "wall_s": 47,
+  "time": "2026-10-13 19:19:35",
+  "block": "randomStable_13065_13128",
+  "comp": "4",
+  "off": [
+   "middleEnd"
+  ],
+  "n_on": 10,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 40,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c4_off6_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c4_off6_canonical_det.csv",
+  "hash": "591fd7e61ef7f820",
+  "wall_s": 37,
+  "time": "2026-10-13 19:20:17",
+  "block": "canonical_13001_13064",
+  "comp": "4",
+  "off": [
+   "ringBase"
+  ],
+  "n_on": 10,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 54,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c4_off6_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c4_off6_randomStable_det.csv",
+  "hash": "cdc8ffe141ca46c6",
+  "wall_s": 37,
+  "time": "2026-10-13 19:20:59",
+  "block": "randomStable_13065_13128",
+  "comp": "4",
+  "off": [
+   "ringBase"
+  ],
+  "n_on": 10,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 42,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c4_off7_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c4_off7_canonical_det.csv",
+  "hash": "9a266342b40749cf",
+  "wall_s": 31,
+  "time": "2026-10-13 19:21:35",
+  "block": "canonical_13001_13064",
+  "comp": "4",
+  "off": [
+   "ringMiddle"
+  ],
+  "n_on": 10,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 62,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c4_off7_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c4_off7_randomStable_det.csv",
+  "hash": "ba3a55273d5b8890",
+  "wall_s": 42,
+  "time": "2026-10-13 19:22:22",
+  "block": "randomStable_13065_13128",
+  "comp": "4",
+  "off": [
+   "ringMiddle"
+  ],
+  "n_on": 10,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 42,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c4_off8_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c4_off8_canonical_det.csv",
+  "hash": "ae74ec60c2777942",
+  "wall_s": 31,
+  "time": "2026-10-13 19:22:58",
+  "block": "canonical_13001_13064",
+  "comp": "4",
+  "off": [
+   "ringEnd"
+  ],
+  "n_on": 10,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 59,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c4_off8_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c4_off8_randomStable_det.csv",
+  "hash": "eae5363d77bee625",
+  "wall_s": 42,
+  "time": "2026-10-13 19:23:45",
+  "block": "randomStable_13065_13128",
+  "comp": "4",
+  "off": [
+   "ringEnd"
+  ],
+  "n_on": 10,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 41,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c4_off12_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c4_off12_canonical_det.csv",
+  "hash": "c38dc9fa38698924",
+  "wall_s": 26,
+  "time": "2026-10-13 19:24:16",
+  "block": "canonical_13001_13064",
+  "comp": "4",
+  "off": [
+   "thumbBase"
+  ],
+  "n_on": 10,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 47,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c4_off12_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c4_off12_randomStable_det.csv",
+  "hash": "86a5d520c7b6ee7f",
+  "wall_s": 73,
+  "time": "2026-10-13 19:25:34",
+  "block": "randomStable_13065_13128",
+  "comp": "4",
+  "off": [
+   "thumbBase"
+  ],
+  "n_on": 10,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 7,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c4_off13_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c4_off13_canonical_det.csv",
+  "hash": "080447a7bc3f038b",
+  "wall_s": 31,
+  "time": "2026-10-13 19:26:09",
+  "block": "canonical_13001_13064",
+  "comp": "4",
+  "off": [
+   "thumbEnd"
+  ],
+  "n_on": 10,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 62,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c4_off13_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c4_off13_randomStable_det.csv",
+  "hash": "41dfb85ec2730830",
+  "wall_s": 42,
+  "time": "2026-10-13 19:26:56",
+  "block": "randomStable_13065_13128",
+  "comp": "4",
+  "off": [
+   "thumbEnd"
+  ],
+  "n_on": 10,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 42,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c5_off0_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c5_off0_canonical_det.csv",
+  "hash": "cf1b6eaf523dcc55",
+  "wall_s": 31,
+  "time": "2026-10-13 19:27:32",
+  "block": "canonical_13001_13064",
+  "comp": "5",
+  "off": [
+   "indexBase"
+  ],
+  "n_on": 13,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 62,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c5_off0_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c5_off0_randomStable_det.csv",
+  "hash": "c0dff40463d68f4a",
+  "wall_s": 37,
+  "time": "2026-10-13 19:28:14",
+  "block": "randomStable_13065_13128",
+  "comp": "5",
+  "off": [
+   "indexBase"
+  ],
+  "n_on": 13,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 44,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c5_off1_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c5_off1_canonical_det.csv",
+  "hash": "6f379126426a3eae",
+  "wall_s": 31,
+  "time": "2026-10-13 19:28:50",
+  "block": "canonical_13001_13064",
+  "comp": "5",
+  "off": [
+   "indexMiddle"
+  ],
+  "n_on": 13,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 63,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c5_off1_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c5_off1_randomStable_det.csv",
+  "hash": "6e6d46d8ee0863f7",
+  "wall_s": 37,
+  "time": "2026-10-13 19:29:32",
+  "block": "randomStable_13065_13128",
+  "comp": "5",
+  "off": [
+   "indexMiddle"
+  ],
+  "n_on": 13,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 48,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c5_off2_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c5_off2_canonical_det.csv",
+  "hash": "867a93f906020bee",
+  "wall_s": 31,
+  "time": "2026-10-13 19:30:08",
+  "block": "canonical_13001_13064",
+  "comp": "5",
+  "off": [
+   "indexEnd"
+  ],
+  "n_on": 13,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 62,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c5_off2_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c5_off2_randomStable_det.csv",
+  "hash": "fb1bae8992494500",
+  "wall_s": 35,
+  "time": "2026-10-13 19:30:44",
+  "block": "randomStable_13065_13128",
+  "comp": "5",
+  "off": [
+   "indexEnd"
+  ],
+  "n_on": 13,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 50,
+  "runner_race": true
+ },
+ {
+  "tag": "B_c5_off3_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c5_off3_canonical_det.csv",
+  "hash": "e0ca691c6d2b757c",
+  "wall_s": 31,
+  "time": "2026-10-13 19:31:20",
+  "block": "canonical_13001_13064",
+  "comp": "5",
+  "off": [
+   "middleBase"
+  ],
+  "n_on": 13,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 58,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c5_off3_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c5_off3_randomStable_det.csv",
+  "hash": "c03ccbf1105d5b7a",
+  "wall_s": 42,
+  "time": "2026-10-13 19:32:07",
+  "block": "randomStable_13065_13128",
+  "comp": "5",
+  "off": [
+   "middleBase"
+  ],
+  "n_on": 13,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 48,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c5_off4_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c5_off4_canonical_det.csv",
+  "hash": "3e2f27916d0d8ff7",
+  "wall_s": 31,
+  "time": "2026-10-13 19:32:43",
+  "block": "canonical_13001_13064",
+  "comp": "5",
+  "off": [
+   "middleMiddle"
+  ],
+  "n_on": 13,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 64,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c5_off4_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c5_off4_randomStable_det.csv",
+  "hash": "cb9ead4ad9c46e1d",
+  "wall_s": 37,
+  "time": "2026-10-13 19:33:25",
+  "block": "randomStable_13065_13128",
+  "comp": "5",
+  "off": [
+   "middleMiddle"
+  ],
+  "n_on": 13,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 47,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c5_off5_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c5_off5_canonical_det.csv",
+  "hash": "839e4fa6171a911e",
+  "wall_s": 31,
+  "time": "2026-10-13 19:34:01",
+  "block": "canonical_13001_13064",
+  "comp": "5",
+  "off": [
+   "middleEnd"
+  ],
+  "n_on": 13,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 62,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c5_off5_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c5_off5_randomStable_det.csv",
+  "hash": "d7aebfad9d26f451",
+  "wall_s": 37,
+  "time": "2026-10-13 19:34:43",
+  "block": "randomStable_13065_13128",
+  "comp": "5",
+  "off": [
+   "middleEnd"
+  ],
+  "n_on": 13,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 52,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c5_off6_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c5_off6_canonical_det.csv",
+  "hash": "74d70ccc302bb6ba",
+  "wall_s": 31,
+  "time": "2026-10-13 19:35:18",
+  "block": "canonical_13001_13064",
+  "comp": "5",
+  "off": [
+   "ringBase"
+  ],
+  "n_on": 13,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 61,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c5_off6_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c5_off6_randomStable_det.csv",
+  "hash": "af5c2bf0a1baf40a",
+  "wall_s": 35,
+  "time": "2026-10-13 19:35:55",
+  "block": "randomStable_13065_13128",
+  "comp": "5",
+  "off": [
+   "ringBase"
+  ],
+  "n_on": 13,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 48,
+  "runner_race": true
+ },
+ {
+  "tag": "B_c5_off7_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c5_off7_canonical_det.csv",
+  "hash": "da073d147fa03af1",
+  "wall_s": 31,
+  "time": "2026-10-13 19:36:31",
+  "block": "canonical_13001_13064",
+  "comp": "5",
+  "off": [
+   "ringMiddle"
+  ],
+  "n_on": 13,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 63,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c5_off7_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c5_off7_randomStable_det.csv",
+  "hash": "454803e914f4067c",
+  "wall_s": 37,
+  "time": "2026-10-13 19:37:13",
+  "block": "randomStable_13065_13128",
+  "comp": "5",
+  "off": [
+   "ringMiddle"
+  ],
+  "n_on": 13,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 51,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c5_off8_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c5_off8_canonical_det.csv",
+  "hash": "0d247fed84f6bd9c",
+  "wall_s": 31,
+  "time": "2026-10-13 19:37:49",
+  "block": "canonical_13001_13064",
+  "comp": "5",
+  "off": [
+   "ringEnd"
+  ],
+  "n_on": 13,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 62,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c5_off8_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c5_off8_randomStable_det.csv",
+  "hash": "4a4d648b467f44d2",
+  "wall_s": 37,
+  "time": "2026-10-13 19:38:31",
+  "block": "randomStable_13065_13128",
+  "comp": "5",
+  "off": [
+   "ringEnd"
+  ],
+  "n_on": 13,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 47,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c5_off9_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c5_off9_canonical_det.csv",
+  "hash": "9ac5832ed63af809",
+  "wall_s": 31,
+  "time": "2026-10-13 19:39:07",
+  "block": "canonical_13001_13064",
+  "comp": "5",
+  "off": [
+   "pinkyBase"
+  ],
+  "n_on": 13,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 63,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c5_off9_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c5_off9_randomStable_det.csv",
+  "hash": "78dde020955fab9e",
+  "wall_s": 37,
+  "time": "2026-10-13 19:39:49",
+  "block": "randomStable_13065_13128",
+  "comp": "5",
+  "off": [
+   "pinkyBase"
+  ],
+  "n_on": 13,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 47,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c5_off10_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c5_off10_canonical_det.csv",
+  "hash": "62ecc3d8be93a1c2",
+  "wall_s": 31,
+  "time": "2026-10-13 19:40:24",
+  "block": "canonical_13001_13064",
+  "comp": "5",
+  "off": [
+   "pinkyMiddle"
+  ],
+  "n_on": 13,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 64,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c5_off10_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c5_off10_randomStable_det.csv",
+  "hash": "4f3780c99f894566",
+  "wall_s": 42,
+  "time": "2026-10-13 19:41:11",
+  "block": "randomStable_13065_13128",
+  "comp": "5",
+  "off": [
+   "pinkyMiddle"
+  ],
+  "n_on": 13,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 51,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c5_off11_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c5_off11_canonical_det.csv",
+  "hash": "0ebdf8e6ed977725",
+  "wall_s": 31,
+  "time": "2026-10-13 19:41:47",
+  "block": "canonical_13001_13064",
+  "comp": "5",
+  "off": [
+   "pinkyEnd"
+  ],
+  "n_on": 13,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 64,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c5_off11_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c5_off11_randomStable_det.csv",
+  "hash": "23fffad9ec096c5f",
+  "wall_s": 37,
+  "time": "2026-10-13 19:42:29",
+  "block": "randomStable_13065_13128",
+  "comp": "5",
+  "off": [
+   "pinkyEnd"
+  ],
+  "n_on": 13,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 49,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c5_off12_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c5_off12_canonical_det.csv",
+  "hash": "5f43d9e0f0353c8d",
+  "wall_s": 31,
+  "time": "2026-10-13 19:43:05",
+  "block": "canonical_13001_13064",
+  "comp": "5",
+  "off": [
+   "thumbBase"
+  ],
+  "n_on": 13,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 43,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c5_off12_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c5_off12_randomStable_det.csv",
+  "hash": "7b4ac60467f448e6",
+  "wall_s": 52,
+  "time": "2026-10-13 19:44:02",
+  "block": "randomStable_13065_13128",
+  "comp": "5",
+  "off": [
+   "thumbBase"
+  ],
+  "n_on": 13,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 13,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c5_off13_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c5_off13_canonical_det.csv",
+  "hash": "552e1b1e6f890f81",
+  "wall_s": 31,
+  "time": "2026-10-13 19:44:38",
+  "block": "canonical_13001_13064",
+  "comp": "5",
+  "off": [
+   "thumbEnd"
+  ],
+  "n_on": 13,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 64,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c5_off13_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c5_off13_randomStable_det.csv",
+  "hash": "49304f4bd3b8e437",
+  "wall_s": 35,
+  "time": "2026-10-13 19:45:14",
+  "block": "randomStable_13065_13128",
+  "comp": "5",
+  "off": [
+   "thumbEnd"
+  ],
+  "n_on": 13,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 49,
+  "runner_race": true
+ },
+ {
+  "tag": "B_c6a_off0_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off0_canonical_det.csv",
+  "hash": "6ce57d29e4bbcd6c",
+  "wall_s": 37,
+  "time": "2026-10-13 19:45:56",
+  "block": "canonical_13001_13064",
+  "comp": "6a",
+  "off": [
+   "indexBase"
+  ],
+  "n_on": 16,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 56,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6a_off0_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off0_randomStable_det.csv",
+  "hash": "b4b59f895365e1cd",
+  "wall_s": 42,
+  "time": "2026-10-13 19:46:44",
+  "block": "randomStable_13065_13128",
+  "comp": "6a",
+  "off": [
+   "indexBase"
+  ],
+  "n_on": 16,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 47,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6a_off1_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off1_canonical_det.csv",
+  "hash": "d5ff29965170f20c",
+  "wall_s": 35,
+  "time": "2026-10-13 19:47:19",
+  "block": "canonical_13001_13064",
+  "comp": "6a",
+  "off": [
+   "indexMiddle"
+  ],
+  "n_on": 16,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 58,
+  "runner_race": true
+ },
+ {
+  "tag": "B_c6a_off1_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off1_randomStable_det.csv",
+  "hash": "fd01260ebf428203",
+  "wall_s": 37,
+  "time": "2026-10-13 19:48:02",
+  "block": "randomStable_13065_13128",
+  "comp": "6a",
+  "off": [
+   "indexMiddle"
+  ],
+  "n_on": 16,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 49,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6a_off2_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off2_canonical_det.csv",
+  "hash": "7932c7f85b2daf23",
+  "wall_s": 31,
+  "time": "2026-10-13 19:48:38",
+  "block": "canonical_13001_13064",
+  "comp": "6a",
+  "off": [
+   "indexEnd"
+  ],
+  "n_on": 16,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 59,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6a_off2_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off2_randomStable_det.csv",
+  "hash": "dbf147ab8c6ea197",
+  "wall_s": 42,
+  "time": "2026-10-13 19:49:25",
+  "block": "randomStable_13065_13128",
+  "comp": "6a",
+  "off": [
+   "indexEnd"
+  ],
+  "n_on": 16,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 48,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6a_off3_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off3_canonical_det.csv",
+  "hash": "52570729922b987a",
+  "wall_s": 31,
+  "time": "2026-10-13 19:50:01",
+  "block": "canonical_13001_13064",
+  "comp": "6a",
+  "off": [
+   "middleBase"
+  ],
+  "n_on": 16,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 54,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6a_off3_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off3_randomStable_det.csv",
+  "hash": "079056f32ab26b4b",
+  "wall_s": 37,
+  "time": "2026-10-13 19:50:43",
+  "block": "randomStable_13065_13128",
+  "comp": "6a",
+  "off": [
+   "middleBase"
+  ],
+  "n_on": 16,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 46,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6a_off4_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off4_canonical_det.csv",
+  "hash": "5f689b641b7e1a10",
+  "wall_s": 35,
+  "time": "2026-10-13 19:51:19",
+  "block": "canonical_13001_13064",
+  "comp": "6a",
+  "off": [
+   "middleMiddle"
+  ],
+  "n_on": 16,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 61,
+  "runner_race": true
+ },
+ {
+  "tag": "B_c6a_off4_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off4_randomStable_det.csv",
+  "hash": "0cb64ceabac88607",
+  "wall_s": 42,
+  "time": "2026-10-13 19:52:07",
+  "block": "randomStable_13065_13128",
+  "comp": "6a",
+  "off": [
+   "middleMiddle"
+  ],
+  "n_on": 16,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 51,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6a_off5_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off5_canonical_det.csv",
+  "hash": "578de32c50267b06",
+  "wall_s": 31,
+  "time": "2026-10-13 19:52:42",
+  "block": "canonical_13001_13064",
+  "comp": "6a",
+  "off": [
+   "middleEnd"
+  ],
+  "n_on": 16,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 58,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6a_off5_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off5_randomStable_det.csv",
+  "hash": "e187e43f1190263a",
+  "wall_s": 37,
+  "time": "2026-10-13 19:53:25",
+  "block": "randomStable_13065_13128",
+  "comp": "6a",
+  "off": [
+   "middleEnd"
+  ],
+  "n_on": 16,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 49,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6a_off6_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off6_canonical_det.csv",
+  "hash": "2b5408cbfde3587d",
+  "wall_s": 35,
+  "time": "2026-10-13 19:54:01",
+  "block": "canonical_13001_13064",
+  "comp": "6a",
+  "off": [
+   "ringBase"
+  ],
+  "n_on": 16,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 56,
+  "runner_race": true
+ },
+ {
+  "tag": "B_c6a_off6_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off6_randomStable_det.csv",
+  "hash": "5b832c5b8b8ab599",
+  "wall_s": 42,
+  "time": "2026-10-13 19:54:48",
+  "block": "randomStable_13065_13128",
+  "comp": "6a",
+  "off": [
+   "ringBase"
+  ],
+  "n_on": 16,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 52,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6a_off7_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off7_canonical_det.csv",
+  "hash": "a9e40227807bb9e5",
+  "wall_s": 35,
+  "time": "2026-10-13 19:55:24",
+  "block": "canonical_13001_13064",
+  "comp": "6a",
+  "off": [
+   "ringMiddle"
+  ],
+  "n_on": 16,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 60,
+  "runner_race": true
+ },
+ {
+  "tag": "B_c6a_off7_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off7_randomStable_det.csv",
+  "hash": "fab0625b8f1efc9a",
+  "wall_s": 37,
+  "time": "2026-10-13 19:56:07",
+  "block": "randomStable_13065_13128",
+  "comp": "6a",
+  "off": [
+   "ringMiddle"
+  ],
+  "n_on": 16,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 42,
+  "runner_race": false
+ },
+ {
+  "tag": "throwaway_20261013_195652",
+  "ok": true,
+  "throwaway": true,
+  "csv": "results/bo/discrete/passes/throwaway_20261013_195652.csv",
+  "hash": "7994a95bd048e5f8",
+  "wall_s": 16,
+  "time": "2026-10-13 19:57:12"
+ },
+ {
+  "tag": "B_c6a_off8_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off8_canonical_det.csv",
+  "hash": "2f876aa16e1c4bb0",
+  "wall_s": 31,
+  "time": "2026-10-13 19:57:47",
+  "block": "canonical_13001_13064",
+  "comp": "6a",
+  "off": [
+   "ringEnd"
+  ],
+  "n_on": 16,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 58,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6a_off8_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off8_randomStable_det.csv",
+  "hash": "0f5a4124c0a8df42",
+  "wall_s": 31,
+  "time": "2026-10-13 19:58:23",
+  "block": "randomStable_13065_13128",
+  "comp": "6a",
+  "off": [
+   "ringEnd"
+  ],
+  "n_on": 16,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 44,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6a_off9_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off9_canonical_det.csv",
+  "hash": "08c718e978e29b67",
+  "wall_s": 31,
+  "time": "2026-10-13 19:58:59",
+  "block": "canonical_13001_13064",
+  "comp": "6a",
+  "off": [
+   "pinkyBase"
+  ],
+  "n_on": 16,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 61,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6a_off9_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off9_randomStable_det.csv",
+  "hash": "3fd6ff1e007968a7",
+  "wall_s": 42,
+  "time": "2026-10-13 19:59:46",
+  "block": "randomStable_13065_13128",
+  "comp": "6a",
+  "off": [
+   "pinkyBase"
+  ],
+  "n_on": 16,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 43,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6a_off10_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off10_canonical_det.csv",
+  "hash": "8183656e128dc8c8",
+  "wall_s": 31,
+  "time": "2026-10-13 20:00:22",
+  "block": "canonical_13001_13064",
+  "comp": "6a",
+  "off": [
+   "pinkyMiddle"
+  ],
+  "n_on": 16,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 59,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6a_off10_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off10_randomStable_det.csv",
+  "hash": "cce70e6dcbad9c00",
+  "wall_s": 42,
+  "time": "2026-10-13 20:01:09",
+  "block": "randomStable_13065_13128",
+  "comp": "6a",
+  "off": [
+   "pinkyMiddle"
+  ],
+  "n_on": 16,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 50,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6a_off11_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off11_canonical_det.csv",
+  "hash": "805f85aee5a78f70",
+  "wall_s": 31,
+  "time": "2026-10-13 20:01:45",
+  "block": "canonical_13001_13064",
+  "comp": "6a",
+  "off": [
+   "pinkyEnd"
+  ],
+  "n_on": 16,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 56,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6a_off11_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off11_randomStable_det.csv",
+  "hash": "99c57f81f25df865",
+  "wall_s": 37,
+  "time": "2026-10-13 20:02:27",
+  "block": "randomStable_13065_13128",
+  "comp": "6a",
+  "off": [
+   "pinkyEnd"
+  ],
+  "n_on": 16,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 48,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6a_off12_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off12_canonical_det.csv",
+  "hash": "2a674354ed535030",
+  "wall_s": 26,
+  "time": "2026-10-13 20:02:57",
+  "block": "canonical_13001_13064",
+  "comp": "6a",
+  "off": [
+   "thumbBase"
+  ],
+  "n_on": 16,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 27,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6a_off12_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off12_randomStable_det.csv",
+  "hash": "bf9a2a1f3435a227",
+  "wall_s": 52,
+  "time": "2026-10-13 20:03:54",
+  "block": "randomStable_13065_13128",
+  "comp": "6a",
+  "off": [
+   "thumbBase"
+  ],
+  "n_on": 16,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 10,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6a_off13_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off13_canonical_det.csv",
+  "hash": "a92c8f8725c23d34",
+  "wall_s": 31,
+  "time": "2026-10-13 20:04:30",
+  "block": "canonical_13001_13064",
+  "comp": "6a",
+  "off": [
+   "thumbEnd"
+  ],
+  "n_on": 16,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 61,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6a_off13_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off13_randomStable_det.csv",
+  "hash": "87cf6cc10fa78b53",
+  "wall_s": 42,
+  "time": "2026-10-13 20:05:17",
+  "block": "randomStable_13065_13128",
+  "comp": "6a",
+  "off": [
+   "thumbEnd"
+  ],
+  "n_on": 16,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 48,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6a_off14_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off14_canonical_det.csv",
+  "hash": "9af11745e0941f82",
+  "wall_s": 31,
+  "time": "2026-10-13 20:05:53",
+  "block": "canonical_13001_13064",
+  "comp": "6a",
+  "off": [
+   "extraBase"
+  ],
+  "n_on": 16,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 59,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6a_off14_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off14_randomStable_det.csv",
+  "hash": "caad43fa98b54417",
+  "wall_s": 37,
+  "time": "2026-10-13 20:06:35",
+  "block": "randomStable_13065_13128",
+  "comp": "6a",
+  "off": [
+   "extraBase"
+  ],
+  "n_on": 16,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 50,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6a_off15_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off15_canonical_det.csv",
+  "hash": "c60aa267a10af437",
+  "wall_s": 31,
+  "time": "2026-10-13 20:07:11",
+  "block": "canonical_13001_13064",
+  "comp": "6a",
+  "off": [
+   "extraMiddle"
+  ],
+  "n_on": 16,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 61,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6a_off15_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off15_randomStable_det.csv",
+  "hash": "b5543e9255a61899",
+  "wall_s": 37,
+  "time": "2026-10-13 20:07:53",
+  "block": "randomStable_13065_13128",
+  "comp": "6a",
+  "off": [
+   "extraMiddle"
+  ],
+  "n_on": 16,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 50,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6a_off16_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off16_canonical_det.csv",
+  "hash": "44c4a12316a194d7",
+  "wall_s": 31,
+  "time": "2026-10-13 20:08:29",
+  "block": "canonical_13001_13064",
+  "comp": "6a",
+  "off": [
+   "extraEnd"
+  ],
+  "n_on": 16,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 59,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6a_off16_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6a_off16_randomStable_det.csv",
+  "hash": "099c851babf6c2b6",
+  "wall_s": 37,
+  "time": "2026-10-13 20:09:11",
+  "block": "randomStable_13065_13128",
+  "comp": "6a",
+  "off": [
+   "extraEnd"
+  ],
+  "n_on": 16,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 45,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6b_off0_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off0_canonical_det.csv",
+  "hash": "e457fd1436cb0965",
+  "wall_s": 36,
+  "time": "2026-10-13 20:09:48",
+  "block": "canonical_13001_13064",
+  "comp": "6b",
+  "off": [
+   "indexBase"
+  ],
+  "n_on": 15,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 62,
+  "runner_race": true
+ },
+ {
+  "tag": "B_c6b_off0_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off0_randomStable_det.csv",
+  "hash": "0cec1ce3c88aecec",
+  "wall_s": 37,
+  "time": "2026-10-13 20:10:30",
+  "block": "randomStable_13065_13128",
+  "comp": "6b",
+  "off": [
+   "indexBase"
+  ],
+  "n_on": 15,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 49,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6b_off1_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off1_canonical_det.csv",
+  "hash": "45a1bef07830a68f",
+  "wall_s": 31,
+  "time": "2026-10-13 20:11:06",
+  "block": "canonical_13001_13064",
+  "comp": "6b",
+  "off": [
+   "indexMiddle"
+  ],
+  "n_on": 15,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 60,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6b_off1_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off1_randomStable_det.csv",
+  "hash": "53a62aed8686053f",
+  "wall_s": 37,
+  "time": "2026-10-13 20:11:48",
+  "block": "randomStable_13065_13128",
+  "comp": "6b",
+  "off": [
+   "indexMiddle"
+  ],
+  "n_on": 15,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 47,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6b_off2_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off2_canonical_det.csv",
+  "hash": "d4699c3bc4294065",
+  "wall_s": 31,
+  "time": "2026-10-13 20:12:24",
+  "block": "canonical_13001_13064",
+  "comp": "6b",
+  "off": [
+   "indexEnd"
+  ],
+  "n_on": 15,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 58,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6b_off2_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off2_randomStable_det.csv",
+  "hash": "4023ac2514dc2bd2",
+  "wall_s": 42,
+  "time": "2026-10-13 20:13:11",
+  "block": "randomStable_13065_13128",
+  "comp": "6b",
+  "off": [
+   "indexEnd"
+  ],
+  "n_on": 15,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 50,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6b_off3_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off3_canonical_det.csv",
+  "hash": "a00278a0c2cacbc5",
+  "wall_s": 31,
+  "time": "2026-10-13 20:13:47",
+  "block": "canonical_13001_13064",
+  "comp": "6b",
+  "off": [
+   "middleBase"
+  ],
+  "n_on": 15,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 60,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6b_off3_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off3_randomStable_det.csv",
+  "hash": "13a2a7e8e441f177",
+  "wall_s": 37,
+  "time": "2026-10-13 20:14:29",
+  "block": "randomStable_13065_13128",
+  "comp": "6b",
+  "off": [
+   "middleBase"
+  ],
+  "n_on": 15,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 41,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6b_off4_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off4_canonical_det.csv",
+  "hash": "2d67d19b4d942bb4",
+  "wall_s": 35,
+  "time": "2026-10-13 20:15:05",
+  "block": "canonical_13001_13064",
+  "comp": "6b",
+  "off": [
+   "middleMiddle"
+  ],
+  "n_on": 15,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 62,
+  "runner_race": true
+ },
+ {
+  "tag": "B_c6b_off4_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off4_randomStable_det.csv",
+  "hash": "c860f0a502fb482a",
+  "wall_s": 37,
+  "time": "2026-10-13 20:15:47",
+  "block": "randomStable_13065_13128",
+  "comp": "6b",
+  "off": [
+   "middleMiddle"
+  ],
+  "n_on": 15,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 46,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6b_off5_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off5_canonical_det.csv",
+  "hash": "69e5085368697bcd",
+  "wall_s": 31,
+  "time": "2026-10-13 20:16:23",
+  "block": "canonical_13001_13064",
+  "comp": "6b",
+  "off": [
+   "middleEnd"
+  ],
+  "n_on": 15,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 61,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6b_off5_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off5_randomStable_det.csv",
+  "hash": "1e038a3fdac3dbc5",
+  "wall_s": 37,
+  "time": "2026-10-13 20:17:05",
+  "block": "randomStable_13065_13128",
+  "comp": "6b",
+  "off": [
+   "middleEnd"
+  ],
+  "n_on": 15,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 43,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6b_off6_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off6_canonical_det.csv",
+  "hash": "d0eca516df059105",
+  "wall_s": 31,
+  "time": "2026-10-13 20:17:41",
+  "block": "canonical_13001_13064",
+  "comp": "6b",
+  "off": [
+   "ringBase"
+  ],
+  "n_on": 15,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 61,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6b_off6_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off6_randomStable_det.csv",
+  "hash": "a24c4f6a609b2848",
+  "wall_s": 35,
+  "time": "2026-10-13 20:18:17",
+  "block": "randomStable_13065_13128",
+  "comp": "6b",
+  "off": [
+   "ringBase"
+  ],
+  "n_on": 15,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 43,
+  "runner_race": true
+ },
+ {
+  "tag": "B_c6b_off7_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off7_canonical_det.csv",
+  "hash": "c66772c17fc13df9",
+  "wall_s": 31,
+  "time": "2026-10-13 20:18:53",
+  "block": "canonical_13001_13064",
+  "comp": "6b",
+  "off": [
+   "ringMiddle"
+  ],
+  "n_on": 15,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 58,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6b_off7_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off7_randomStable_det.csv",
+  "hash": "254e061af5ecd484",
+  "wall_s": 37,
+  "time": "2026-10-13 20:19:35",
+  "block": "randomStable_13065_13128",
+  "comp": "6b",
+  "off": [
+   "ringMiddle"
+  ],
+  "n_on": 15,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 43,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6b_off8_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off8_canonical_det.csv",
+  "hash": "7beb4403b7a91cd5",
+  "wall_s": 35,
+  "time": "2026-10-13 20:20:11",
+  "block": "canonical_13001_13064",
+  "comp": "6b",
+  "off": [
+   "ringEnd"
+  ],
+  "n_on": 15,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 63,
+  "runner_race": true
+ },
+ {
+  "tag": "B_c6b_off8_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off8_randomStable_det.csv",
+  "hash": "041e8241b8589f22",
+  "wall_s": 47,
+  "time": "2026-10-13 20:21:03",
+  "block": "randomStable_13065_13128",
+  "comp": "6b",
+  "off": [
+   "ringEnd"
+  ],
+  "n_on": 15,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 44,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6b_off9_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off9_canonical_det.csv",
+  "hash": "35f703d9d92ad129",
+  "wall_s": 31,
+  "time": "2026-10-13 20:21:39",
+  "block": "canonical_13001_13064",
+  "comp": "6b",
+  "off": [
+   "pinkyBase"
+  ],
+  "n_on": 15,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 58,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6b_off9_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off9_randomStable_det.csv",
+  "hash": "d6de63bc80d9529b",
+  "wall_s": 42,
+  "time": "2026-10-13 20:22:26",
+  "block": "randomStable_13065_13128",
+  "comp": "6b",
+  "off": [
+   "pinkyBase"
+  ],
+  "n_on": 15,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 48,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6b_off10_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off10_canonical_det.csv",
+  "hash": "200f75ea7e5da8ae",
+  "wall_s": 35,
+  "time": "2026-10-13 20:23:02",
+  "block": "canonical_13001_13064",
+  "comp": "6b",
+  "off": [
+   "pinkyMiddle"
+  ],
+  "n_on": 15,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 61,
+  "runner_race": true
+ },
+ {
+  "tag": "B_c6b_off10_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off10_randomStable_det.csv",
+  "hash": "6c1a426d468354b9",
+  "wall_s": 37,
+  "time": "2026-10-13 20:23:44",
+  "block": "randomStable_13065_13128",
+  "comp": "6b",
+  "off": [
+   "pinkyMiddle"
+  ],
+  "n_on": 15,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 45,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6b_off11_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off11_canonical_det.csv",
+  "hash": "6bc5de17f38bcf5b",
+  "wall_s": 35,
+  "time": "2026-10-13 20:24:20",
+  "block": "canonical_13001_13064",
+  "comp": "6b",
+  "off": [
+   "pinkyEnd"
+  ],
+  "n_on": 15,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 63,
+  "runner_race": true
+ },
+ {
+  "tag": "B_c6b_off11_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off11_randomStable_det.csv",
+  "hash": "4649eb7d32c449c1",
+  "wall_s": 37,
+  "time": "2026-10-13 20:25:02",
+  "block": "randomStable_13065_13128",
+  "comp": "6b",
+  "off": [
+   "pinkyEnd"
+  ],
+  "n_on": 15,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 49,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6b_off12_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off12_canonical_det.csv",
+  "hash": "84f8668a68a622e8",
+  "wall_s": 31,
+  "time": "2026-10-13 20:25:38",
+  "block": "canonical_13001_13064",
+  "comp": "6b",
+  "off": [
+   "thumbBase"
+  ],
+  "n_on": 15,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 52,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6b_off12_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off12_randomStable_det.csv",
+  "hash": "c0caf27821b50cb9",
+  "wall_s": 47,
+  "time": "2026-10-13 20:26:30",
+  "block": "randomStable_13065_13128",
+  "comp": "6b",
+  "off": [
+   "thumbBase"
+  ],
+  "n_on": 15,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 10,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6b_off13_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off13_canonical_det.csv",
+  "hash": "0d5638ec04948761",
+  "wall_s": 31,
+  "time": "2026-10-13 20:27:06",
+  "block": "canonical_13001_13064",
+  "comp": "6b",
+  "off": [
+   "thumbEnd"
+  ],
+  "n_on": 15,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 61,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6b_off13_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off13_randomStable_det.csv",
+  "hash": "3be85ca83b97dbfc",
+  "wall_s": 37,
+  "time": "2026-10-13 20:27:48",
+  "block": "randomStable_13065_13128",
+  "comp": "6b",
+  "off": [
+   "thumbEnd"
+  ],
+  "n_on": 15,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 43,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6b_off17_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off17_canonical_det.csv",
+  "hash": "179df6adcd97f1fc",
+  "wall_s": 31,
+  "time": "2026-10-13 20:28:24",
+  "block": "canonical_13001_13064",
+  "comp": "6b",
+  "off": [
+   "thumb2Base"
+  ],
+  "n_on": 15,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 59,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c6b_off17_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off17_randomStable_det.csv",
+  "hash": "efb0dc47b8ad07a4",
+  "wall_s": 36,
+  "time": "2026-10-13 20:29:01",
+  "block": "randomStable_13065_13128",
+  "comp": "6b",
+  "off": [
+   "thumb2Base"
+  ],
+  "n_on": 15,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 44,
+  "runner_race": true
+ },
+ {
+  "tag": "B_c6b_off18_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off18_canonical_det.csv",
+  "hash": "cbe0f0afd84535a1",
+  "wall_s": 35,
+  "time": "2026-10-13 20:29:37",
+  "block": "canonical_13001_13064",
+  "comp": "6b",
+  "off": [
+   "thumb2End"
+  ],
+  "n_on": 15,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 62,
+  "runner_race": true
+ },
+ {
+  "tag": "B_c6b_off18_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c6b_off18_randomStable_det.csv",
+  "hash": "0b46c28be4f916d6",
+  "wall_s": 37,
+  "time": "2026-10-13 20:30:19",
+  "block": "randomStable_13065_13128",
+  "comp": "6b",
+  "off": [
+   "thumb2End"
+  ],
+  "n_on": 15,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 49,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off0_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off0_canonical_det.csv",
+  "hash": "c8bd784f775874d0",
+  "wall_s": 37,
+  "time": "2026-10-13 20:31:01",
+  "block": "canonical_13001_13064",
+  "comp": "7",
+  "off": [
+   "indexBase"
+  ],
+  "n_on": 18,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 51,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off0_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off0_randomStable_det.csv",
+  "hash": "512ec661f2f72f7d",
+  "wall_s": 47,
+  "time": "2026-10-13 20:31:53",
+  "block": "randomStable_13065_13128",
+  "comp": "7",
+  "off": [
+   "indexBase"
+  ],
+  "n_on": 18,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 40,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off1_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off1_canonical_det.csv",
+  "hash": "b6fa3effb7d792fc",
+  "wall_s": 37,
+  "time": "2026-10-13 20:32:36",
+  "block": "canonical_13001_13064",
+  "comp": "7",
+  "off": [
+   "indexMiddle"
+  ],
+  "n_on": 18,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 58,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off1_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off1_randomStable_det.csv",
+  "hash": "9188519419e404b3",
+  "wall_s": 52,
+  "time": "2026-10-13 20:33:33",
+  "block": "randomStable_13065_13128",
+  "comp": "7",
+  "off": [
+   "indexMiddle"
+  ],
+  "n_on": 18,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 40,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off2_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off2_canonical_det.csv",
+  "hash": "244c3cbfb60a42b9",
+  "wall_s": 37,
+  "time": "2026-10-13 20:34:15",
+  "block": "canonical_13001_13064",
+  "comp": "7",
+  "off": [
+   "indexEnd"
+  ],
+  "n_on": 18,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 57,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off2_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off2_randomStable_det.csv",
+  "hash": "9ebd60799977e93a",
+  "wall_s": 57,
+  "time": "2026-10-13 20:35:16",
+  "block": "randomStable_13065_13128",
+  "comp": "7",
+  "off": [
+   "indexEnd"
+  ],
+  "n_on": 18,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 44,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off3_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off3_canonical_det.csv",
+  "hash": "d7746e066f51a28c",
+  "wall_s": 37,
+  "time": "2026-10-13 20:35:59",
+  "block": "canonical_13001_13064",
+  "comp": "7",
+  "off": [
+   "middleBase"
+  ],
+  "n_on": 18,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 51,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off3_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off3_randomStable_det.csv",
+  "hash": "974e64c68ebf6fe0",
+  "wall_s": 57,
+  "time": "2026-10-13 20:37:01",
+  "block": "randomStable_13065_13128",
+  "comp": "7",
+  "off": [
+   "middleBase"
+  ],
+  "n_on": 18,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 38,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off4_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off4_canonical_det.csv",
+  "hash": "8c0497d71e18e055",
+  "wall_s": 38,
+  "time": "2026-10-13 20:37:43",
+  "block": "canonical_13001_13064",
+  "comp": "7",
+  "off": [
+   "middleMiddle"
+  ],
+  "n_on": 18,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 59,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off4_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off4_randomStable_det.csv",
+  "hash": "ea6a13bfb7c9d652",
+  "wall_s": 57,
+  "time": "2026-10-13 20:38:45",
+  "block": "randomStable_13065_13128",
+  "comp": "7",
+  "off": [
+   "middleMiddle"
+  ],
+  "n_on": 18,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 36,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off5_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off5_canonical_det.csv",
+  "hash": "1327b662a30b2a79",
+  "wall_s": 37,
+  "time": "2026-10-13 20:39:27",
+  "block": "canonical_13001_13064",
+  "comp": "7",
+  "off": [
+   "middleEnd"
+  ],
+  "n_on": 18,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 57,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off5_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off5_randomStable_det.csv",
+  "hash": "828d2bf8d903cdcd",
+  "wall_s": 52,
+  "time": "2026-10-13 20:40:24",
+  "block": "randomStable_13065_13128",
+  "comp": "7",
+  "off": [
+   "middleEnd"
+  ],
+  "n_on": 18,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 44,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off6_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off6_canonical_det.csv",
+  "hash": "e79b6075e57045f7",
+  "wall_s": 37,
+  "time": "2026-10-13 20:41:06",
+  "block": "canonical_13001_13064",
+  "comp": "7",
+  "off": [
+   "ringBase"
+  ],
+  "n_on": 18,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 50,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off6_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off6_randomStable_det.csv",
+  "hash": "641a1629a40db6d1",
+  "wall_s": 52,
+  "time": "2026-10-13 20:42:03",
+  "block": "randomStable_13065_13128",
+  "comp": "7",
+  "off": [
+   "ringBase"
+  ],
+  "n_on": 18,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 40,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off7_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off7_canonical_det.csv",
+  "hash": "730702cd7fb85736",
+  "wall_s": 37,
+  "time": "2026-10-13 20:42:46",
+  "block": "canonical_13001_13064",
+  "comp": "7",
+  "off": [
+   "ringMiddle"
+  ],
+  "n_on": 18,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 57,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off7_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off7_randomStable_det.csv",
+  "hash": "7d99d67c36f38587",
+  "wall_s": 47,
+  "time": "2026-10-13 20:43:38",
+  "block": "randomStable_13065_13128",
+  "comp": "7",
+  "off": [
+   "ringMiddle"
+  ],
+  "n_on": 18,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 36,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off8_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off8_canonical_det.csv",
+  "hash": "819b9c447e71e15f",
+  "wall_s": 37,
+  "time": "2026-10-13 20:44:20",
+  "block": "canonical_13001_13064",
+  "comp": "7",
+  "off": [
+   "ringEnd"
+  ],
+  "n_on": 18,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 57,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off8_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off8_randomStable_det.csv",
+  "hash": "0f8f71c4c25fcf1f",
+  "wall_s": 47,
+  "time": "2026-10-13 20:45:12",
+  "block": "randomStable_13065_13128",
+  "comp": "7",
+  "off": [
+   "ringEnd"
+  ],
+  "n_on": 18,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 33,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off9_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off9_canonical_det.csv",
+  "hash": "ee50d61350b61859",
+  "wall_s": 37,
+  "time": "2026-10-13 20:45:55",
+  "block": "canonical_13001_13064",
+  "comp": "7",
+  "off": [
+   "pinkyBase"
+  ],
+  "n_on": 18,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 55,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off9_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off9_randomStable_det.csv",
+  "hash": "4ac3d19fcddd991a",
+  "wall_s": 52,
+  "time": "2026-10-13 20:46:52",
+  "block": "randomStable_13065_13128",
+  "comp": "7",
+  "off": [
+   "pinkyBase"
+  ],
+  "n_on": 18,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 46,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off10_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off10_canonical_det.csv",
+  "hash": "b16e1ec8fd6cd7e4",
+  "wall_s": 37,
+  "time": "2026-10-13 20:47:34",
+  "block": "canonical_13001_13064",
+  "comp": "7",
+  "off": [
+   "pinkyMiddle"
+  ],
+  "n_on": 18,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 58,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off10_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off10_randomStable_det.csv",
+  "hash": "69ae8edb02c0f1f7",
+  "wall_s": 52,
+  "time": "2026-10-13 20:48:31",
+  "block": "randomStable_13065_13128",
+  "comp": "7",
+  "off": [
+   "pinkyMiddle"
+  ],
+  "n_on": 18,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 39,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off11_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off11_canonical_det.csv",
+  "hash": "122ee98a89f146ee",
+  "wall_s": 37,
+  "time": "2026-10-13 20:49:14",
+  "block": "canonical_13001_13064",
+  "comp": "7",
+  "off": [
+   "pinkyEnd"
+  ],
+  "n_on": 18,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 58,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off11_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off11_randomStable_det.csv",
+  "hash": "b236a43318d7a12d",
+  "wall_s": 57,
+  "time": "2026-10-13 20:50:16",
+  "block": "randomStable_13065_13128",
+  "comp": "7",
+  "off": [
+   "pinkyEnd"
+  ],
+  "n_on": 18,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 43,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off12_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off12_canonical_det.csv",
+  "hash": "d30dda958077f6ef",
+  "wall_s": 31,
+  "time": "2026-10-13 20:50:52",
+  "block": "canonical_13001_13064",
+  "comp": "7",
+  "off": [
+   "thumbBase"
+  ],
+  "n_on": 18,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 36,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off12_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off12_randomStable_det.csv",
+  "hash": "d8e177d1df996fef",
+  "wall_s": 62,
+  "time": "2026-10-13 20:51:59",
+  "block": "randomStable_13065_13128",
+  "comp": "7",
+  "off": [
+   "thumbBase"
+  ],
+  "n_on": 18,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 15,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off13_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off13_canonical_det.csv",
+  "hash": "e145a710ce0fa102",
+  "wall_s": 37,
+  "time": "2026-10-13 20:52:41",
+  "block": "canonical_13001_13064",
+  "comp": "7",
+  "off": [
+   "thumbEnd"
+  ],
+  "n_on": 18,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 57,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off13_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off13_randomStable_det.csv",
+  "hash": "6ad659e6ecafd79a",
+  "wall_s": 47,
+  "time": "2026-10-13 20:53:33",
+  "block": "randomStable_13065_13128",
+  "comp": "7",
+  "off": [
+   "thumbEnd"
+  ],
+  "n_on": 18,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 41,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off14_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off14_canonical_det.csv",
+  "hash": "00668e5f6eac4784",
+  "wall_s": 37,
+  "time": "2026-10-13 20:54:15",
+  "block": "canonical_13001_13064",
+  "comp": "7",
+  "off": [
+   "extraBase"
+  ],
+  "n_on": 18,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 59,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off14_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off14_randomStable_det.csv",
+  "hash": "8287a22982be567a",
+  "wall_s": 47,
+  "time": "2026-10-13 20:55:07",
+  "block": "randomStable_13065_13128",
+  "comp": "7",
+  "off": [
+   "extraBase"
+  ],
+  "n_on": 18,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 42,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off15_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off15_canonical_det.csv",
+  "hash": "bf48364ce0f16451",
+  "wall_s": 37,
+  "time": "2026-10-13 20:55:49",
+  "block": "canonical_13001_13064",
+  "comp": "7",
+  "off": [
+   "extraMiddle"
+  ],
+  "n_on": 18,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 57,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off15_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off15_randomStable_det.csv",
+  "hash": "1fcbf2607f206a64",
+  "wall_s": 47,
+  "time": "2026-10-13 20:56:42",
+  "block": "randomStable_13065_13128",
+  "comp": "7",
+  "off": [
+   "extraMiddle"
+  ],
+  "n_on": 18,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 38,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off16_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off16_canonical_det.csv",
+  "hash": "ed9666434d7293c4",
+  "wall_s": 37,
+  "time": "2026-10-13 20:57:24",
+  "block": "canonical_13001_13064",
+  "comp": "7",
+  "off": [
+   "extraEnd"
+  ],
+  "n_on": 18,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 54,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off16_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off16_randomStable_det.csv",
+  "hash": "92578df0023e6a8b",
+  "wall_s": 57,
+  "time": "2026-10-13 20:58:26",
+  "block": "randomStable_13065_13128",
+  "comp": "7",
+  "off": [
+   "extraEnd"
+  ],
+  "n_on": 18,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 38,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off17_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off17_canonical_det.csv",
+  "hash": "9fc9d1b9a9d08000",
+  "wall_s": 36,
+  "time": "2026-10-13 20:59:03",
+  "block": "canonical_13001_13064",
+  "comp": "7",
+  "off": [
+   "thumb2Base"
+  ],
+  "n_on": 18,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 54,
+  "runner_race": true
+ },
+ {
+  "tag": "B_c7_off17_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off17_randomStable_det.csv",
+  "hash": "4dccba41ffbf1a8c",
+  "wall_s": 52,
+  "time": "2026-10-13 21:00:00",
+  "block": "randomStable_13065_13128",
+  "comp": "7",
+  "off": [
+   "thumb2Base"
+  ],
+  "n_on": 18,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 44,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off18_canonical_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off18_canonical_det.csv",
+  "hash": "b2d92e72f8db9c99",
+  "wall_s": 37,
+  "time": "2026-10-13 21:00:42",
+  "block": "canonical_13001_13064",
+  "comp": "7",
+  "off": [
+   "thumb2End"
+  ],
+  "n_on": 18,
+  "pose": "canonical",
+  "head": "deterministic",
+  "n": 64,
+  "k": 57,
+  "runner_race": false
+ },
+ {
+  "tag": "B_c7_off18_randomStable_det",
+  "ok": true,
+  "csv": "results/bo/discrete/passes/B_c7_off18_randomStable_det.csv",
+  "hash": "c1971fc6cf36510b",
+  "wall_s": 57,
+  "time": "2026-10-13 21:01:44",
+  "block": "randomStable_13065_13128",
+  "comp": "7",
+  "off": [
+   "thumb2End"
+  ],
+  "n_on": 18,
+  "pose": "randomStable",
+  "head": "deterministic",
+  "n": 64,
+  "k": 39,
+  "runner_race": false
  }
 ]

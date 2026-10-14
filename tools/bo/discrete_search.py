@@ -163,15 +163,23 @@ def evaluate(tag, comp, off, pose, seeds, head):
     if tag in done: return load(done[tag]["csv"])
     ensure_editor()
     csv_path = f"{PASSES}/{tag}.csv"; t0 = time.time()
+    race = False
     try: path, wall = run_pass(config(comp, off, pose, seeds, head, csv_path), max_wait=5400)
     except Exception as ex:
-        log.append({"tag": tag, "ok": False, "error": repr(ex)[:400], "time": time.strftime("%F %T")}); save_log()
-        raise StopRun(f"{tag}: harness pass failed: {repr(ex)[:300]}")
+        # gates_runner race: the harness writes DONE and leaves Play between run_pass's DONE poll and its 30 s play-mode poll, so a completed
+        # pass reports rc=4 ("stopped" before DONE was seen). Accept only rc=4 with DONE at the end of the CSV; validate() still checks every row.
+        full = os.path.join(REPO, csv_path)
+        if "rc=4" in repr(ex) and os.path.exists(full) and b"DONE" in open(full, "rb").read()[-16:]:
+            path, wall, race = full, time.time() - t0, True
+            print(f"{tag}: runner reported rc=4 but the CSV is complete (DONE); accepted subject to validation", flush=True)
+        else:
+            log.append({"tag": tag, "ok": False, "error": repr(ex)[:400], "time": time.strftime("%F %T")}); save_log()
+            raise StopRun(f"{tag}: harness pass failed: {repr(ex)[:300]}")
     state["since_launch"] += 1
     rows = load(csv_path); block = validate(tag, rows, comp, off, pose, seeds, head)
     k = sum(ok(r) for r in rows)
     e = {"tag": tag, "ok": True, "csv": csv_path, "hash": pass_hash(path), "wall_s": round(wall), "time": time.strftime("%F %T"), "block": block,
-         "comp": comp, "off": [TS.GROUP_NAMES[g] for g in off], "n_on": n_on(comp, off), "pose": pose, "head": head, "n": len(rows), "k": k}
+         "comp": comp, "off": [TS.GROUP_NAMES[g] for g in off], "n_on": n_on(comp, off), "pose": pose, "head": head, "n": len(rows), "k": k, "runner_race": race}
     log.append(e); done[tag] = e; save_log()
     print(f"{tag}: {k}/{len(rows)} = {k / len(rows):.3f}  ({wall:.0f} s)", flush=True)
     return rows
